@@ -11,6 +11,8 @@
 				(set! test-num (add1 test-num))
 				test-num))
 
+(define (_unwrap-val val) (if (procedure? val) (val) val))
+
 (define (test-more-check  #:expr     ex
 						  #:expected [expected #t]
 						  #:msg      [m ""]
@@ -47,11 +49,17 @@
 
 
 (define (is val expected [msg ""] [op equal?])
-  (test-more-check #:expr (if (procedure? val) (val) val)
+  (test-more-check #:expr (_unwrap-val val)
 				   #:expected expected
 				   #:msg msg
 				   #:op op
 				   ))
+
+(define (isnt val
+			  expected
+			  [msg ""]
+			  [op (lambda (a b) (not (equal? a b)))])
+  (is val expected msg op))
 
 (define-syntax (like stx)
   (syntax-parse stx
@@ -74,27 +82,6 @@
 									#:report-expected/got #f
 									)]))
 
-
-(define-syntax (isnt stx)
-  (syntax-parse stx
-				[(isnt this correct)
-				 #`(test-more-check #:expr this
-									#:expected correct
-									#:op (lambda (a b) (not (equal? a b)))
-
-									)]
-				[(isnt this correct msg)
-				 #`(test-more-check #:expr this
-									#:expected correct
-									#:msg msg
-									#:op (lambda (a b) (not (equal? a b)))
-									)]
-				[(isnt this correct op msg)
-				 #`(test-more-check #:expr this
-									#:expected correct
-									#:msg msg
-									#:op op)]
-				))
 
 
 (define/contract (throws thunk pred [msg ""])
