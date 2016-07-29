@@ -33,14 +33,15 @@
 					   ))))
 
 (define (ok val [msg ""])
-  (test-more-check #:expr (if (procedure? val) (val) val)
+  (test-more-check #:expr (_unwrap-val val)
 				   #:msg msg
 				   #:report-expected/got #f
 				   #:op (lambda (a b) (not (false? a)))
 				   ))
 
 (define (not-ok val [msg ""])
-  (ok (not (_unwrap-val val)) msg))
+  (ok (not (_unwrap-val val))
+	  msg))
 
 
 (define (is val expected [msg ""] [op equal?])
@@ -56,14 +57,20 @@
 			  [op (lambda (a b) (not (equal? a b)))])
   (is val expected msg op))
 
-(define/contract (like val regex [msg ""])
+(define (like val regex [msg ""])
   (ok (regexp-match regex val) msg))
 
 (define/contract (unlike val regex [msg ""])
+  (->* (any/c regexp?)
+	   (string?)
+	   any/c)
   (ok (not (regexp-match regex val)) msg))
 
 
 (define/contract (throws thunk pred [msg ""])
+  (->* (procedure? (or/c string? regexp? (-> any/c boolean?)))
+	   (string?)
+	   any/c)
   ;;    'thunk' should generate an exception
   ;;    'msg'  is what test-more-check will report
   ;;    'pred' could be a string, a proc, or a regex
