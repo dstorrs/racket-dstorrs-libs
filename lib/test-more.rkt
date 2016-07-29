@@ -1,10 +1,6 @@
 #lang racket
 
-(require (for-syntax syntax/parse)
-		 racket/stxparam
-		 racket
-		 racket/splicing
-		 )
+(require racket racket/splicing)
 
 (splicing-let ([test-num 0])
 			  (define (next-test-num)
@@ -64,9 +60,11 @@
 (define (like val regex [msg ""])
   (ok (regexp-match regex val) msg))
 
-(define (unlike val regex [msg ""])
+(define/contract (unlike val regex [msg ""])
+  (->* (any/c regexp?)
+	   (string?)
+	   any/c)
   (ok (not (regexp-match regex val)) msg))
-
 
 
 (define/contract (throws thunk pred [msg ""])
@@ -100,45 +98,6 @@
 					(thunk))
 				   #:msg msg))
 
-
-;;   (define (build-predicate pred)
-;; 	(let ([m (lambda (e) (exn-message e))])
-;; 	  (cond
-;; 	   [(string? pred) (lambda (e) (equal? pred (m e)))]
-;; 	   [(regexp? pred) (lambda (e) (regexp-match pred (m e)))]
-;; 	   [(procedure? pred) pred])))
-;;   (begin
-;; 	(println "main body, thunk:")
-;; 	(println thunk)
-;; 	(with-handlers ([exn?
-;; 					 (test-more-check
-;; 					  #:expr ((lambda (e)
-;; 							   (begin
-;; 							   (println "in handler")
-;; 							   (let ([p (build-predicate pred)])
-;; 								 (println (format "~a~a" "p is:" p))
-;; 								 #t))))
-;; 					  #:msg msg)])
-;; 				   (thunk))))
-
-;;   (define (build-predicate pred)
-;; 	(cond
-;; 	 [(procedure? pred) pred]
-;; 	 [(string?    pred)
-;; 	  (lambda (exn)
-;; 		;;    Snip the boilerplate off the exception message
-;; 		(let* ([str (exn-message exn)]
-;; 			   [str (regexp-replace #px"^.+?expected: " str "")]
-;; 			   [str (regexp-replace #px"(.+)\n.+$" str "\\1")])
-;; 		  (equal? str pred)))]
-;; 	 [(regexp? pred)
-;; 	  (lambda (exn) (regexp-match pred (exn-message exn)))]))
-
-;; 	(with-handlers
-;; 	 ([((build-predicate pred) exn)
-;; 	   (test-more-check    #:expr #t  #:msg msg)]
-;; 	  [#t (test-more-check #:expr #f  #:msg msg)])
-;; 	 (expr)))
 
 
 (provide ok not-ok is isnt test-more-check like unlike throws)
