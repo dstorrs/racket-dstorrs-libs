@@ -61,26 +61,11 @@
 			  [op (lambda (a b) (not (equal? a b)))])
   (is val expected msg op))
 
-(define-syntax (like stx)
-  (syntax-parse stx
-				[(like val regex)
-				 #'(ok (regexp-match regex val))]
-				[(like val regex msg)
-				 #'(ok (regexp-match regex val) msg)]))
+(define (like val regex [msg ""])
+  (ok (regexp-match regex val) msg))
 
-(define-syntax (unlike stx)
-  (syntax-parse stx
-				[(unlike val regex)
-				 #'(test-more-check #:expr val
-									#:op (lambda (a b) (false? a))
-									#:report-expected/got #f
-									)]
-				[(unlike val regex msg)
-				 #'(test-more-check #:expr val
-									#:op (lambda (a b) (false? a))
-									#:msg msg
-									#:report-expected/got #f
-									)]))
+(define (unlike val regex [msg ""])
+  (ok (not (regexp-match regex val)) msg))
 
 
 
