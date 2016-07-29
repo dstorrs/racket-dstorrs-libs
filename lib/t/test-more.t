@@ -10,11 +10,11 @@
 (ok 4)
 (ok (lambda () 9))
 
-;; (not-ok #f "not-ok #f works")
-;; (not-ok (lambda () #f) "not-ok works w/ func returning #f.")
-;; (displayln "\t### Next two tests deliberately have no message")
-;; (not-ok #f)
-;; (not-ok (lambda () #f))
+(not-ok #f "not-ok #f works")
+(not-ok (lambda () #f) "not-ok works w/ func returning #f.")
+(displayln "\t### Next two tests deliberately have no message")
+(not-ok #f)
+(not-ok (lambda () #f))
 
 (displayln "\t### Next 5 tests should say 'NOT ok'; second has no message")
 (ok #f "this should say 'NOT ok', and so should the next one")
