@@ -17,7 +17,7 @@
 (not-ok (lambda () #f))
 
 (displayln "\t### Next 5 tests should say 'NOT ok'; second has no message")
-(ok #f "this should say 'NOT ok', and so should the next one")
+(ok #f "(ok) with message.  Next one is (ok) without message")
 (ok #f)
 (isnt 8 8 "this should say 'NOT ok' (isnt 8 8)")
 (is 8 "8" "(is 8 \"8\") should say 'NOT ok'")
@@ -26,7 +26,7 @@
 (displayln "\t### Should say 'ok' from here down; next test has no message, the rest do")
 (isnt 3 "abc")
 (is 8 8 "(is 8 8) works")
-(is 8 8  eq? "(is 8 8) works when given eq?")
+(is 8 8  "(is 8 8) works when given eq?" eq?)
 
 (isnt 7 "7" "(isnt 7 \"7\") works")
 

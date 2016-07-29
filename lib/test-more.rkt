@@ -46,24 +46,12 @@
 	  msg))
 
 
-(define-syntax (is stx)
-  (syntax-parse stx
-				[(is this correct)
-				 #`(test-more-check #:expr this
-									#:expected correct)]
-				[(is this correct msg)
-				 #`(test-more-check #:expr this
-									#:expected correct
-									#:msg msg)]
-
-				[(is this correct op msg)
-				 #`(test-more-check #:expr this
-									#:expected correct
-									#:msg msg
-									#:op op)]
-
-				))
-
+(define (is val expected [msg ""] [op equal?])
+  (test-more-check #:expr (if (procedure? val) (val) val)
+				   #:expected expected
+				   #:msg msg
+				   #:op op
+				   ))
 
 (define-syntax (like stx)
   (syntax-parse stx
