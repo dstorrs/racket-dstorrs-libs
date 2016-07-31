@@ -53,3 +53,10 @@
 (is (remove-nulls '(foo bar)) '(foo bar) "remove-nulls leaves list unchanged if it contains no null list")
 (is (remove-nulls '(foo () bar)) '(foo bar) "remove-nulls removes one null")
 (is (remove-nulls '(foo (()) bar)) '(foo (()) bar) "remove-nulls does not remove (())")
+
+(for ((v `(#f #t "foo" 7 list? () ,(make-hash '((x . 7))) ,(make-vector 8))))
+	 (not-ok (list-not-null? v) (format "list-not-null? ~a is #f" v)))
+
+(for ((v '((foo) (()))))
+	 (ok (list-not-null? v) (format "(list-not-null? ~a is #t" v)))
+

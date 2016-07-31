@@ -8,6 +8,8 @@
 
 (define (remove-nulls l) (filter (negate null?) l))
 
+(define (list-not-null? l) (and (not (atom? l)) (not (null? l))))
+
 ;;----------------------------------------------------------------------
 ;;    Take a data structure built of nested hashes and lists, retrieve
 ;;    items from it.  Hashes are accessed by key, lists by index. If
