@@ -67,6 +67,16 @@
   (ok (not (regexp-match regex val)) msg))
 
 
+(define/contract (lives thunk [msg ""])
+  (->* (procedure?) (string?) any/c)
+  (with-handlers ((exn? (lambda (e)
+						  (test-more-check #:expr #f
+										   #:msg (format "Exception thrown! Test message: '~a'.  Exception: '~a'" msg (exn-message e))))))
+				 (begin
+				   (thunk)
+				   (test-more-check #:expr #t  #:msg msg))))
+
+
 (define/contract (throws thunk pred [msg ""])
   (->* (procedure? (or/c string? regexp? (-> any/c boolean?)))
 	   (string?)
@@ -100,5 +110,5 @@
 
 
 
-(provide ok not-ok is isnt test-more-check like unlike throws)
+(provide ok not-ok is isnt test-more-check like unlike throws lives)
 
