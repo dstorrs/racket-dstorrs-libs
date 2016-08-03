@@ -5,7 +5,8 @@
 		 openssl
 		 rackunit
 		 racket/pretty
-		 "./list-utils.rkt" ; for atom?
+		 "list-utils.rkt" ; for atom?
+		 "web.rkt"        ; for web/call
 		 (planet neil/html-parsing:3:0)
 		 sxml		 
 		 )
@@ -150,16 +151,6 @@
    [(searched-for? some-content)  (autobox (action some-content))]
    [else                          (apply append (map ld some-content))]))
 
-
-;;----------------------------------------------------------------------
-;;    (web/call url-string)  -> xexpr
-;;
-(define (web/call url-string)
-  (html->xexp
-   (call/input-url (string->url url-string)
-				   (curry get-pure-port #:redirections 5)
-				   port->string)))
-						  
 
 ;;----------------------------------------------------------------------
 
