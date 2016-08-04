@@ -2,23 +2,26 @@
 
 (require racket/runtime-path
 		 net/url
-		 "web.rkt"
 		 (planet neil/html-parsing:3:0)
+		 "web.rkt"
+		 "HTML-TreeBuilder.rkt"
 		 )
 
-(define url-13F-search "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=13f&owner=include&count=100&action=getcurrent")
+(define latest-filings-url "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&owner=include&count=100&action=getcurrent")
 
-;;    
-(define (get-page #:source  [source url-13F-search]
-					   #:as-text [as-text #f])
-  (->* ()
-	   (#:source  (or/c string? path-string? url?)
-				  #:as-text boolean?)
-	   (or/c string? list?))
-  (let* ((u (to-url source))
-		 (str (port->string (if (is-local? source)
-								(open-input-file (url->string u))
-								(get-pure-port  u)))))
-	(if as-text str (html->xexp str))))
+(define latest-13Fs-url "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=13F&owner=include&count=100&action=getcurrent")
+
+;;----------------------------------------------------------------------
+;;    Get an xexp containing the 'tr's that represent the filings.
+;;    Unfortunately, the SEC is using table-based layouts and no ids
+;;    or classes.  There are five tables on the page, but only one
+;;    div.  We want to get the second table from inside that div.
+(define/contract (latest-filings-rows [url latest-filings-url])
+  (->* () ((or/c path-string? url?)) list?)
+  (look-down #:tag 'tr
+   (second (look-down #:tag 'table
+					  (look-down #:tag 'div
+								 (get-page url))))))
+
 
 (provide (all-defined-out))

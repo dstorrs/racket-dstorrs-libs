@@ -6,31 +6,28 @@
 		 "../sec.rkt"
 		 "../HTML-TreeBuilder.rkt"
 		 racket/runtime-path
+		 net/url
 		 )
 
-(define-runtime-path path "data/20160802_Latest_EDGAR_Filings.html")
+(define correct-header-row
+  '(tr (@ (bgcolor "#D6D6D6")) "\n" (th (@ (align "left") (nowrap "nowrap") (width "4%")) "Form") "\n" (th (@ (align "left") (nowrap "nowrap") (width "4%")) "Formats") "\n" (th (@ (align "left") (width "40%")) "Description") "\n" (th (@ (align "left") (nowrap "nowrap") (width "4%")) "Accepted") "\n" (th (@ (align "left") (nowrap "nowrap") (width "4%")) "Filing Date") "\n" (th (@ (align "left") (nowrap "nowrap") (width "4%")) "File/Film No") "\n"))
 
-(define standard-url "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=13f&owner=include&count=100&action=getcurrent")
+(define-runtime-path main-path  "data/20160802_Latest_EDGAR_Filings/main_page.html")
 
+(define new-filings-url "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&owner=include&count=100&action=getcurrent")
+(define new-13Fs-url    "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=13F&owner=include&count=100&action=getcurrent")
 (define second-url "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=13f&owner=include&count=40&action=getcurrent")
-
 (define title-regex #px"Latest Filings Received and Processed at the SEC")
-
-(define correct-text (port->string (open-input-file path)))
+(define correct-text (port->string (open-input-file main-path)))
 
 (ok 1 "test harness working")
 
-(is url-13F-search standard-url "(url-13F-search) is correct")
+(is latest-filings-url new-filings-url "(latest-filings-url) is correct")
+(is latest-13Fs-url    new-13Fs-url    "(latest-13Fs-url) is correct")
 
-(like (get-page #:source path #:as-text #t)
-	  title-regex
-	  "(get-page #:source path #:as-text #t)")
+(let ((rows (latest-filings-rows)))
+  (is (car rows) correct-header-row "got correct header row from table")
+  (is (length rows) 201 "got 201 rows (header + 100 records w/2 rows each) of filings"))
 
-(let ((xlist (get-page #:source path)))
-  (is (look-down xlist #:tag 'title)
-	  '((title "Latest EDGAR Filings"))
-	  "got the main page from file"))
 
-(like (get-page #:as-text #t) title-regex "got the page from the web using implicit standard url")
-(like (get-page #:source second-url #:as-text #t) title-regex "got the page from the web using specified url")
 
