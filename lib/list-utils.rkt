@@ -1,7 +1,5 @@
 #lang racket
 
-(require racket/pretty)
-
 (define (atom? x) (not (pair? x)))
 
 (define (autobox x) (if (list? x) x (list x)))
@@ -9,6 +7,12 @@
 (define (remove-nulls l) (filter (negate null?) l))
 
 (define (list-not-null? l) (and (not (atom? l)) (not (null? l))))
+
+(define (step-by-n func data [num 2])
+  (if (null? data)
+	  (func '())
+	  (append (autobox (func (take data num)))
+			  (step-by-n func (drop data num) num))))
 
 ;;----------------------------------------------------------------------
 ;;    Take a data structure built of nested hashes and lists, retrieve
