@@ -25,9 +25,19 @@
 (is latest-filings-url new-filings-url "(latest-filings-url) is correct")
 (is latest-13Fs-url    new-13Fs-url    "(latest-13Fs-url) is correct")
 
-(let ((rows (latest-filings-rows)))
-  (is (car rows) correct-header-row "got correct header row from table")
-  (is (length rows) 201 "got 201 rows (header + 100 records w/2 rows each) of filings"))
+;; (let ((rows (latest-filings-rows-raw)))
+;;   (is (car rows) correct-header-row "got correct header row from table")
+;;   (is (length rows) 201 "got 201 raw rows (header + 100 records w/2 rows each) of filings"))
 
+;; (let ((rows (latest-filings-rows)))
+;;   (is (length rows) 100 "got 100 post-processed rows of filings")
+;;   (for ((h (take rows 10))
+;; 		(num (in-naturals)))
+;; 	   (ok (hash? h) (format "row #~a is a hash" num))
+;; 	   (is (sort (hash-keys h) string<?) '("cik" "doc-link" "name") "got expected keys")
+;; 	   (ok (andmap
+;; 			(lambda (s) (and (string? s) (length s)) (hash-values h)))
+;; 		   "all values are non-empty strings")
+;; 	   ))
 
 
