@@ -21,18 +21,18 @@
 ;;    struct.  Examples:
 ;;
 ;;  (define h (hash "foo" '(a b c) "bar" 8))
-;;  (-> h     '("foo" 1))   -> 'b
-;;  (-> h     '("bar"))     -> 8
-;;  (-> "bob" '("foo" 3))   -> "bob"
+;;  (fetch h     '("foo" 1))   -> 'b
+;;  (fetch h     '("bar"))     -> 8
+;;  (fetch "bob" '("foo" 3))   -> "bob"
 ;;
-(define (-> s keys) 
+(define (fetch s keys) 
   (define (data/ref s key)
 	(cond
 	 [(hash? s) (hash-ref s key)]
 	 [(list? s) (list-ref s key)]
 	 [else s]))
   (define (fetch-once key s) (data/ref s key))
-  (foldl fetch-once s keys))
+  (foldl fetch-once s (autobox keys)))
 
 ;;----------------------------------------------------------------------
 (provide (all-defined-out))
