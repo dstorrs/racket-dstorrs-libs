@@ -14,6 +14,11 @@
 (define attr-list? (ntype?? '@))
 
 ;;--------------------------------------------------
+;;    attr-val:  xexp 'key  -> any
+(define (attr-val x key) (hash-ref (attr-hash x) key))
+
+
+;;--------------------------------------------------
 ;;    (html-treebuilder-new src) -> xexpr
 ;;        source : string (URL, HTML, or filepath)
 ;;
@@ -83,6 +88,27 @@
    #px"[\t ]+" ;; don't trim newlines
   ))
 ;;  (p (@ (class "hi") (style "border: 1px solid red;")) "Hello world")
+
+
+
+;;----------------------------------------------------------------------
+;;    Take an xexp that models an A tag and return a two-element list:
+;;    the URL and the link text.  Note that it's called an 'hlink'
+;;    (hyperlink) to disambiguate it from the 'link' and 'hyperlink'
+;;    structs in Scribble. 
+(define (hlink-data hlink-xexp [base ""])
+  (list (->absolute-url base (hash-ref (attr-hash hlink-xexp) 'href)) ;; URL
+		(fetch hlink-xexp '(2))))               ;; link text
+
+;;----------------------------------------------------------------------
+;;    Get a list of all the hlink xexps in a document
+(define (all-hlinks x) (look-down x #:tag 'a))
+
+;;----------------------------------------------------------------------
+;;    Get the xexp for the first link in a document
+(define (first-hlink x)
+  (let ((r (all-hlinks x)))
+	(if (null? r) r (first r))))
 
 ;;----------------------------------------------------------------------
 ;;    look-down  ->  returns list

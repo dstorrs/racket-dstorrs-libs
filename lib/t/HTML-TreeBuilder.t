@@ -6,9 +6,8 @@
 		 racket/runtime-path
 		 (planet neil/html-parsing:3:0)
 		 sxml
-
-(runtime-require "../list-utils.rkt")
-(runtime-require "../HTML-TreeBuilder.rkt")
+		 "../list-utils.rkt"
+		 "../HTML-TreeBuilder.rkt")
 
 (define (hash-key-is? h k v)
   (and (hash-has-key? h k)
