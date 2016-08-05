@@ -3,6 +3,9 @@
 (require net/url
 		 (planet neil/html-parsing:3:0))
 
+;;----------------------------------------------------------------------
+;;    Check if a url-ish thing refers to a local resource or one on
+;;    the net.
 (define/contract (is-local? s)
   (-> (or/c path-string? url?) boolean?) 
   (let ((scheme (url-scheme (cond
@@ -14,12 +17,24 @@
 		(equal? 'file scheme)
 		)))
 
+;;----------------------------------------------------------------------
+;;    Turn a url-ish thing (string, path, url) into an url
 (define/contract (to-url s)
-  (-> (or/c path-string? url?) url?)
+  (-> (or/c string? path-string? url?) url?)
   (cond ((url? s)  s)
 		((path? s) (string->url (path->string s)))
 		(else (string->url s))))
 
+
+;;----------------------------------------------------------------------
+;;    Two args, 'b' and 'u'.  Both can be path, string, or url.  If
+;;    'u' is absolute, return it.  If it is relative, combine it with
+;;    'b'.  In either case, the return value is a url structure
+;;    regardless of how it came in.  
+(define/contract (->absolute-url b u)
+  (->(or/c string? path-string? url?) (or/c string? path-string? url?) url?)
+  (let ((u (to-url u)))
+	(if (url-scheme u) u (combine-url/relative (to-url b) (url->string u)))))
 
 ;;----------------------------------------------------------------------
 ;;    Get a page from the internet. Accepts a path, string, or url.
