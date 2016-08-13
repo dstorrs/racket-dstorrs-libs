@@ -43,3 +43,5 @@ Icon*
 temp.html
 .git
 .meteor
+test.rkt
+compiled
