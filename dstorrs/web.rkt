@@ -39,7 +39,8 @@
 ;;----------------------------------------------------------------------
 ;;    Get a page from the internet. Accepts a path, string, or url.
 ;;    'call-proc' gets passed to call/input-url.  'post-proc' gets the
-;;    result of call/input-url
+;;    result of call/input-url.  Returns the result of post-proc.  By
+;;    default returns an xexp representing the page.
 ;;
 (define/contract (web/call url-string
 						   #:call-proc [call-proc port->string]
