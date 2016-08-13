@@ -28,7 +28,7 @@
 ;;  (get h     '("bar"))     -> 8
 ;;  (get "bob" '("foo" 3))   -> "bob"
 ;;
-(define (get s keys) 
+(define (get s keys)
   (define (data/ref s key)
 	(cond
 	 [(hash? s) (hash-ref s key)]
@@ -40,7 +40,7 @@
 ;;----------------------------------------------------------------------
 
 ;;    Search through a list for all instances of an item.  e.g.:
-;; (member-rec 
+;; (member-rec
 ;; (define (member-rec a)
 ;;   (cond
 ;;    ((atom? a) null)
@@ -53,14 +53,15 @@
 ;; 				 (member-rec (cdr a))))))
 
 (define (member-rec match lst)
-  (cond
-   ((atom? lst) null)
-   ((null? lst) null)
-   ((and (list? lst) (equal? (car lst) 'table))
-	(append (list lst)
-			(member-rec match (car lst))
-			(member-rec match (cdr lst))))
-   (else (append (member-rec match (car lst))
-				 (member-rec match (cdr lst))))))
+  (let ((func (if (procedure? match) match (curry equal? match))))
+	(cond
+	 ((atom? lst) null)
+	 ((null? lst) null)
+	 ((func lst)
+	  (append (list lst)
+			  (member-rec func (car lst))
+			  (member-rec func (cdr lst))))
+	 (else (append (member-rec func (car lst))
+				   (member-rec func (cdr lst)))))))
 ;;----------------------------------------------------------------------
 (provide (all-defined-out))
