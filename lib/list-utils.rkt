@@ -12,7 +12,10 @@
   (if (null? data)
 	  (func '())
 	  (append (autobox (func (take data num)))
-			  (step-by-n func (drop data num) num))))
+			  (let ((l (drop data num)))
+				(step-by-n func
+						   (if (> (length l) num) l (error "wrong number of args"))
+						   num)))))
 
 ;;----------------------------------------------------------------------
 ;;    Take a data structure built of nested hashes and lists, retrieve
@@ -21,18 +24,43 @@
 ;;    struct.  Examples:
 ;;
 ;;  (define h (hash "foo" '(a b c) "bar" 8))
-;;  (fetch h     '("foo" 1))   -> 'b
-;;  (fetch h     '("bar"))     -> 8
-;;  (fetch "bob" '("foo" 3))   -> "bob"
+;;  (get h     '("foo" 1))   -> 'b
+;;  (get h     '("bar"))     -> 8
+;;  (get "bob" '("foo" 3))   -> "bob"
 ;;
-(define (fetch s keys) 
+(define (get s keys) 
   (define (data/ref s key)
 	(cond
 	 [(hash? s) (hash-ref s key)]
 	 [(list? s) (list-ref s key)]
 	 [else s]))
-  (define (fetch-once key s) (data/ref s key))
-  (foldl fetch-once s (autobox keys)))
+  (define (get-once key s) (data/ref s key))
+  (foldl get-once s (autobox keys)))
 
+;;----------------------------------------------------------------------
+
+;;    Search through a list for all instances of an item.  e.g.:
+;; (member-rec 
+;; (define (member-rec a)
+;;   (cond
+;;    ((atom? a) null)
+;;    ((null? a) null)
+;;    ((and (list? a) (equal? (car a) 'table))
+;; 	(append (list a)
+;; 			(member-rec (car a))
+;; 			(member-rec (cdr a))))
+;;    (else (append (member-rec (car a))
+;; 				 (member-rec (cdr a))))))
+
+(define (member-rec match a)
+  (cond
+   ((atom? a) null)
+   ((null? a) null)
+   ((and (list? a) (equal? (car a) 'table))
+	(append (list a)
+			(member-rec match (car a))
+			(member-rec match (cdr a))))
+   (else (append (member-rec match (car a))
+				 (member-rec match (cdr a))))))
 ;;----------------------------------------------------------------------
 (provide (all-defined-out))
