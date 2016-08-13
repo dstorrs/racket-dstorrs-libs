@@ -8,7 +8,7 @@
 		 "list-utils.rkt" ; for atom?
 		 "web.rkt"        ; for web/call
 		 (planet neil/html-parsing:3:0)
-		 sxml		 
+		 sxml
 		 )
 
 (define attr-list? (ntype?? '@))
@@ -39,13 +39,13 @@
   (define v (and (hash-has-key? h key)
 				 (hash-ref h key)))
   (if val
-	  (and (regexp-match 
+	  (and (regexp-match
 			(pregexp (string-append "\\b" val "\\b"))
 			val)
 		   v)
 	  v))
-  
-		   
+
+
 
 ;;--------------------------------------------------
 ;;    (attr-hash el) -> immutable hash
@@ -86,7 +86,7 @@
 		  (string-join (list (text-of (car x))
 							 (text-of (cdr x))))])
    #px"[\t ]+" ;; don't trim newlines
-  ))
+   ))
 ;;  (p (@ (class "hi") (style "border: 1px solid red;")) "Hello world")
 
 
@@ -95,10 +95,22 @@
 ;;    Take an xexp that models an A tag and return a two-element list:
 ;;    the URL and the link text.  Note that it's called an 'hlink'
 ;;    (hyperlink) to disambiguate it from the 'link' and 'hyperlink'
-;;    structs in Scribble. 
+;;    structs in Scribble.
 (define (hlink-data hlink-xexp [base ""])
-  (list (->absolute-url base (hash-ref (attr-hash hlink-xexp) 'href)) ;; URL
-		(fetch hlink-xexp '(2))))               ;; link text
+  (list (->absolute-url base
+						(hash-ref (attr-hash hlink-xexp) 'href)) ;; URL
+		(get hlink-xexp '(2))))               ;; link text
+
+;;----------------------------------------------------------------------
+;;    Take an 'A' xexp and return the URL as a string
+;;
+(define (hlink-url x)
+  (first (hlink-data x)))
+
+;;    Ditto, but return the link text
+(define (hlink-text x)
+  (second (hlink-data x)))
+
 
 ;;----------------------------------------------------------------------
 ;;    Get a list of all the hlink xexps in a document
@@ -111,12 +123,12 @@
 	(if (null? r) r (first r))))
 
 ;;----------------------------------------------------------------------
-;;    look-down  ->  returns list
+;;    look-down  ->  returns list or string
 ;;
 ;;    Looks through an xexpr that meets criteria specified by the
 ;;    #:match function and the optional #:attr keyword.  It runs the
 ;;    'action' procedure on anything that matches and returns a list
-;;    of results.
+;;    of results, or a string if requested.
 ;;
 ;;    @@IMPORTANT: the 'action' function will be autoboxed to ensure
 ;;    it returns a list
@@ -125,9 +137,9 @@
 ;;    #:match       ->  optional, function returning boolean
 ;;    #:tag         ->  optional, a symbol representing an HTML tag
 ;;    #:attr        ->  optional, quoted-value   : attribute that must be present (e.g. 'class)
-;;                      or dotted pair : ('class . "container")  
-;;                      or dotted pair : ('class . #rx"foo.+bar")  
-;;                      or dotted pair : ('class . #px"foo.+bar")  
+;;                      or dotted pair : ('class . "container")
+;;                      or dotted pair : ('class . #rx"foo.+bar")
+;;                      or dotted pair : ('class . #px"foo.+bar")
 ;;
 ;;    When the #:attr is a dotted pair, the specified key must be
 ;;    present for the match to succeed.  If the value is a string it
@@ -146,29 +158,30 @@
   (define (coerce-to-regexp val)
 	(if (string? val)
 		(pregexp (string-append "\\b" val "\\b"))
-		val))	
+		val))
   (define (verify-attr el)
 	(cond
-	 [(pair? :attr)            ;; car will be key, cdr is string or regexp 
+	 [(pair? :attr)            ;; car will be key, cdr is string or regexp
 	  (let* ([key (car :attr)]
 			 [val (cdr :attr)]
 			 [res   (has-attr? el key)])
-		  (and res
-			   (regexp-match (coerce-to-regexp val) res)))]
+		(and res
+			 (regexp-match (coerce-to-regexp val) res)))]
 	 ;;
 	 ;;    :attr can be just a name; the attribute must exist in the element
 	 [:attr	(has-attr? some-content :attr)]
 	 ;;
 	 ;; if :attr wasn't set, then validation automatically succeeds
 	 [else #t]))
-  (define (searched-for? el) (and (:tag? el)  ;; Use 'and' instead of 'or' so that :match? can trump
-								  (verify-attr el)
-								  (:match? el)))
+  (define (searched-for? el)
+	(and (:tag? el)  ;; Use 'and' instead of 'or' so that :match? can trump
+		 (verify-attr el)
+		 (:match? el)))
   (define (ld c) ;; can't use curryr here since we need to use keyword args
 	(autobox
-	  (if (atom? c)
-		  empty
-		  (look-down c action #:match searched-for? #:attr :attr))))
+	 (if (atom? c)
+		 empty
+		 (look-down c action #:match searched-for? #:attr :attr))))
   ;;
   ;; NOTE: Body of 'look-down' starts here
   (cond
