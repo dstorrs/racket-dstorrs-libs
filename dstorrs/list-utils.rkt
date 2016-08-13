@@ -6,7 +6,7 @@
 
 (define (remove-nulls l) (filter (negate null?) l))
 
-(define (list-not-null? l) (and (not (atom? l)) (not (null? l))))
+(define (list/not-null? l) (and (not (atom? l)) (not (null? l))))
 
 (define (step-by-n func data [num 2])
   (if (null? data)
@@ -18,24 +18,41 @@
 						   num)))))
 
 ;;----------------------------------------------------------------------
-;;    Take a data structure built of nested hashes and lists, retrieve
-;;    items from it.  Hashes are accessed by key, lists by index. If
-;;    the struct is neither a hash nor a list, it just returns the
-;;    struct.  Examples:
+;;    Take a data structure built of nested (hashes, lists, vectors)
+;;    and retrieve items from it.  Hashes are accessed by key, vectors
+;;    and lists by index. If the struct is neither a hash nor a list,
+;;    it just returns the struct.  Examples:
 ;;
-;;  (define h (hash "foo" '(a b c) "bar" 8))
+;;  (define h (hash "foo" '(a b c) "bar" 8 "quux" (vector "d" "e" "f")))
 ;;  (get h     '("foo" 1))   -> 'b
 ;;  (get h     '("bar"))     -> 8
-;;  (get "bob" '("foo" 3))   -> "bob"
+;;  (get h     '("quux" 1))  -> "e"
+;;  (get "bob" '("apple"))   -> "bob"
 ;;
-(define (get s keys)
-  (define (data/ref s key)
+;;    The optional def argument allows you to specify a default.  The
+;;    default is returned iff one of the following exceptions is
+;;    thrown:
+;;        #(struct:exn:fail:contract list-ref: index too large for list
+;;        #(struct:exn:fail:contract hash-ref: no value found for key
+;;        #(struct:exn:fail:contract vector-ref: index is out of range
+;;
+(define (get s keys [def #f])
+  (define (get-once key s)
 	(cond
-	 [(hash? s) (hash-ref s key)]
-	 [(list? s) (list-ref s key)]
+	 [(hash? s)   (hash-ref   s key)]
+	 [(list? s)   (list-ref   s key)]
+	 [(vector? s) (vector-ref s key)]
 	 [else s]))
-  (define (get-once key s) (data/ref s key))
-  (foldl get-once s (autobox keys)))
+  (with-handlers
+   ((exn:fail:contract?
+	 (lambda (e)
+	   (cond
+		((not (regexp-match #px"(no value found for key|index (too large|out of range))"
+							(exn-message e)))
+		 (raise e))
+		((false? def) (raise e))
+		(else def)))))
+   (foldl get-once s (autobox keys))))
 
 ;;----------------------------------------------------------------------
 ;;    Search through a list recursively for all instances of an item,
