@@ -63,3 +63,10 @@
 	 (ok (list/not-null? v) (format "(list/not-null? ~a is #t" v)))
 
 (is (get '(a b c) '(0)) 'a)
+
+(is (firstn '(foo bar)) 'foo "firstn '(foo bar) is 'foo")
+(is (firstn '()) '() "firstn '() is '()")
+
+(is (restn '(foo bar)) '(bar) "firstn '(foo bar) is '(bar)")
+(is (restn '()) '() "restn '() is '()")
+

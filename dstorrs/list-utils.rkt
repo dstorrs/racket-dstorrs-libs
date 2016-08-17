@@ -1,5 +1,8 @@
 #lang racket
 
+(define (firstn l) (if (null? l) '() (first l)))
+(define (restn  l) (if (null? l) '() (rest l)))
+
 (define (atom? x) (not (pair? x)))
 
 (define (autobox x) (if (list? x) x (list x)))
