@@ -14,8 +14,13 @@
 (define attr-list? (ntype?? '@))
 
 ;;--------------------------------------------------
-;;    attr-val:  xexp 'key  -> any
-(define (attr-val x key) (hash-ref (attr-hash x) key))
+;;    attr-val:  xexp 'key [default value]  -> any
+(define (attr-val x key [def #f])
+  (let ((h (attr-hash x)))
+	(cond
+	 ((not (hash? h)) def)
+	 ((hash-has-key? h key) (hash-ref h key))
+	 (else def))))
 
 
 ;;--------------------------------------------------
