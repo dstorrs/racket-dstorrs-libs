@@ -25,6 +25,7 @@
 		((path? s) (string->url (path->string s)))
 		(else (string->url s))))
 
+(define (url-as-string s) (url->string (to-url s)))
 
 ;;----------------------------------------------------------------------
 ;;    Two args, 'b' and 'u'.  Both can be path, string, or url.  If
@@ -57,6 +58,17 @@
 				   call-proc))) ;; Note that if you passed #:as-text, this better return a string
 
 
+;;--------------------------------------------------------------------------------
+
+(define (fetch-with-curl url)
+  ;; OSX El Capitan won't talk to HTTPS sites because it ships with
+  ;; out of date libcrypto and libssl libraries and won't let you
+  ;; update them.  (Seriously, root isn't allowed to update them.)
+  ;; Default to this stupid hack.
+  (html->xexp
+   (with-output-to-string
+	 (lambda () (system (format "curl ~a" (url-as-string url)))))))
+  
 ;;--------------------------------------------------------------------------------
 ;;    Get a page from the internet (via web/call) or from a
 ;;    file. 'post-proc' will be run across the results.
