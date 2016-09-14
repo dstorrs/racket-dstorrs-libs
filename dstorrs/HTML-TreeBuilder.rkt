@@ -17,11 +17,9 @@
 ;;    attr-val:  xexp 'key [default value]  -> any
 (define (attr-val x key [def #f])
   (let ((h (attr-hash x)))
-	(cond
-	 ((not (hash? h)) def)
-	 ((hash-has-key? h key) (hash-ref h key))
-	 (else def))))
-
+	(if (hash? h)
+		(hash-ref h key def)
+		def)))
 
 ;;--------------------------------------------------
 ;;    (html-treebuilder-new src) -> xexpr
@@ -32,7 +30,9 @@
 		[is-html #px"^<(!DOCTYPE|[A-Za-z]+)"])
 	(cond [(regexp-match is-url  src) (web/call src)]
 		  [(regexp-match is-html src) (html->xexp (open-input-string src))]
-		  [else (html->xexp (open-input-file src))])))
+		  [else (let ((p (open-input-file src)))
+				   (begin0 (html->xexp p)
+						   (close-input-port p)))])))
 
 ;;--------------------------------------------------
 ;;    Take an xexp, a hash, and a quoted symbol (e.g. 'class) and
@@ -64,7 +64,7 @@
 ;;    returns:  #hash((class . "footer"))
 ;;
 (define (attr-hash el)
-  ;;(displayln (format "In attr-hash, el is: ~a" el))
+  ;;(displayln (format "### In attr-hash, el is: ~a" el))
   (define (attr-hash-helper l)
 	(cond [(atom? l)  (hash)]
 		  [(null? l)  (hash)]
@@ -93,8 +93,6 @@
    #px"[\t ]+" ;; don't trim newlines
    ))
 ;;  (p (@ (class "hi") (style "border: 1px solid red;")) "Hello world")
-
-
 
 ;;----------------------------------------------------------------------
 ;;    Take an xexp that models an A tag and return a two-element list:
@@ -170,19 +168,22 @@
 	  (let* ([key (car :attr)]
 			 [val (cdr :attr)]
 			 [res   (has-attr? el key)])
+		;;(displayln  "verify attr, regex match (el, k, v, res): ~a,~a,~a,~a" el key val res)
 		(and res
 			 (regexp-match (coerce-to-regexp val) res)))]
 	 ;;
 	 ;;    :attr can be just a name; the attribute must exist in the element
-	 [:attr	(has-attr? some-content :attr)]
+	 [:attr (has-attr? some-content :attr)]
 	 ;;
 	 ;; if :attr wasn't set, then validation automatically succeeds
 	 [else #t]))
   (define (searched-for? el)
+	;;(displayln (format "### in searched for, (tag? el) '~a', el: ~a" (:tag? el) el))
 	(and (:tag? el)  ;; Use 'and' instead of 'or' so that :match? can trump
 		 (verify-attr el)
 		 (:match? el)))
   (define (ld c) ;; can't use curryr here since we need to use keyword args
+	;;(displayln (format "ld. attr: '~a'. atom? c: ~a " :attr (atom? c)))
 	(autobox
 	 (if (atom? c)
 		 empty
@@ -190,10 +191,17 @@
   ;;
   ;; NOTE: Body of 'look-down' starts here
   (cond
-   [(empty?        some-content)  empty]
-   [(attr-list?    some-content)  empty]
-   [(searched-for? some-content)  (autobox (action some-content))]
-   [else                          (apply append (map ld some-content))]))
+   [(empty?        some-content)  (begin
+									;;(displayln (format  "### empty some-content"))
+									empty)]
+   [(attr-list?    some-content)  (begin
+									;;(displayln (format  "### is attr list"))
+									empty)]
+   [(searched-for? some-content)  (begin
+									;;(displayln (format  "### cond searched-for some-content"))
+									(autobox (action some-content)))]
+   [else                          (begin ;;(displayln (format "### else"))
+										 (apply append (map ld some-content)))]))
 
 
 ;;----------------------------------------------------------------------
