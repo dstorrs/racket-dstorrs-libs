@@ -2,6 +2,10 @@
  
 #lang racket
 
+;;    This is some one-off code for accessing the SEC's EDGAR database
+;;    of corporate filings.  It's usable but single-purpose and not
+;;    terribly robust.
+
 (require "HTML-TreeBuilder.rkt"
 		 "list-utils.rkt"
 		 threading
