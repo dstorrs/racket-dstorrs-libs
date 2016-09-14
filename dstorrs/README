@@ -2,7 +2,7 @@ Convenience libraries for list handling, HTML parsing, etc.
 
 Use these by:
 
-(require "../path/to/libdir/dstorrs/HTML-TreeBuilder.rkt")
+    In Racket code: (require "../path/to/libdir/dstorrs/HTML-TreeBuilder.rkt")
 
 Or, put this in your .bashrc (or other shell setup file):
 
