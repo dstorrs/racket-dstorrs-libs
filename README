@@ -12,7 +12,9 @@ Then in your code you can use:
 
     (require dstorrs/HTML-TreeBuilder)
 
-For me, this would be:	
+For me, the dstorrs directory is
+    /Users/dstorrs/Dropbox/dstorrs/personal/scheme/dstorrs
+so I would use:
 
     In .bashrc:      export PLTCOLLECTS=/Users/dstorrs/Dropbox/dstorrs/personal/scheme
     In Racket code:  (require dstorrs/HTML-TreeBuilder)
