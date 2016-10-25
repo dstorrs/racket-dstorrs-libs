@@ -119,9 +119,9 @@
 (define-syntax (test-suite stx)
   (syntax-case stx ()
 	[(_ msg body body1 ...)
-	 #'(begin (say "### start test-suite: " msg)
-			  (with-handlers ((exn? (lambda (e) #f)))
-							 body body1 ...))]))
+	 #'(begin (say "### START test-suite: " msg)
+			  (lives (thunk body body1 ...)
+					 (~a "### END test-suite: " msg)))]))
 
 
 (provide ok not-ok
