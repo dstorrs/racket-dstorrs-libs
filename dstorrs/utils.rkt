@@ -1,5 +1,23 @@
 #lang racket
 
+(define (true? x) (not (false? x)))
+
+(define-syntax (say stx)
+  (syntax-case stx ()
+	[(_ a b ...)
+	 #'(displayln (~a a b ...))]))
+
+;;    Because the Racket concept of booleans is inflexible
+(define (perl-true? x) (not (perl-false? x)))
+(define (perl-false? x)
+  (cond
+   ((string? x) (= 0 (string-length x)))
+   ((number? x) (zero? x))
+   ((list?   x) (perl-false? (length x)))
+   ((vector? x) (perl-false? (vector-length x)))
+   ((false? x)  #t)
+   (else #f)))
+
 ;;    This is intended for things like turning 9 into "09" for us in
 ;;    dates, filenames, etc.  
 (define (pad-digits d [width 2] [pad "0"])
