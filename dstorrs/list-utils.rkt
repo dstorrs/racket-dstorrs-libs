@@ -9,6 +9,13 @@
 
 (define (remove-nulls l) (filter (negate null?) l))
 
+;;    Create list with conditional elements
+;; (list 'a 'b (when x 'c) 'd)   => either '(a b c d) or '(a b #<void> d)
+;; (list-remf* 'a 'b (when x 'c) 'd) => either '(a b c d) or '(a b d)
+;; (list-remf* 'a 'b (if 
+(define (list-remf* #:pred [pred void?] . l)
+  (remf* pred l))
+
 (define (list/not-null? l) (and (not (atom? l)) (not (null? l))))
 
 (define (step-by-n func data [num 2])
@@ -21,6 +28,8 @@
 						   num)))))
 
 ;;----------------------------------------------------------------------
+;; NOTE: This is obsoleted by #lang rackjure.  Prefer that.
+;;
 ;;    Take a data structure built of nested (hashes, lists, vectors)
 ;;    and retrieve items from it.  Hashes are accessed by key, vectors
 ;;    and lists by index. If the struct is neither a hash nor a list,
@@ -86,4 +95,25 @@
    (else (recur lst))))
 
 ;;----------------------------------------------------------------------
+
+(define/contract (vector->dict data keys [dict-maker hash])
+  (->* ((or/c vector? #f) list?) ((-> any/c ... dict?)) dict?)
+  (cond ((not data) (dict-maker));; Makes handling DB queries easier
+		((not (= (length keys) (vector-length data)))
+		  (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
+		(else (list->dict (vector->list data) keys dict-maker))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (list->dict data keys [dict-maker hash])
+  (->* (list? list?) ((-> any/c ... dict?)) dict?)
+  (unless (= (length data) (length keys))
+		  (raise "In list->dict, data and keys must be the same length"))
+  (apply dict-maker (foldl (lambda (a b acc) (append (list a b) acc))
+					 '()
+					 keys
+					 data)))
+
+;;----------------------------------------------------------------------
+
 (provide (all-defined-out))
