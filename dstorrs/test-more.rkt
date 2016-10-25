@@ -40,7 +40,7 @@
 				   ))
 
 (define (not-ok val [msg ""])
-  (ok (not (_unwrap-val val))
+  (ok (false? (_unwrap-val val))
 	  msg))
 
 
@@ -97,18 +97,32 @@
 				   (with-handlers
 					([exn?
 					  (lambda (e)
-						(let ((s (remove-exn-boilerplate (exn-message e))))
+						(let ((msg (exn-message e)))
 						  (cond
-						   ((string? pred) (equal? pred s))
-						   ((regexp? pred) (regexp-match? pred s))
+						   ((string? pred) (equal? pred (remove-exn-boilerplate e)))
+						   ((regexp? pred) (regexp-match? pred msg))
 						   ((procedure? pred) (pred e))
 						   (else #f)
 						   )))]
 					 [exn? (lambda (e) #f)])
 					(thunk))
 				   #:msg msg))
+(define/contract (dies thunk pred [msg ""])
+  (->* (procedure? (or/c string? regexp? (-> any/c boolean?)))
+	   (string?)
+	   any/c)
+  (throws thunk pred msg))
+
+(define-syntax (test-suite stx)
+  (syntax-case stx ()
+	[(_ msg body body1 ...)
+	 #'(lives (thunk body body1 ...) msg)]))
 
 
-
-(provide ok not-ok is isnt test-more-check like unlike throws lives)
+(provide ok not-ok
+		 is isnt
+		 test-more-check
+		 like unlike
+		 throws dies lives
+		 test-suite)
 
