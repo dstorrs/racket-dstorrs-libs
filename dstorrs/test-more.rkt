@@ -1,6 +1,9 @@
 #lang racket
 
-(require racket racket/splicing)
+(require racket
+		 racket/splicing
+		 dstorrs/utils
+		 )
 
 (splicing-let ([test-num 0])
 			  (define (next-test-num)
@@ -116,7 +119,9 @@
 (define-syntax (test-suite stx)
   (syntax-case stx ()
 	[(_ msg body body1 ...)
-	 #'(lives (thunk body body1 ...) msg)]))
+	 #'(begin (say "### start test-suite: " msg)
+			  (with-handlers ((exn? (lambda (e) #f)))
+							 body body1 ...))]))
 
 
 (provide ok not-ok
