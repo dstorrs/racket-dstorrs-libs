@@ -14,7 +14,8 @@
    ((string? x) (= 0 (string-length x)))
    ((number? x) (zero? x))
    ((list?   x) (null? x))
-   (else (false? x))))
+   (else (or (void? x)
+			 (false? x)))))
 
 ;;    This is intended for things like turning 9 into "09" for use in
 ;;    dates, filenames, etc.  
