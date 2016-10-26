@@ -13,12 +13,10 @@
   (cond
    ((string? x) (= 0 (string-length x)))
    ((number? x) (zero? x))
-   ((list?   x) (perl-false? (length x)))
-   ((vector? x) (perl-false? (vector-length x)))
-   ((false? x)  #t)
-   (else #f)))
+   ((list?   x) (null? x))
+   (else (false? x))))
 
-;;    This is intended for things like turning 9 into "09" for us in
+;;    This is intended for things like turning 9 into "09" for use in
 ;;    dates, filenames, etc.  
 (define (pad-digits d [width 2] [pad "0"])
   (~a d #:left-pad-string pad #:min-width width #:align 'right))
