@@ -121,7 +121,8 @@
 	[(_ msg body body1 ...)
 	 #'(begin (say "### START test-suite: " msg)
 			  (lives (thunk body body1 ...)
-					 (~a "### END test-suite: " msg)))]))
+					 "test-suite completed")
+			  (say "### END test-suite: " msg))]))
 
 
 (provide ok not-ok
