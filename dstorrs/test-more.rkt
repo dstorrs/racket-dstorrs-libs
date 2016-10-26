@@ -121,7 +121,7 @@
 	[(_ msg body body1 ...)
 	 #'(begin (say "### START test-suite: " msg)
 			  (lives (thunk body body1 ...)
-					 "test-suite completed")
+					 "test-suite completed without throwing exception")
 			  (say "### END test-suite: " msg))]))
 
 
