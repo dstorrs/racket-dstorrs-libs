@@ -96,16 +96,28 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (vector->dict data keys [dict-maker hash])
-  (->* ((or/c vector? #f) list?) ((-> any/c ... dict?)) dict?)
+(define/contract (vector->dict keys data [dict-maker hash])
+  (->* (list? (or/c vector? #f)) ((-> any/c ... dict?)) dict?)
   (cond ((not data) (dict-maker));; Makes handling DB queries easier
 		((not (= (length keys) (vector-length data)))
 		  (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
-		(else (list->dict (vector->list data) keys dict-maker))))
+		(else (list->dict keys (vector->list data) dict-maker))))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (list->dict data keys [dict-maker hash])
+(define (in-range-inc x [y #f])
+  (stream->list (if y (in-range x (add1 y)) (in-range (add1 x)))))
+					
+;;----------------------------------------------------------------------
+
+;; (define-syntax (.. stx)
+;;   (syntax-case stx ()
+;; 	(with-syntax
+;; 	 [(x .. y) #`(in-range-inc #x y)])))
+
+;;----------------------------------------------------------------------
+
+(define/contract (list->dict keys data [dict-maker hash])
   (->* (list? list?) ((-> any/c ... dict?)) dict?)
   (unless (= (length data) (length keys))
 		  (raise "In list->dict, data and keys must be the same length"))
