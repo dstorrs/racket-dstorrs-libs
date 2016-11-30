@@ -5,6 +5,17 @@
 		 dstorrs/utils
 		 )
 
+(define tp 0)
+(define tf 0)
+
+(define (tests-passed [inc 0])
+  (set! tp (+ tp inc))
+  tp)
+
+(define (tests-failed [inc 0])
+  (set! tf (+ tf inc))
+  tf)
+
 (splicing-let ([test-num 0])
 			  (define (next-test-num)
 				(set! test-num (add1 test-num))
@@ -19,7 +30,8 @@
 						  #:report-expected/got [ex-report #t]
 						  )
   (let* ([res ex]
-		 [ok-str (if (op res expected) "ok " "NOT ok ")]
+         [success (op res expected)]
+		 [ok-str (if success "ok " "NOT ok ")]
 		 [msg (format "~a~a"
 					  (if (non-empty-string? m)
 						  (format " - ~a" m)
@@ -29,6 +41,8 @@
 						  (format "\n\tExpected: ~a\n\tGot:      ~a"
 								  expected
 								  res)))])
+    (define result-func (if success tests-passed tests-failed))
+    (result-func 1)
 	(displayln (format "~a~a~a"
 					   ok-str
 					   (next-test-num)
@@ -129,6 +143,10 @@
 	 #'(begin (say "### START test-suite: " msg)
 			  (lives (thunk body body1 ...)
 					 "test-suite completed without throwing exception")
+              (say "")
+              (say "Total tests passed so far: " (tests-passed))
+              (say "Total tests failed so far: " (tests-failed))
+              (say "")
 			  (say "### END test-suite: " msg))]))
 
 
