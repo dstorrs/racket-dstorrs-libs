@@ -72,6 +72,18 @@
                   ...)
            (thunk f0 f1 ...)
          ))]
+    [(try [body0 body1 ...]
+          [pre p0 p1 ...]          
+          [catch catch0 catch1 ...]
+          [finally f0 f1 ... ])
+     #'(with-handlers (catch0 catch1 ...)
+         (dynamic-wind
+           (thunk p0 p1 ...)
+           (thunk body0
+                  body1
+                  ...)
+           (thunk f0 f1 ...)
+         ))]
     ))
 
 (provide  (all-defined-out))
