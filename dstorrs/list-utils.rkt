@@ -10,9 +10,9 @@
 (define (remove-nulls l) (filter (negate null?) l))
 
 ;;    Create list with conditional elements
-;; (list 'a 'b (when x 'c) 'd)   => either '(a b c d) or '(a b #<void> d)
-;; (list-remf* 'a 'b (when x 'c) 'd) => either '(a b c d) or '(a b d)
-;; (list-remf* 'a 'b (if 
+;; (list 'a 'b (when x 'c) 'd)        => either '(a b c d) or '(a b #<void> d)
+;; (list-remf* 'a 'b (when x 'c) 'd)  => either '(a b c d) or '(a b d)
+;; (list-remf* 'a "b" #:pred string?) => '(a)
 (define (list-remf* #:pred [pred void?] . l)
   (remf* pred l))
 
