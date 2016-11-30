@@ -47,6 +47,13 @@
 	  msg))
 
 
+;;    (is-type (my-func) hash? "(my-func) returns a hash")
+(define (is-type val type-pred [msg ""] [op equal?])
+  (test-more-check #:expr (type-pred val)
+				   #:msg msg
+				   #:op op
+				   ))
+
 (define (is val expected [msg ""] [op equal?])
   (test-more-check #:expr (_unwrap-val val)
 				   #:expected expected
@@ -127,6 +134,7 @@
 
 (provide ok not-ok
 		 is isnt
+         is-type
 		 test-more-check
 		 like unlike
 		 throws dies lives
