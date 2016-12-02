@@ -101,8 +101,10 @@
 				   (test-more-check #:expr #t  #:msg msg))))
 
 
+;; note that if you give it a function predicat that predicate must
+;; take one argument but it can be anything, not just an (exn?)
 (define/contract (throws thunk pred [msg ""])
-  (->* (procedure? (or/c string? regexp? (-> any/c boolean?)))
+  (->* (procedure? (or/c string? regexp? (-> any/c boolean?))) 
 	   (string?)
 	   any/c)
   ;;    'thunk' should generate an exception
