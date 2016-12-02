@@ -31,7 +31,9 @@
 		   "")
 	   (number->string (random 1000000)))))
 
-;;    Because the Racket concept of booleans is inflexible
+;;    Because the Racket concept of booleans is inflexible.
+;;    Things that are perl-false:
+;;        #f, "", '(), #<void>, and anything matching (zero?)
 (define (perl-true? x) (not (perl-false? x)))
 (define (perl-false? x)
   (cond
