@@ -96,12 +96,16 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (vector->dict keys data [dict-maker hash])
-  (->* (list? (or/c vector? #f)) ((-> any/c ... dict?)) dict?)
+(define/contract (vector->dict keys data [dict-maker hash] #:transform [transform list])
+  (->* (list? (or/c #f vector?))  ;; keys and data
+       ((-> any/c ... dict?)    ;; dict-maker takes any number of args and returns a dict
+        #:transform (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
+        )
+       dict?)
   (cond ((not data) (dict-maker));; Makes handling DB queries easier
 		((not (= (length keys) (vector-length data)))
          (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
-		(else (list->dict keys (vector->list data) dict-maker))))
+		(else (list->dict keys (vector->list data) dict-maker #:transform transform))))
 
 ;;----------------------------------------------------------------------
 
@@ -110,21 +114,20 @@
 
 ;;----------------------------------------------------------------------
 
-;; (define-syntax (.. stx)
-;;   (syntax-case stx ()
-;; 	(with-syntax
-;; 	 [(x .. y) #`(in-range-inc #x y)])))
-
-;;----------------------------------------------------------------------
-
-(define/contract (list->dict keys data [dict-maker hash])
-  (->* (list? list?) ((-> any/c ... dict?)) dict?)
+(define/contract (list->dict keys data [dict-maker hash] #:transform [transform list])
+  (->* (list? list?)         ;; keys and data
+       ((-> any/c ... dict?) ;; takes any number of args and returns a dict
+        #:transform (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
+        )
+       dict?)
   (unless (= (length data) (length keys))
     (raise "In list->dict, data and keys must be the same length"))
-  (apply dict-maker (foldl (lambda (a b acc) (append (list a b) acc))
-                           '()
-                           keys
-                           data)))
+  (apply dict-maker
+         (foldl (lambda (a b acc)
+                  (append (transform a b) acc))
+                '()
+                keys
+                data)))
 
 ;;----------------------------------------------------------------------
 
