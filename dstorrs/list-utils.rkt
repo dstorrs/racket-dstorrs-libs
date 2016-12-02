@@ -51,20 +51,20 @@
 (define (get s keys [def #f])
   (define (get-once key s)
 	(cond
-	 [(hash? s)   (hash-ref   s key)]
-	 [(list? s)   (list-ref   s key)]
-	 [(vector? s) (vector-ref s key)]
-	 [else s]))
+      [(hash? s)   (hash-ref   s key)]
+      [(list? s)   (list-ref   s key)]
+      [(vector? s) (vector-ref s key)]
+      [else s]))
   (with-handlers
-   ((exn:fail:contract?
-	 (lambda (e)
-	   (cond
-		((not (regexp-match #px"(no value found for key|index (too large|out of range))"
-							(exn-message e)))
-		 (raise e))
-		((false? def) (raise e))
-		(else def)))))
-   (foldl get-once s (autobox keys))))
+    ((exn:fail:contract?
+      (lambda (e)
+        (cond
+          ((not (regexp-match #px"(no value found for key|index (too large|out of range))"
+                              (exn-message e)))
+           (raise e))
+          ((false? def) (raise e))
+          (else def)))))
+    (foldl get-once s (autobox keys))))
 
 ;;----------------------------------------------------------------------
 ;;    Search through a list recursively for all instances of an item,
@@ -89,10 +89,10 @@
   (define search (compose autobox (curry member-rec match)))
   (define (recur l) (append (search (car l)) (search (cdr l))))
   (cond
-   ((atom? lst) (if (match lst) (list lst) null))
-   ((null? lst) null)
-   ((match lst) (append (list lst) (recur lst)))
-   (else (recur lst))))
+    ((atom? lst) (if (match lst) (list lst) null))
+    ((null? lst) null)
+    ((match lst) (append (list lst) (recur lst)))
+    (else (recur lst))))
 
 ;;----------------------------------------------------------------------
 
@@ -100,14 +100,14 @@
   (->* (list? (or/c vector? #f)) ((-> any/c ... dict?)) dict?)
   (cond ((not data) (dict-maker));; Makes handling DB queries easier
 		((not (= (length keys) (vector-length data)))
-		  (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
+         (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
 		(else (list->dict keys (vector->list data) dict-maker))))
 
 ;;----------------------------------------------------------------------
 
 (define (in-range-inc x [y #f])
   (stream->list (if y (in-range x (add1 y)) (in-range (add1 x)))))
-					
+
 ;;----------------------------------------------------------------------
 
 ;; (define-syntax (.. stx)
@@ -120,11 +120,41 @@
 (define/contract (list->dict keys data [dict-maker hash])
   (->* (list? list?) ((-> any/c ... dict?)) dict?)
   (unless (= (length data) (length keys))
-		  (raise "In list->dict, data and keys must be the same length"))
+    (raise "In list->dict, data and keys must be the same length"))
   (apply dict-maker (foldl (lambda (a b acc) (append (list a b) acc))
-					 '()
-					 keys
-					 data)))
+                           '()
+                           keys
+                           data)))
+
+;;----------------------------------------------------------------------
+
+;;    Generate a list of lists where each sublist is a sequence of
+;;    consecutive chunk-nums.  For example, if the hashes in 'data'
+;;    had these chunk nums:
+;;
+;;        '(1 2 3 5 7 200 201 202 203))
+;;
+;;    Then you would get this result:
+;;
+;;        '((2 3) (5) (7) (200 201 202 203))
+;;
+
+(define (find-contiguous-runs data #:key [extract-key identity])
+  (define result '())
+  (define-values (n final)
+    (for/fold ((prev (car data))
+               (acc '())
+               )
+              ((curr (cdr data)))
+      (values curr
+              (if (= (extract-key curr) (add1 (extract-key prev)))
+                  (cons curr acc)
+                  (begin
+                    (set! result (cons (reverse acc) result))
+                    (list curr))))
+      ))
+  (reverse (cons (reverse final) result))
+  )
 
 ;;----------------------------------------------------------------------
 
