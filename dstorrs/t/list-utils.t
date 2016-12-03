@@ -78,18 +78,22 @@
  "find-contiguous-runs"
  (define nums '(1 2 3 5 7 200 201 202 203))
 
- ;; (is (find-contiguous-runs nums)
- ;;     '((2 3) (5) (7) (200 201 202 203))
- ;;     "correctly found runs in a list of numbers")
+ (is (find-contiguous-runs nums)
+     '((1 2 3) (5) (7) (200 201 202 203))
+     "correctly found runs in a list of numbers")
 
- ;; (define (prep x) (hash 'foo x))
- ;; (is (find-contiguous-runs (map prep nums) #:key (lambda (h) (hash-ref h 'foo)))
- ;;     (for/list ((l '((2 3) (5) (7) (200 201 202 203))))
- ;;       (map prep l))
- ;;     "correctly found runs in a list of hashes")
- #t
+ (is
+  (find-contiguous-runs (map (curry vector->dict '(chunk-hash chunk-num chunkdir-path scratchdir-path))
+                             '(#("hash-7347" 6 "/foo/bar-2541" #f)
+                               #("hash-1983" 8 "/foo/bar-2542" #f)
+                               #("hash-5917" 9 "/foo/bar-9014" #f)))
+                        #:key (lambda (h) (hash-ref h 'chunk-num)))
+  '((#hash((chunk-hash . "hash-7347") (chunk-num . 6) (chunkdir-path . "/foo/bar-2541") (scratchdir-path . #f)))
+    (#hash((chunk-hash . "hash-1983") (chunk-num . 8) (chunkdir-path . "/foo/bar-2542") (scratchdir-path . #f))
+     #hash((chunk-hash . "hash-5917") (chunk-num . 9) (chunkdir-path . "/foo/bar-9014") (scratchdir-path . #f))))
+  "correctly found runs in a list of hashes")
  )
-                   
+
 (test-suite
  "list->dict and vector->dict"
  (is (list->dict '(a b c)
@@ -128,4 +132,3 @@
      (hash 'a 2 'b 3 'c 4)
      "vector->dict accepts transformer")
  )
- 

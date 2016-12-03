@@ -142,11 +142,12 @@
 ;;        '((2 3) (5) (7) (200 201 202 203))
 ;;
 
-(define (find-contiguous-runs data #:key [extract-key identity])
+(define/contract (find-contiguous-runs data #:key  [extract-key identity])
+  (->* (list?) (#:key (-> any/c exact-integer?)) list?)
   (define result '())
   (define-values (n final)
     (for/fold ((prev (car data))
-               (acc '())
+               (acc  (list (car data)))
                )
               ((curr (cdr data)))
       (values curr
