@@ -99,6 +99,12 @@
 
  (is (list->dict '(a b c)
                  '(1 2 3)
+                 #:dict-maker hasheq)
+     (hasheq 'a 1 'b 2 'c 3)
+     "list->dict  '(a 1 b 2 c 3)) works")
+
+ (is (list->dict '(a b c)
+                 '(1 2 3)
                  #:transform (lambda (k v) (list k (add1 v))))
      (hash 'a 2 'b 3 'c 4)
      "list->dict can transform values")

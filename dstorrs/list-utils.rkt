@@ -96,16 +96,16 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (vector->dict keys data [dict-maker hash] #:transform [transform list])
+(define/contract (vector->dict keys data #:dict-maker [dict-maker hash] #:transform [transform list])
   (->* (list? (or/c #f vector?))  ;; keys and data
-       ((-> any/c ... dict?)    ;; dict-maker takes any number of args and returns a dict
-        #:transform (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
+       (#:dict-maker (-> any/c ... dict?)    ;; dict-maker takes any number of args and returns a dict
+        #:transform  (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
         )
        dict?)
   (cond ((not data) (dict-maker));; Makes handling DB queries easier
 		((not (= (length keys) (vector-length data)))
          (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
-		(else (list->dict keys (vector->list data) dict-maker #:transform transform))))
+		(else (list->dict keys (vector->list data) #:dict-maker dict-maker #:transform transform))))
 
 ;;----------------------------------------------------------------------
 
@@ -114,9 +114,9 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (list->dict keys data [dict-maker hash] #:transform [transform list])
+(define/contract (list->dict keys data #:dict-maker [dict-maker hash] #:transform [transform list])
   (->* (list? list?)         ;; keys and data
-       ((-> any/c ... dict?) ;; takes any number of args and returns a dict
+       (#:dict-maker (-> any/c ... dict?) ;; takes any number of args and returns a dict
         #:transform (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
         )
        dict?)
