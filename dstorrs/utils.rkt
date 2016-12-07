@@ -1,5 +1,19 @@
 #lang racket
 
+;; List of functions:
+;; *) px : alias for pregexp
+;; *) path-string->string and path-string->path
+;; *) symbol-string->string and symbol-string->symbol
+;; *) true? : opposite of false? (not usually needed)
+;; *) append-file
+;; *) say : macro that uses 'displayln' to output all
+;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
+;; *) rand-val : get a random string value, optionally with 
+;;     prefix. e.g: (rand-val) or (rand-val "employee-id")
+;; *) perl-true? and perl-false? : Relaxed boolean checks
+;; *) pad-digits : convert, e.g. "9" to "09"
+;; *) 12hr->24hr : for time displays
+
 (define px pregexp)
 
 (define (path-string->string p) (if (path? p)   (path->string p) p))
@@ -11,6 +25,21 @@
 ;;    not sure when you'd need this, but it itched at me
 (define (true? x) (not (false? x))) 
 
+(define/contract (append-file source dest)
+  (-> path-string? path-string? exact-positive-integer?)
+
+  ;;    Append file, return number of bytes in file afterwards so that we could verify the append if so
+  (with-output-to-file dest
+    #:exists 'append
+    (thunk
+     (with-input-from-file
+       source
+       (thunk
+        (display (port->bytes))))))
+
+  (file-size dest)
+  )
+        
 (define-syntax (say stx)
   (syntax-case stx ()
 	[(_ a b ...)
