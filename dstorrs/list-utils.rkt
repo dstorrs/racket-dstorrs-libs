@@ -1,5 +1,20 @@
 #lang racket
 
+;;    Functions:
+;; *) firstn, restn : first and rest, but they return '() when given '()
+;; *) atom? : true if something is not a pair. (symbol, number, vector...)
+;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
+;; *) remove-nulls : filter '()s out of a list
+;; *) list-remf* filter all desired elements out of a list, by default #<void>
+;; *) list/not-null? : is it a pair and not '()? NB: checks for pair,
+;;     not list, so it treats '(x . y) as a list
+;; *) step-by-n : repeatedly call a function on next N elements of a list
+;; *) member-rec : finds matching elements in sublist as well as main list
+;; *) vector->dict, list->dict : turn a vector/list into some kind of
+;;     dict (typically a hash)
+;; *) in-range-inc : inclusive ranges
+;; *) find-contiguous-ranges : search a list for contiguous segments,
+;;     return a list of sublists
 (define (firstn l) (if (null? l) '() (first l)))
 (define (restn  l) (if (null? l) '() (rest l)))
 
