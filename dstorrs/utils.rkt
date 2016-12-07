@@ -30,6 +30,7 @@
 
   ;;    Append file, return number of bytes in file afterwards so that we could verify the append if so
   (with-output-to-file dest
+    #:mode 'binary
     #:exists 'append
     (thunk
      (with-input-from-file
