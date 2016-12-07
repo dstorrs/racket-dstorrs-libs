@@ -33,13 +33,14 @@
 
 (define (list/not-null? l) (and (not (atom? l)) (not (null? l))))
 
-(define (step-by-n func data [num 2])
+(define/contract (step-by-n func data [num 2])
+  (-> procedure? list? list?)
   (if (null? data)
-	  (func '())
-	  (append (autobox (func (take data num)))
+      '()
+	  (append (autobox (apply func (take data num)))
 			  (let ((l (drop data num)))
 				(step-by-n func
-						   (if (> (length l) num) l (error "wrong number of args"))
+                           l
 						   num)))))
 
 ;;----------------------------------------------------------------------
@@ -111,16 +112,16 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (vector->dict keys data #:dict-maker [dict-maker hash] #:transform [transform list])
+(define/contract (vector->dict keys data #:dict-maker [dict-maker make-hash] #:transform [transform identity])
   (->* (list? (or/c #f vector?))  ;; keys and data
-       (#:dict-maker (-> any/c ... dict?)    ;; dict-maker takes any number of args and returns a dict
-        #:transform  (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
+       (#:dict-maker procedure?
+        #:transform  (-> dict? dict?) ;; transform the resulting dict before returning
         )
        dict?)
   (cond ((not data) (dict-maker));; Makes handling DB queries easier
-		((not (= (length keys) (vector-length data)))
+        ((not (= (length keys) (vector-length data)))
          (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
-		(else (list->dict keys (vector->list data) #:dict-maker dict-maker #:transform transform))))
+        (else (list->dict keys (vector->list data) #:dict-maker dict-maker #:transform transform))))
 
 ;;----------------------------------------------------------------------
 
@@ -129,20 +130,33 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (list->dict keys data #:dict-maker [dict-maker hash] #:transform [transform list])
+(define (list->assoc-list lst)
+  (step-by-n (compose list cons) lst))
+
+;;----------------------------------------------------------------------
+
+(define/contract (list-of-2->pair l)
+  (-> (list/c any/c any/c) pair?)
+  (cons (first l) (second l)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (list->dict keys
+                             data
+                             #:dict-maker [dict-maker make-hash]
+                             #:transform [transform-post identity]
+                             )
   (->* (list? list?)         ;; keys and data
-       (#:dict-maker (-> any/c ... dict?) ;; takes any number of args and returns a dict
-        #:transform (-> any/c any/c (list/c any/c any/c)) ;; two args, returns two-item list
+       (#:dict-maker (-> (listof pair?) dict?) ; takes an assoc list, returns a dict
+        #:transform (-> dict? dict?)           ; transform the output of dict-maker
         )
        dict?)
+
   (unless (= (length data) (length keys))
     (raise "In list->dict, data and keys must be the same length"))
-  (apply dict-maker
-         (foldl (lambda (a b acc)
-                  (append (transform a b) acc))
-                '()
-                keys
-                data)))
+
+  (transform-post (dict-maker (map (compose list-of-2->pair list) keys data)))
+  )
 
 ;;----------------------------------------------------------------------
 

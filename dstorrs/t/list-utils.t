@@ -1,6 +1,6 @@
 #!/usr/bin/env racket
 
-#lang racket
+#lang at-exp rackjure
 
 (require "../list-utils.rkt"
 		 "../test-more.rkt")
@@ -96,39 +96,58 @@
 
 (test-suite
  "list->dict and vector->dict"
+
+ (define data '((a . 1) (b . 2) (c . 3)))
+
+ (displayln (list->dict '(a b c)
+                        '(1 2 3)))
+ (displayln (make-hash data))
  (is (list->dict '(a b c)
                  '(1 2 3))
-     (hash 'a 1 'b 2 'c 3)
-     "list->dict  '(a 1 b 2 c 3)) works")
+     (make-hash data)
+     "(list->dict  '(a b c) '(1 2 3)) works (default dict-maker)")
 
  (is (list->dict '(a b c)
                  '(1 2 3)
-                 #:dict-maker hasheq)
-     (hasheq 'a 1 'b 2 'c 3)
-     "list->dict  '(a 1 b 2 c 3)) works")
+                 #:dict-maker make-hasheq)
+     (make-hasheq '((a . 1) (b . 2) (c . 3)))
+     "(list->dict  '(a b c) '(1 2 3)) works with make-hasheq")
+
+ (displayln (list->dict '(a b c)
+                 '(1 2 3)
+                 #:transform (lambda (d)
+                               (apply hash (for/fold ((acc '()))
+                                               ((k (hash-keys  d)))
+                                       (append (list (string->symbol (string-append "key-" (symbol->string k)))
+                                                     (add1 (hash-ref d k)))
+                                               acc))))))
 
  (is (list->dict '(a b c)
                  '(1 2 3)
-                 #:transform (lambda (k v) (list k (add1 v))))
-     (hash 'a 2 'b 3 'c 4)
-     "list->dict can transform values")
-
- (is (list->dict '(a b c)
-                 '(1 2 3)
-                 #:transform (lambda (k v)
-                               (list (string->symbol (string-append "key-" (symbol->string k)))
-                                     (add1 v))))
-     (hash 'key-a 2 'key-b 3 'key-c 4)
+                 #:transform (lambda (d)
+                               (displayln (~a "IN TRANSFORM, dict: " d))
+                               (define res (apply hash (for/fold ((acc '()))
+                                               ((k (hash-keys  d)))
+                                       (append (list (string->symbol (string-append "key-" (symbol->string k)))
+                                                     (add1 (hash-ref d k)))
+                                               acc))))
+                                 (displayln (~a "IN TRANSFORM, res : " res))
+                                 res))
+     (apply hash '(key-a 2 key-b 3 key-c  4))
      "list->dict can transform keys and values")
 
  (is (vector->dict '(a b c)
                    (vector 1 2 3))
-     (hash 'a 1 'b 2 'c 3)
+     (make-hash '((a . 1) (b . 2) (c . 3)))
      "(vector->dict  '(a b c) (vector 1 2 3)) works")
 
  (is (vector->dict '(a b c)
                    (vector 1 2 3)
-                   #:transform (lambda (k v) (list k (add1 v))))
-     (hash 'a 2 'b 3 'c 4)
+                   #:transform (lambda (d)
+                                 (for ((k (hash-keys d))) (hash-set! d k (add1 (d k)))
+                                      )
+                                 d))
+     (make-hash '((a . 2) (b . 3) (c . 4)))
      "vector->dict accepts transformer")
  )
+(exit)
