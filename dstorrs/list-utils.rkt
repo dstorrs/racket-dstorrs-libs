@@ -13,7 +13,7 @@
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (typically a hash)
 ;; *) in-range-inc : inclusive ranges
-;; *) find-contiguous-ranges : search a list for contiguous segments,
+;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
 (define (firstn l) (if (null? l) '() (first l)))
 (define (restn  l) (if (null? l) '() (rest l)))
@@ -173,19 +173,26 @@
 
 (define/contract (find-contiguous-runs data #:key  [extract-key identity])
   (->* (list?) (#:key (-> any/c exact-integer?)) list?)
-  (define result '())
-  (define-values (n final)
+  (define-values (n final result)
     (for/fold ((prev (car data))
                (acc  (list (car data)))
+               (result '())
                )
               ((curr (cdr data)))
-      (values curr
-              (if (= (extract-key curr) (add1 (extract-key prev)))
+
+      ;; if curr is contiguous with prev, add curr to acc (build the run)
+      ;; if curr not contiguous, add acc to result and clear acc for next time
+      
+      (define is-contiguous (= (extract-key curr) (add1 (extract-key prev))))
+      (values curr                  ;; the one we just processed becomes 'prev(ious)'
+              (if is-contiguous     ;; add to or clear accumulator
                   (cons curr acc)
-                  (begin
-                    (set! result (cons (reverse acc) result))
-                    (list curr))))
-      ))
+                  (list curr))
+              (if is-contiguous     ;; add accumulator to result if the run is over
+                  result
+                  (cons (reverse acc) result)
+                  ))
+      ))  
   (reverse (cons (reverse final) result))
   )
 
