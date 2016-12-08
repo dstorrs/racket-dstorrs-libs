@@ -66,11 +66,11 @@
 
  (is (get '(a b c) '(0)) 'a)
 
- (is (firstn '(foo bar)) 'foo "firstn '(foo bar) is 'foo")
- (is (firstn '()) '() "firstn '() is '()")
+ (is (safe-first '(foo bar)) 'foo "safe-first '(foo bar) is 'foo")
+ (is (safe-first '()) '() "safe-first '() is '()")
 
- (is (restn '(foo bar)) '(bar) "firstn '(foo bar) is '(bar)")
- (is (restn '()) '() "restn '() is '()")
+ (is (safe-rest '(foo bar)) '(bar) "safe-first '(foo bar) is '(bar)")
+ (is (safe-rest '()) '() "safe-rest '() is '()")
  )
 
 
@@ -113,15 +113,22 @@
 
  (is (list->dict '(a b c)
                  '(1 2 3)
-                 #:transform (lambda (d)
-                               (define res (apply hash (for/fold ((acc '()))
-                                                                 ((k (hash-keys  d)))
-                                                         (append (list (string->symbol (string-append "key-" (symbol->string k)))
-                                                                       (add1 (hash-ref d k)))
-                                                                 acc))))
-                               res))
+                 #:transform-data (lambda (k v) (cons k (add1 v))))
+     (make-hash '((a . 2) (b . 3) (c . 4)))
+     "list->dict can transform the data before creation")
+
+ (is (list->dict '(a b c)
+                 '(1 2 3)
+                 #:transform-dict
+                 (lambda (d)
+                   (apply hash
+                          (for/fold ((acc '()))
+                                    ((k (hash-keys  d)))
+                            (append (list (string->symbol (string-append "key-" (symbol->string k)))
+                                          (add1 (hash-ref d k)))
+                                    acc)))))
      (apply hash '(key-a 2 key-b 3 key-c  4))
-     "list->dict can transform keys and values")
+     "list->dict can transform the dict after creation")
 
  (is (vector->dict '(a b c)
                    (vector 1 2 3))
@@ -130,11 +137,11 @@
 
  (is (vector->dict '(a b c)
                    (vector 1 2 3)
-                   #:transform (lambda (d)
-                                 (for ((k (hash-keys d))) (hash-set! d k (add1 (d k)))
+                   #:transform-dict (lambda (d)
+                                      (for ((k (hash-keys d)))
+                                        (hash-set! d k (add1 (d k)))
                                       )
-                                 d))
+                                      d))
      (make-hash '((a . 2) (b . 3) (c . 4)))
      "vector->dict accepts transformer")
  )
-(exit)

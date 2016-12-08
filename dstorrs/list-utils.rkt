@@ -1,7 +1,7 @@
 #lang racket
 
 ;;    Functions:
-;; *) firstn, restn : first and rest, but they return '() when given '()
+;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
 ;; *) remove-nulls : filter '()s out of a list
@@ -11,12 +11,13 @@
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
 ;; *) member-rec : finds matching elements in sublist as well as main list
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
-;;     dict (typically a hash)
+;;     dict (by default a mutable hash)
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
-(define (firstn l) (if (null? l) '() (first l)))
-(define (restn  l) (if (null? l) '() (rest l)))
+;;
+(define (safe-first l) (if (null? l) '() (first l)))
+(define (safe-rest  l) (if (null? l) '() (rest l)))
 
 (define (atom? x) (not (pair? x)))
 
@@ -112,19 +113,6 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (vector->dict keys data #:dict-maker [dict-maker make-hash] #:transform [transform identity])
-  (->* (list? (or/c #f vector?))  ;; keys and data
-       (#:dict-maker procedure?
-        #:transform  (-> dict? dict?) ;; transform the resulting dict before returning
-        )
-       dict?)
-  (cond ((not data) (dict-maker));; Makes handling DB queries easier
-        ((not (= (length keys) (vector-length data)))
-         (raise "In vector->dict, data (vector) and keys (list) must be the same length"))
-        (else (list->dict keys (vector->list data) #:dict-maker dict-maker #:transform transform))))
-
-;;----------------------------------------------------------------------
-
 (define (in-range-inc x [y #f])
   (stream->list (if y (in-range x (add1 y)) (in-range (add1 x)))))
 
@@ -135,27 +123,49 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (list-of-2->pair l)
-  (-> (list/c any/c any/c) pair?)
-  (cons (first l) (second l)))
+(define/contract (vector->dict keys
+                               data
+                               #:dict-maker [dict-maker make-hash]
+                               #:transform-dict [transform-dict identity]
+                               #:transform-data [transform-data cons]
+                               )
+  (->* (list? vector?)         ;; keys and data
+       (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
+        #:transform-data (-> any/c any/c pair?)  ; transform the output of dict-maker
+        )
+       dict?)
+
+  (if (not data)
+      (dict-maker);; Makes handling DB queries easier
+      (list->dict keys
+                  (vector->list data)
+                  #:dict-maker dict-maker
+                  #:transform-dict transform-dict
+                  #:transform-data transform-data
+                  )))
 
 ;;----------------------------------------------------------------------
 
 (define/contract (list->dict keys
                              data
                              #:dict-maker [dict-maker make-hash]
-                             #:transform [transform-post identity]
+                             #:transform-dict [transform-dict identity]
+                             #:transform-data [transform-data cons]
                              )
   (->* (list? list?)         ;; keys and data
-       (#:dict-maker (-> (listof pair?) dict?) ; takes an assoc list, returns a dict
-        #:transform (-> dict? dict?)           ; transform the output of dict-maker
+       (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
+        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
         )
        dict?)
 
   (unless (= (length data) (length keys))
-    (raise "In list->dict, data and keys must be the same length"))
+    (raise-argument-error 'list->dict
+                          "data and keys must be the same length"
+                          (format "keys, data: '~a', '~a'" keys data)))
 
-  (transform-post (dict-maker (map (compose list-of-2->pair list) keys data)))
+  (transform-dict (dict-maker (map transform-data keys data)))
   )
 
 ;;----------------------------------------------------------------------
@@ -182,7 +192,7 @@
 
       ;; if curr is contiguous with prev, add curr to acc (build the run)
       ;; if curr not contiguous, add acc to result and clear acc for next time
-      
+
       (define is-contiguous (= (extract-key curr) (add1 (extract-key prev))))
       (values curr                  ;; the one we just processed becomes 'prev(ious)'
               (if is-contiguous     ;; add to or clear accumulator
@@ -192,7 +202,7 @@
                   result
                   (cons (reverse acc) result)
                   ))
-      ))  
+      ))
   (reverse (cons (reverse final) result))
   )
 
