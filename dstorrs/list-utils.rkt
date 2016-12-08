@@ -183,28 +183,31 @@
 
 (define/contract (find-contiguous-runs data #:key  [extract-key identity])
   (->* (list?) (#:key (-> any/c exact-integer?)) list?)
-  (define-values (n final result)
-    (for/fold ((prev (car data))
-               (acc  (list (car data)))
-               (result '())
-               )
-              ((curr (cdr data)))
+  (if (null? data)
+      null
+      (let ((ignored #t)) ; need the let only to establish a definition context
+        (define-values (n final result)
+          (for/fold ((prev (car data))
+                     (acc  (list (car data)))
+                     (result '())
+                     )
+                    ((curr (cdr data)))
 
-      ;; if curr is contiguous with prev, add curr to acc (build the run)
-      ;; if curr not contiguous, add acc to result and clear acc for next time
+            ;; if curr is contiguous with prev, add curr to acc (build the run)
+            ;; if curr not contiguous, add acc to result and clear acc for next time
 
-      (define is-contiguous (= (extract-key curr) (add1 (extract-key prev))))
-      (values curr                  ;; the one we just processed becomes 'prev(ious)'
-              (if is-contiguous     ;; add to or clear accumulator
-                  (cons curr acc)
-                  (list curr))
-              (if is-contiguous     ;; add accumulator to result if the run is over
-                  result
-                  (cons (reverse acc) result)
-                  ))
+            (define is-contiguous (= (extract-key curr) (add1 (extract-key prev))))
+            (values curr                  ;; the one we just processed becomes 'prev(ious)'
+                    (if is-contiguous     ;; add to or clear accumulator
+                        (cons curr acc)
+                        (list curr))
+                    (if is-contiguous     ;; add accumulator to result if the run is over
+                        result
+                        (cons (reverse acc) result)
+                        ))
+            ))
+        (reverse (cons (reverse final) result)))
       ))
-  (reverse (cons (reverse final) result))
-  )
 
 ;;----------------------------------------------------------------------
 
