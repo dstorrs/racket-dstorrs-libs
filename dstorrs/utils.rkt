@@ -28,8 +28,14 @@
 (define/contract (append-file source dest)
   (-> path-string? path-string? exact-positive-integer?)
 
-  ;;    Append file, return number of bytes in file afterwards so that we could verify the append if so
-  (with-output-to-file dest
+  ;;    Append file, return number of bytes in file afterwards so that
+  ;;    we could verify the append if so desired.
+  ;;
+  ;; @@TODO: This reads the entire source file into RAM, so will work
+  ;; poorly on large files.  Should add a file-size check and make it
+  ;; do the transfer in a loop if it's too big.
+  (with-output-to-file
+    dest
     #:mode 'binary
     #:exists 'append
     (thunk
