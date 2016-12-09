@@ -1,6 +1,7 @@
 #lang racket
 
 ;;    Functions:
+;; *) L : alias for 'list'
 ;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
@@ -16,6 +17,7 @@
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
 ;;
+(define L list)
 (define (safe-first l) (if (null? l) '() (first l)))
 (define (safe-rest  l) (if (null? l) '() (rest l)))
 
