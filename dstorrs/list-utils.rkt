@@ -213,4 +213,10 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (flatten/convert func lst)
+  (-> procedure? list? list?)
+  (flatten (map func lst)))
+
+;;----------------------------------------------------------------------
+
 (provide (all-defined-out))

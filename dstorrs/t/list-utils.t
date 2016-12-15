@@ -145,3 +145,21 @@
      (make-hash '((a . 2) (b . 3) (c . 4)))
      "vector->dict accepts transformer")
  )
+
+(test-suite
+ "flatten/convert"
+ (is (flatten/convert vector->list (list (vector 1)(vector 2)(vector 3)))
+     '(1 2 3)
+     "converted vectors of one int to list of ints")
+
+ (is (flatten/convert add1 (list 1 2 3))
+     '(2 3 4)
+     "incremented list")
+
+ (is (flatten/convert (compose length hash-keys)
+                      (list (hash 'a 1 'b 2)
+                            (hash 'c 2 'd 3 'e 4)))
+     '(2 3)
+     "counted  list")
+
+ )
