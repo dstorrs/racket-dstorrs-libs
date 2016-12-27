@@ -127,7 +127,7 @@
 					  (lambda (e)
 						(let ((msg (exn-message e)))
 						  (cond
-						   ((string? pred) (equal? pred (remove-exn-boilerplate e)))
+						   ((string? pred) (equal? pred (remove-exn-boilerplate (exn-message e))))
 						   ((regexp? pred) (regexp-match? pred msg))
 						   ((procedure? pred) (pred e))
 						   (else #f)
@@ -135,11 +135,13 @@
 					 [exn? (lambda (e) #f)])
 					(thunk))
 				   #:msg msg))
-(define/contract (dies thunk pred [msg ""])
-  (->* (procedure? (or/c string? regexp? (-> any/c boolean?)))
+
+;;    When all you care about is that it dies, not why
+(define/contract (dies thunk [msg ""])
+  (->* (procedure?)
 	   (string?)
 	   any/c)
-  (throws thunk pred msg))
+  (throws thunk (lambda (e) #t) msg))
 
 (define-syntax (test-suite stx)
   (syntax-case stx ()

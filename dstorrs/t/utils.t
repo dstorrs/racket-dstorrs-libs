@@ -45,5 +45,24 @@
  (delete-file dest)
  )
 
+(test-suite
+ "safe-hash-set"
+ (define hash-imm (hash 'a 1 'b 2 'c 3))
+ (ok (immutable? hash-imm) "using immutable hash for next test")
+ (is (safe-hash-set hash-imm 'b 5)
+     (hash 'a 1 'b 5 'c 3)
+     "can handle an immutable hash")
+
+ (define hash-mut (make-hash '((a . 1) (b . 2) (c . 3))))
+ (define correct  (make-hash '((a . 1) (b . 5) (c . 3))))
+ (ok (not (immutable? hash-mut)) "using mutable hash for next test")
+ (ok (not (immutable? correct)) "using mutable hash for answer to next test")
+ (is (safe-hash-set hash-mut 'b 5)
+     correct
+     "can handle a mutable hash")
+
+ (dies (thunk (safe-hash-set #f 'a 7))
+       "safe-hash-set requires a hash")
+ )
 
 (say "Done testing.")

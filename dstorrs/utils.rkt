@@ -1,6 +1,7 @@
-#lang racket
+#lang at-exp racket
 
 ;; List of functions:
+;; *) safe-hash-set : does hash-set or hash-set! as needed
 ;; *) px : alias for pregexp
 ;; *) path-string->string and path-string->path
 ;; *) symbol-string->string and symbol-string->symbol
@@ -13,6 +14,12 @@
 ;; *) perl-true? and perl-false? : Relaxed boolean checks
 ;; *) pad-digits : convert, e.g. "9" to "09"
 ;; *) 12hr->24hr : for time displays
+
+(define/contract (safe-hash-set h k v)
+  (-> hash? any/c any/c hash?)
+  (if (immutable? h)
+      (hash-set h k v)
+      (begin (hash-set! h k v) h)))
 
 (define px pregexp)
 
