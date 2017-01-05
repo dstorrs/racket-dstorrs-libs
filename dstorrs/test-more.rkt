@@ -128,7 +128,7 @@
 						(let ((msg (exn-message e)))
 						  (cond
 						   ((string? pred) (equal? pred (remove-exn-boilerplate (exn-message e))))
-						   ((regexp? pred) (regexp-match? pred msg))
+						   ((regexp? pred)  (regexp-match? pred msg))
 						   ((procedure? pred) (pred e))
 						   (else #f)
 						   )))]
