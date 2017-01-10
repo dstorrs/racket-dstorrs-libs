@@ -1,22 +1,23 @@
 #lang racket
 
 ;;    Functions:
-;; *) L : alias for 'list'
-;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
+;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
-;; *) remove-nulls : filter '()s out of a list
-;; *) list-remf* filter all desired elements out of a list, by default #<void>
-;; *) list/not-null? : is it a pair and not '()? NB: checks for pair,
-;;     not list, so it treats '(x . y) as a list
-;; *) step-by-n : repeatedly call a function on next N elements of a list
-;; *) member-rec : finds matching elements in sublist as well as main list
-;; *) vector->dict, list->dict : turn a vector/list into some kind of
-;;     dict (by default a mutable hash)
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
-;;
+;; *) L : alias for 'list'
+;; *) list-remf* filter all desired elements out of a list, by default #<void>
+;; *) list/not-null? : is it a pair and not '()? NB: checks for pair,
+;;     not list, so it treats '(x . y) as a list
+;; *) member-rec : finds matching elements in sublist as well as main list
+;; *) remove-nulls : filter '()s out of a list
+;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
+;; *) step-by-n : repeatedly call a function on next N elements of a list
+;; *) vector->dict, list->dict : turn a vector/list into some kind of
+;;     dict (by default a mutable hash)
+  
 (define L list)
 (define (safe-first l) (if (null? l) '() (first l)))
 (define (safe-rest  l) (if (null? l) '() (rest l)))
@@ -216,6 +217,12 @@
 (define/contract (flatten/convert func lst)
   (-> procedure? list? list?)
   (flatten (map func lst)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (alist->hash alist)
+  (-> (listof pair?) (and/c hash? immutable?))
+  (apply hash (flatten alist)))
 
 ;;----------------------------------------------------------------------
 
