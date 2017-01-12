@@ -1,6 +1,8 @@
 #lang at-exp racket
 
 ;; List of functions:
+;; *) hash->immutable : convert an (im)mutable hash to an immutable one
+;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) safe-hash-set : does hash-set or hash-set! as needed
 ;; *) px : alias for pregexp
 ;; *) path-string->string and path-string->path
@@ -22,6 +24,18 @@
       (begin (hash-set! h k v) h)))
 
 (define px pregexp)
+
+(define (hash->mutable h)
+  (if (not (immutable? h))
+      h
+      (make-hash (for/list ((k (hash-keys h)))
+                   (cons k (hash-ref h k))))))
+
+(define (hash->immutable h)
+  (if (immutable? h)
+      h
+      (apply hash (flatten (for/list ((k (hash-keys h)))
+                             (cons k (hash-ref h k)))))))
 
 (define (path-string->string p) (if (path? p)   (path->string p) p))
 (define (path-string->path   p) (if (path? p) p (string->path p)))
