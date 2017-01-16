@@ -15,6 +15,7 @@
 ;; *) remove-nulls : filter '()s out of a list
 ;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
+;; *) unique : return a list of the unique non-null elements in a list, in the order seen
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (by default a mutable hash)
   
@@ -223,6 +224,17 @@
 (define/contract (alist->hash alist)
   (-> (listof pair?) (and/c hash? immutable?))
   (apply hash (flatten alist)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (unique lst)
+  (-> list? list?)
+  (define h (make-hash))
+  (remove-nulls 
+   (for/list ((i lst))
+     (if (hash-has-key? h i)
+         '()
+         (begin (hash-set! h i 1) i)))))
 
 ;;----------------------------------------------------------------------
 

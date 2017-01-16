@@ -140,7 +140,7 @@
                    #:transform-dict (lambda (d)
                                       (for ((k (hash-keys d)))
                                         (hash-set! d k (add1 (d k)))
-                                      )
+                                        )
                                       d))
      (make-hash '((a . 2) (b . 3) (c . 4)))
      "vector->dict accepts transformer")
@@ -162,4 +162,19 @@
      '(2 3)
      "counted  list")
 
+ )
+
+(test-suite
+ "unique"
+ (is (unique '()) '() "null ")
+ (is (unique '(1)) '(1) "'(1) ")
+ (is (unique '(2 1)) '(2 1) "(2 1) ")
+ (is (unique '(2 2 1)) '(2 1) "(2 2 1) ")
+ (is (unique '(2 foo 2 1)) '(2 foo 1) "(2 foo 2 1) ")
+ (is (unique (list 2 '() 2 1)) '(2 1) "(2 () 2 1) ")
+ (is (unique (list 2 (hash) 2 1)) (list 2 (hash) 1) "(2 (hash) 2 1) ")
+ (is (unique (list 2 (list 0 (vector)) 2 1)) (list 2 (list 0 (vector)) 1) "(2 (0 (vector)) 2 1)")
+ (is (unique '(2 #t 2 1 #t)) '(2 #t 1) "(2 #t 2 1) ")
+ (is (unique '(2 #f 2 1 #t)) '(2 #f 1 #t) "(2 #f 2 1 #t) ")
+ (is (unique '(2 "apple" 2 "apple" 1)) '(2 "apple" 1) "(2 apple 2 apple 1) [apple => string]")
  )
