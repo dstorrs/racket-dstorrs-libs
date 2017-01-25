@@ -103,13 +103,13 @@
 				   (test-more-check #:expr #t  #:msg msg))))
 
 
-;; note that if you give it a function predicat that predicate must
+;; note that if you give it a function predicate that predicate must
 ;; take one argument but it can be anything, not just an (exn?)
-(define/contract (throws thunk pred [msg ""])
-  (->* (procedure? (or/c string? regexp? (-> any/c boolean?))) 
+(define/contract (throws thnk pred [msg ""])
+  (->* ((-> any) (or/c string? regexp? (-> any/c boolean?))) 
 	   (string?)
 	   any/c)
-  ;;    'thunk' should generate an exception
+  ;;    'thnk' should generate an exception
   ;;    'msg'  is what test-more-check will report
   ;;    'pred' could be a string, a proc, or a regex
   ;;        - string: Check if it is the (non-boilerplate) exn message
@@ -133,7 +133,7 @@
 						   (else #f)
 						   )))]
 					 [exn? (lambda (e) #f)])
-					(thunk))
+					(thnk))
 				   #:msg msg))
 
 ;;    When all you care about is that it dies, not why
