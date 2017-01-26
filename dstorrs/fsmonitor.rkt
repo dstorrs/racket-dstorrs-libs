@@ -93,7 +93,7 @@
       (apply sync (map evt-maker dirs-to-watch))
       (loop)))
 
-  (thread work)
+  (void (thread work))
   )
 
 (provide (all-defined-out))
