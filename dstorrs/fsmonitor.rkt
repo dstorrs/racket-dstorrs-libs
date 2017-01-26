@@ -2,7 +2,7 @@
 
 (require db
          dstorrs/try
-         kw-utils/partial
+         dstorrs/utils
          )
 
 ;;----------------------------------------------------------------------
@@ -30,7 +30,6 @@
          ]
         [(equal? db-type 'sqlite)
          (list
-
           @~a{CREATE TABLE IF NOT EXISTS watched_files
                      (
                       id BIGINT PRIMARY KEY,
@@ -42,9 +41,9 @@
                          is_missing BOOL DEFAULT 'false' NOT NULL,
                          last_checked BIGINT NOT NULL
                          )}
-         @~a{CREATE UNIQUE INDEX IF NOT EXISTS watched_files_cns_1 ON watched_files (dir,filename)}
-         @~a{CREATE INDEX watched_files_dir_idx ON watched_files(dir)}
-         )]))
+          @~a{CREATE UNIQUE INDEX IF NOT EXISTS watched_files_cns_1 ON watched_files (dir,filename)}
+          @~a{CREATE INDEX watched_files_dir_idx ON watched_files(dir)}
+          )]))
 
 ;;----------------------------------------------------------------------
 
@@ -67,39 +66,34 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (watch-dir dir dbh-maker handler)
-  (-> path-string?
-      (-> connection?)                  ;; dbh-maker is a thunk that returns a dbh
-      (-> path-string? connection? any) ;; proc takes dir and a dbh
-      any)
-
-  ;;    Create a watch-filesystem event for this directory
-  ;;    Put it in a thread, make the thread loop forever
-  (thread
-   (thunk
-    (do ()
-        (#f)
-      (let ((change (sync (filesystem-change-evt dir))))
-        (handler dir (dbh-maker)))
-      ))))
-
-;;----------------------------------------------------------------------
-
-(define/contract (watch-dir-tree dir dbh-maker handler #:recursive [recursive #t])
-  (->* (path-string? (-> connection?) (-> any))
-       (#:recursive boolean?)
+(define/contract (watch-dir-or-tree dir handler [handler-arg #f] #:recursive [recursive #t])
+  (->* (path-string? (-> path-string? any/c any))
+       (any/c #:recursive boolean?)
        any)
 
-  ;;    Watch the specified directory.  If recursive was set, walk
-  ;;    down into the directory looking for other directories, then
-  ;;    recur on them.
-  (watch-dir dir dbh-maker handler)
-  (when recursive
-    (fold-files (lambda (fpath type acc)
-                  (when (equal? 'dir type)
-                    (watch-dir-tree fpath dbh-maker handler)))
-                '()
-                dir))
+  ;;    Locate all the directories to watch. If recursive is #f then
+  ;;    that's just dir.  If recursive is #t then it's dir and all
+  ;;    directories below dir.
+  (define dirs-to-watch
+    (if recursive
+        (fold-files  (lambda (item type acc) (if (equal? type 'dir) (cons item acc) acc))
+                     '()
+                     dir)
+        (list dir))
+    )
+
+
+  (define (evt-maker dir)
+    (handle-evt (filesystem-change-evt dir)
+                (lambda (e)
+                  (handler dir handler-arg))))
+
+  (define (work)
+    (let loop ()
+      (apply sync (map evt-maker dirs-to-watch))
+      (loop)))
+
+  (thread work)
   )
 
 (provide (all-defined-out))
