@@ -7,7 +7,7 @@
 ;; *) px : alias for pregexp
 ;; *) path-string->string and path-string->path
 ;; *) symbol-string->string and symbol-string->symbol
-;; *) true? : opposite of false? (not usually needed)
+;; *) true? : opposite of false? (useful for coercing to boolean)
 ;; *) append-file
 ;; *) say : macro that uses 'displayln' to output all
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
