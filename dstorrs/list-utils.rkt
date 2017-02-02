@@ -117,8 +117,9 @@
 
 ;;----------------------------------------------------------------------
 
-(define (in-range-inc x [y #f])
-  (stream->list (if y (in-range x (add1 y)) (in-range (add1 x)))))
+(define/contract (in-range-inc x [y #f])
+  (->* (exact-integer?) (exact-integer?) stream?)
+  (if y (in-range x (add1 y)) (in-range (add1 x))))
 
 ;;----------------------------------------------------------------------
 
