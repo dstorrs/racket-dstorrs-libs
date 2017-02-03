@@ -1,50 +1,35 @@
 #lang at-exp racket
 
 ;; List of functions:
+;; *) 12hr->24hr : for time displays
+;; *) append-file
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
-;; *) safe-hash-set : does hash-set or hash-set! as needed
-;; *) px : alias for pregexp
+;; *) pad-digits : convert, e.g. "9" to "09"
 ;; *) path-string->string and path-string->path
-;; *) symbol-string->string and symbol-string->symbol
-;; *) true? : opposite of false? (useful for coercing to boolean)
-;; *) append-file
-;; *) say : macro that uses 'displayln' to output all
-;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
+;; *) perl-true? and perl-false? : Relaxed boolean checks
+;; *) px : alias for pregexp
 ;; *) rand-val : get a random string value, optionally with 
 ;;     prefix. e.g: (rand-val) or (rand-val "employee-id")
-;; *) perl-true? and perl-false? : Relaxed boolean checks
-;; *) pad-digits : convert, e.g. "9" to "09"
-;; *) 12hr->24hr : for time displays
+;; *) safe-hash-set : does hash-set or hash-set! as needed
+;; *) say : macro that uses 'displayln' to output all
+;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
+;; *) symbol-string->string and symbol-string->symbol
+;; *) true? : opposite of false? (useful for coercing to boolean)
 
-(define/contract (safe-hash-set h k v)
-  (-> hash? any/c any/c hash?)
-  (if (immutable? h)
-      (hash-set h k v)
-      (begin (hash-set! h k v) h)))
+;;----------------------------------------------------------------------
 
-(define px pregexp)
+;;    Turn a 12-hour time (4pm) into a 24-hour time (16).  By default
+;;    returns as number but you can ask for it as string.
+(define/contract (12hr->24hr tm pm [as-str #f])
+  (->* ((or/c string? exact-integer?) boolean?)
+	   (boolean?)
+	   (or/c string? exact-integer?))
+  (define t (if (string? tm) (string->number tm) tm))
+  (define res (+ t (if pm 12 0)))
+  (if as-str (number->string res) res))
 
-(define (hash->mutable h)
-  (if (not (immutable? h))
-      h
-      (make-hash (for/list ((k (hash-keys h)))
-                   (cons k (hash-ref h k))))))
-
-(define (hash->immutable h)
-  (if (immutable? h)
-      h
-      (apply hash (flatten (for/list ((k (hash-keys h)))
-                             (cons k (hash-ref h k)))))))
-
-(define (path-string->string p) (if (path? p)   (path->string p) p))
-(define (path-string->path   p) (if (path? p) p (string->path p)))
-
-(define (symbol-string->string x) (if (string? x) x (symbol->string x)))
-(define (symbol-string->symbol x) (if (string? x) (string->symbol x) x))
-
-;;    not sure when you'd need this, but it itched at me
-(define (true? x) (not (false? x))) 
+;;----------------------------------------------------------------------
 
 (define/contract (append-file source dest)
   (-> path-string? path-string? exact-positive-integer?)
@@ -67,11 +52,55 @@
 
   (file-size dest)
   )
-        
-(define-syntax (say stx)
-  (syntax-case stx ()
-	[(_ a b ...)
-	 #'(displayln (~a a b ...))]))
+
+;;----------------------------------------------------------------------
+
+(define (hash->immutable h)
+  (if (immutable? h)
+      h
+      (apply hash (flatten (for/list ((k (hash-keys h)))
+                             (cons k (hash-ref h k)))))))
+
+;;----------------------------------------------------------------------
+
+(define (hash->mutable h)
+  (if (not (immutable? h))
+      h
+      (make-hash (for/list ((k (hash-keys h)))
+                   (cons k (hash-ref h k))))))
+
+;;----------------------------------------------------------------------
+
+
+;;    This is intended for things like turning 9 into "09" for use in
+;;    dates, filenames, etc.
+(define (pad-digits d [width 2] [pad "0"])
+  (~a d #:left-pad-string pad #:min-width width #:align 'right))
+
+;;----------------------------------------------------------------------
+
+(define (path-string->path   p) (if (path? p) p (string->path p)))
+(define (path-string->string p) (if (path? p)   (path->string p) p))
+
+;;----------------------------------------------------------------------
+
+;;    Because the Racket concept of booleans is inflexible.
+;;    Things that are perl-false:
+;;        #f, "", '(), #<void>, and anything matching (zero?)
+(define (perl-true? x) (not (perl-false? x)))
+(define (perl-false? x)
+  (cond
+   ((string? x) (= 0 (string-length x)))
+   ((number? x) (zero? x))
+   ((list?   x) (null? x))
+   (else (or (void? x)
+			 (false? x)))))
+
+;;----------------------------------------------------------------------
+
+(define px pregexp)
+
+;;----------------------------------------------------------------------
 
 ;;    generate a random value; generally useful in testing
 ;; (rand-val)                           => e.g. "203428"
@@ -88,32 +117,38 @@
 		   "")
 	   (number->string (random 1000000)))))
 
-;;    Because the Racket concept of booleans is inflexible.
-;;    Things that are perl-false:
-;;        #f, "", '(), #<void>, and anything matching (zero?)
-(define (perl-true? x) (not (perl-false? x)))
-(define (perl-false? x)
-  (cond
-   ((string? x) (= 0 (string-length x)))
-   ((number? x) (zero? x))
-   ((list?   x) (null? x))
-   (else (or (void? x)
-			 (false? x)))))
+;;----------------------------------------------------------------------
 
-;;    This is intended for things like turning 9 into "09" for use in
-;;    dates, filenames, etc.
-(define (pad-digits d [width 2] [pad "0"])
-  (~a d #:left-pad-string pad #:min-width width #:align 'right))
+(define/contract (safe-hash-set h k v)
+  (-> hash? any/c any/c hash?)
+  (if (immutable? h)
+      (hash-set h k v)
+      (begin (hash-set! h k v) h)))
+     
+;;----------------------------------------------------------------------
 
-;;    Turn a 12-hour time (4pm) into a 24-hour time (16).  By default
-;;    returns as number but you can ask for it as string.
-(define/contract (12hr->24hr tm pm [as-str #f])
-  (->* ((or/c string? exact-integer?) boolean?)
-	   (boolean?)
-	   (or/c string? exact-integer?))
-  (define t (if (string? tm) (string->number tm) tm))
-  (define res (+ t (if pm 12 0)))
-  (if as-str (number->string res) res))
+(define-syntax (say stx)
+  (syntax-case stx ()
+	[(_ a b ...)
+	 #'(displayln (~a a b ...))]))
+
+;;----------------------------------------------------------------------
+
+(define/contract (symbol-string->string x)
+  (-> (or/c symbol? string?) string?)
+  (if (string? x) x (symbol->string x)))
+
+(define/contract (symbol-string->symbol x)
+  (-> (or/c symbol? string?) symbol?)
+  (if (string? x) (string->symbol x) x))
+
+;;----------------------------------------------------------------------
+
+;;    Useful for coercing values to boolean for, e.g., inserting into DB
+(define (true? x) (not (false? x))) 
+
+
+
 
 
 (provide (all-defined-out))
