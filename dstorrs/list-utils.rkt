@@ -176,14 +176,13 @@
 ;;----------------------------------------------------------------------
 
 ;;    Generate a list of lists where each sublist is a sequence of
-;;    consecutive chunk-nums.  For example, if the hashes in 'data'
-;;    had these chunk nums:
+;;    consecutive chunk-nums.  For example, if given this list:
 ;;
 ;;        '(1 2 3 5 7 200 201 202 203))
 ;;
 ;;    Then you would get this result:
 ;;
-;;        '((2 3) (5) (7) (200 201 202 203))
+;;        '((1 2 3) (5) (7) (200 201 202 203))
 ;;
 
 (define/contract (find-contiguous-runs data #:key  [extract-key identity])
