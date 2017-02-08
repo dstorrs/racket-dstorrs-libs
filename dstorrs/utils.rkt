@@ -5,6 +5,7 @@
 ;; *) append-file
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
+;; *) not-null?       : what it says on the tin
 ;; *) pad-digits : convert, e.g. "9" to "09"
 ;; *) path-string->string and path-string->path
 ;; *) perl-true? and perl-false? : Relaxed boolean checks
@@ -68,6 +69,12 @@
       h
       (make-hash (for/list ((k (hash-keys h)))
                    (cons k (hash-ref h k))))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (not-null? lst)
+  (-> list? boolean?)
+  (not (null? lst)))
 
 ;;----------------------------------------------------------------------
 
