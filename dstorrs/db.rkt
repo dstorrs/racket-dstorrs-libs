@@ -140,6 +140,18 @@
 
 ;;----------------------------------------------------------------------
 
+
+;;----------------------------------------------------------------------
+;; The list of vectors returned by query-rows is often not very convenient.
+;; So reformulate it as a list of dicts.
+;; keys-list is the names of the columns.
+;;    Example call: (get-rows-as-dicts db sql keys "foo" "bar" 7)
+(define (get-rows-as-dicts db sql keys-list . args)
+  (map (curry vector->dict keys-list)
+       (apply (curry query-rows db sql) args)))
+
+;;----------------------------------------------------------------------
+
 (define/contract (query-flat db sql [vals '()] [converter vector->list])
   (->* (connection? string?) (any/c procedure?) list?)
   (flatten/convert converter
