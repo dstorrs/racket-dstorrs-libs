@@ -12,7 +12,8 @@
 ;; *) px : alias for pregexp
 ;; *) rand-val : get a random string value, optionally with 
 ;;     prefix. e.g: (rand-val) or (rand-val "employee-id")
-;; *) safe-hash-set : does hash-set or hash-set! as needed
+;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
+;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) say : macro that uses 'displayln' to output all
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
 ;; *) symbol-string->string and symbol-string->symbol
@@ -124,6 +125,14 @@
 		   "")
 	   (number->string (random 1000000)))))
 
+;;----------------------------------------------------------------------
+
+(define/contract (safe-hash-remove h k v)
+  (-> hash? any/c any/c hash?)
+  (if (immutable? h)
+      (hash-remove h k v)
+      (begin (hash-remove! h k v) h)))
+     
 ;;----------------------------------------------------------------------
 
 (define/contract (safe-hash-set h k v)
