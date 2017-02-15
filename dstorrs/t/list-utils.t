@@ -3,7 +3,8 @@
 #lang at-exp rackjure
 
 (require "../list-utils.rkt"
-		 "../test-more.rkt")
+         "../test-more.rkt"
+         )
 
 (ok 1 "test harness is working")
 
@@ -25,7 +26,9 @@
  (throws (lambda () (get l '(188 0)))
          #px"list-ref: index too large for list"
          "(get l '(188 0)) throws: index too large for list")
- (is (get l '(188) -11) -11
+
+ (is (get l '(188) -11)
+     -11
      "(get l '(188 0) -11) returns -11; the index was too big so it defaulted")
 
  (for ((k '("foo" baz quux blag (blag "baz")))
@@ -178,3 +181,106 @@
  (is (unique '(2 #f 2 1 #t)) '(2 #f 1 #t) "(2 #f 2 1 #t) ")
  (is (unique '(2 "apple" 2 "apple" 1)) '(2 "apple" 1) "(2 apple 2 apple 1) [apple => string]")
  )
+
+(test-suite
+ "disjunction"
+
+ (define (test-disj d1 d2 correct [msg ""])
+   (define disj (disjunction d1 d2))
+
+   (is-type disj dict-disjunction? "got correct struct type")
+
+   ;; (struct dict-disjunction (different
+   ;;                           only-in-first
+   ;;                           only-in-second
+   ;;                           dict-first
+   ;;                           dict-second) #:transparent)
+   (is disj
+       correct
+       (format "got correct disjunction for ~a: ~a and ~a" msg d1 d2))
+
+   (for ((f (list dict-disjunction-different
+                  dict-disjunction-only-in-first
+                  dict-disjunction-only-in-second
+                  dict-disjunction-dict-first
+                  dict-disjunction-dict-second)))
+     (is (f disj)
+         (f correct)
+         (~a "accessor " (object-name f) " works")))
+   )
+
+ (let ((d1 (apply hash '(a 1 b 2 d 4)))
+       (d2 (apply hash '(a 1 b 3 e 5))))
+   (test-disj d1
+              d2
+              (dict-disjunction  (make-hash '((b . (2 3)))) ;; different
+                                 (make-hash '((d . 4)))     ;; first
+                                 (make-hash '((e . 5)))     ;; second
+                                 d1
+                                 d2)))
+
+ (let ((d1 (hash))
+       (d2 (hash)))
+   (test-disj d1
+              d2
+              (dict-disjunction (make-hash)
+                                (make-hash)
+                                (make-hash)
+                                d1
+                                d2)
+              "hash, hash"
+              ))
+
+ (let ((d1 (make-hash))
+       (d2 (make-hash)))
+   (test-disj d1
+              d2
+              (dict-disjunction (make-hash)
+                                (make-hash)
+                                (make-hash)
+                                d1
+                                d2)
+              "make-hash, make-hash"))
+ 
+ (let ((d1 (make-hash))
+       (d2 (hash)))
+   (test-disj d1
+              d2
+              (dict-disjunction (make-hash)
+                                (make-hash)
+                                (make-hash)
+                                d1
+                                d2)
+              "make-hash, hash"))
+
+ (let ((d1 (apply hash '(a 2 b 3 e 5)))
+       (d2 (apply hash '(a 1 b 3 e 5))))
+   (test-disj d1
+              d2
+              (dict-disjunction  (make-hash '((a . (2 1)))) ;; different
+                                 (make-hash)
+                                 (make-hash)
+                                 d1
+                                 d2)))
+
+ (let ((d1 (apply hash '(a 2)))
+       (d2 (apply hash '(a 1 b 3 e 5))))
+   (test-disj d1
+              d2
+              (dict-disjunction  (make-hash '((a . (2 1)))) ;; different
+                                 (make-hash)
+                                 (make-hash '((b . 3) (e . 5)))
+                                 d1
+                                 d2)))
+ (let* ((h (hash 'a 1))
+        (d1 (apply hash '(a 2)))
+        (d2 (apply hash (list 'a h))))
+   (test-disj d1
+              d2
+              (dict-disjunction  (make-hash `((a . (2 ,h))))
+                                 (make-hash)
+                                 (make-hash)
+                                 d1
+                                 d2)))
+               
+ );; test-suite

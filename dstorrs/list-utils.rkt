@@ -4,6 +4,7 @@
 ;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
+;; *) disjunction : find the elements of one dict that are not in the other
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
@@ -18,7 +19,7 @@
 ;; *) unique : return a list of the unique non-null elements in a list, in the order seen
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (by default a mutable hash)
-  
+
 (define L list)
 (define (safe-first l) (if (null? l) '() (first l)))
 (define (safe-rest  l) (if (null? l) '() (rest l)))
@@ -26,6 +27,26 @@
 (define (atom? x) (not (pair? x)))
 
 (define (autobox x) (if (list? x) x (list x)))
+
+(struct dict-disjunction (different only-in-first only-in-second dict-first dict-second) #:transparent)
+(define/contract (disjunction dict1 dict2)
+  (-> hash? hash? dict-disjunction?)
+
+  (define diff (make-hash))
+  (define first-only (make-hash))
+  (define second-only (make-hash))
+
+  (for ((k (remove-duplicates (append (hash-keys dict1) (hash-keys dict2)))))
+    (cond [(not (hash-has-key? dict1 k))
+           (hash-set! second-only k (hash-ref dict2 k))]
+
+          [(not (hash-has-key? dict2 k))
+           (hash-set! first-only k (hash-ref dict1 k))]
+
+          [(not (equal? (hash-ref dict1 k) (hash-ref dict2 k)))
+           (hash-set! diff k (list (hash-ref dict1 k) (hash-ref dict2 k)))]
+          ))
+  (dict-disjunction diff first-only second-only dict1 dict2))
 
 (define (remove-nulls l) (filter (negate null?) l))
 
@@ -42,11 +63,11 @@
   (-> procedure? list? list?)
   (if (null? data)
       '()
-	  (append (autobox (apply func (take data num)))
-			  (let ((l (drop data num)))
-				(step-by-n func
+      (append (autobox (apply func (take data num)))
+              (let ((l (drop data num)))
+                (step-by-n func
                            l
-						   num)))))
+                           num)))))
 
 ;;----------------------------------------------------------------------
 ;; NOTE: This is obsoleted by #lang rackjure.  Prefer that.
@@ -71,7 +92,7 @@
 ;;
 (define (get s keys [def #f])
   (define (get-once key s)
-	(cond
+    (cond
       [(hash? s)   (hash-ref   s key)]
       [(list? s)   (list-ref   s key)]
       [(vector? s) (vector-ref s key)]
@@ -230,7 +251,7 @@
 (define/contract (unique lst)
   (-> list? list?)
   (define h (make-hash))
-  (remove-nulls 
+  (remove-nulls
    (for/list ((i lst))
      (if (hash-has-key? h i)
          '()
@@ -238,4 +259,5 @@
 
 ;;----------------------------------------------------------------------
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (struct-out dict-disjunction))
