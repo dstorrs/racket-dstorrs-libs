@@ -5,6 +5,15 @@
 		 dstorrs/list-utils
          )
 
+
+;;----------------------------------------------------------------------
+
+(define/contract (sql-IN-clause lst [start-from 1])
+  (->* (list?) (exact-positive-integer?) string?)
+  (define res (~a "IN (" (placeholders-for lst start-from) ")"))
+  ;(say "res: '" res "'")
+  res)
+
 ;;----------------------------------------------------------------------
 
 (define/contract (placeholders-for lst [start-from 1])
