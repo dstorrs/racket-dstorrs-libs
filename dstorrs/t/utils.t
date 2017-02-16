@@ -78,14 +78,26 @@
          exn:fail:contract?
          "(->to-string (list 8 8 #f)) throws")
  )
-;; (test-suite
-;;  "rand-val"
-;;  (for ((v (list 1000 "foo" 'bar)))
-;;  (let ((r (rand-val 1000)))
-;;    (is-type r string?)
-;;    (ok (regexp-match #rx"^1000-\\d+" r) "rand-value is as expected")
-;;    )
-;;  );;test-suite
+
+(test-suite
+ "rand-val"
+ (for ((v (list 1000 "foo" 'bar #\A (list 1 2 3) (vector 1 2 3))))
+   (let ((r (rand-val v)))
+     (is-type r string? (~a "got expected type for " r))
+     (ok (regexp-match (pregexp (~a (->string v) "-\\d+")) r)
+         (~a "rand-value is as expected for " r))
+     )
+   )
+ (is-type (rand-val) string? "generic (rand-val) yields string")
+ (ok (regexp-match (pregexp "\\d+") (rand-val))
+     (~a "rand-value is as expected for (rand-val)"))
+ (is-type (rand-val #:post string->number) number? "got expected type for string->number")
+ (let ((lst (rand-val #:post string->list)))
+   (is-type lst list? "got list from #:post string->list")
+   (ok (andmap char? lst)
+       "when post processing with string->list, we get a list of characters, as expected"))
+ 
+ );;test-suite
 
 (test-suite
  "safe-hash-set"

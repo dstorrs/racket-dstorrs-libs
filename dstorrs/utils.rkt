@@ -11,7 +11,7 @@
 ;; *) path-string->string and path-string->path
 ;; *) perl-true? and perl-false? : Relaxed boolean checks
 ;; *) px : alias for pregexp
-;; *) rand-val : get a random string value, optionally with 
+;; *) rand-val : get a random string value, optionally with
 ;;     prefix. e.g: (rand-val) or (rand-val "employee-id")
 ;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
@@ -23,14 +23,15 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (->string x)
-  (-> (or/c symbol? string? char? number? list? vector?) string?)
+  (-> (or/c path? symbol? string? char? number? list? vector?) string?)
   (cond ((string? x) x)
+        ((path? x) (path->string x))
         ((symbol? x) (symbol->string x))
         ((number? x) (number->string x))
         ((char? x) (list->string (list x)))  ;; it is phenomenally stupid that there is no char->string
         ((list?   x) (apply string-append (map ->string x)))
         ((vector?   x) (apply string-append (map ->string (vector->list x))))))
-        
+
 ;;----------------------------------------------------------------------
 
 ;;    Turn a 12-hour time (4pm) into a 24-hour time (16).  By default
@@ -41,7 +42,7 @@
 	   (or/c string? exact-integer?))
   (define t (if (string? tm) (string->number tm) tm))
   (define res (+ t (if pm 12 0)))
-  (if as-str (number->string res) res))
+  (if as-str (->string res) res))
 
 ;;----------------------------------------------------------------------
 
@@ -99,8 +100,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define (path-string->path   p) (if (path? p) p (string->path p)))
-(define (path-string->string p) (if (path? p)   (path->string p) p))
+(define (path-string->path   p) (->string p))
+(define (path-string->string p) (->string p))
 
 ;;----------------------------------------------------------------------
 
@@ -110,11 +111,11 @@
 (define (perl-true? x) (not (perl-false? x)))
 (define (perl-false? x)
   (cond
-   ((string? x) (= 0 (string-length x)))
-   ((number? x) (zero? x))
-   ((list?   x) (null? x))
-   (else (or (void? x)
-			 (false? x)))))
+    ((string? x) (= 0 (string-length x)))
+    ((number? x) (zero? x))
+    ((list?   x) (null? x))
+    (else (or (void? x)
+              (false? x)))))
 
 ;;----------------------------------------------------------------------
 
@@ -130,12 +131,14 @@
 ;;     #:post (lambda (s) (list s 'foo)))      => e.g. '("x-53084" foo)
 ;;
 (define/contract (rand-val [prefix #f] #:post [converter-proc identity])
-  (->* () (string? #:post (-> string? any)) any) ;; generally returns string
+  (->* () ((or/c path? symbol? string? char? number? list? vector?)
+           #:post (-> string? any))
+       any) ;; generally returns string but converter-proc can change that
   (converter-proc
    (~a (if prefix
-		   (string-append prefix "-")
+		   (string-append (->string prefix) "-")
 		   "")
-	   (number->string (random 1000000)))))
+	   (->string (random 1000000)))))
 
 ;;----------------------------------------------------------------------
 
@@ -144,7 +147,7 @@
   (if (immutable? h)
       (hash-remove h k v)
       (begin (hash-remove! h k v) h)))
-     
+
 ;;----------------------------------------------------------------------
 
 (define/contract (safe-hash-set h k v)
@@ -152,7 +155,7 @@
   (if (immutable? h)
       (hash-set h k v)
       (begin (hash-set! h k v) h)))
-     
+
 ;;----------------------------------------------------------------------
 
 (define-syntax (say stx)
@@ -173,7 +176,7 @@
 ;;----------------------------------------------------------------------
 
 ;;    Useful for coercing values to boolean for, e.g., inserting into DB
-(define (true? x) (not (false? x))) 
+(define (true? x) (not (false? x)))
 
 
 
