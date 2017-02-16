@@ -1,6 +1,7 @@
 #lang at-exp racket
 
 ;; List of functions:
+;; *) ->string   : general purpose "convert stuff to string"
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
@@ -19,6 +20,17 @@
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 
+;;----------------------------------------------------------------------
+
+(define/contract (->string x)
+  (-> (or/c symbol? string? char? number? list? vector?) string?)
+  (cond ((string? x) x)
+        ((symbol? x) (symbol->string x))
+        ((number? x) (number->string x))
+        ((char? x) (list->string (list x)))  ;; it is phenomenally stupid that there is no char->string
+        ((list?   x) (apply string-append (map ->string x)))
+        ((vector?   x) (apply string-append (map ->string (vector->list x))))))
+        
 ;;----------------------------------------------------------------------
 
 ;;    Turn a 12-hour time (4pm) into a 24-hour time (16).  By default

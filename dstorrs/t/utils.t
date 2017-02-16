@@ -46,6 +46,48 @@
  )
 
 (test-suite
+ "->string"
+
+ (is (->string 'foo) "foo" "worked for symbol foo")
+ (is (->string "foo") "foo" "worked for string foo")
+ (is (->string 8) "8" "worked for int 8")
+ (is (->string 8.0) "8.0" "worked for num 8.0")
+ (is (->string +inf.0) "+inf.0" "worked for num +inf.0")
+ (is (->string -inf.0) "-inf.0" "worked for num -inf.0")
+ (is (->string +nan.0) "+nan.0" "worked for num +nan.0")
+ (is (->string -nan.0) "+nan.0" "worked for num -nan.0") ; weird conversion but correct
+ (is (->string (list #\A)) "A" "worked for (list char)")
+ (is (->string (list "x" "y" "z")) "xyz" "worked for (list string)")
+ (is (->string (vector "x" "y" "z")) "xyz" "worked for (vector string, string, string)")
+ (is (->string (vector 8 "y" "z")) "8yz" "worked for (vector num, string, string)")
+
+ (throws (thunk (->string #f))
+         exn:fail:contract?
+         "(->to-string #f) throws")
+ (struct test-struct (x))
+ (throws (thunk (->string (test-struct 'x)))
+         exn:fail:contract?
+         "(->to-string struct) throws")
+ (throws (thunk (->string (exn:fail "foo" (current-continuation-marks))))
+         exn:fail:contract?
+         "(->to-string exn:fail) throws")
+ (throws (thunk (->string (list 8 8 #f)))
+         exn:fail:contract?
+         "(->to-string (list 8 8 #f)) throws")
+ (throws (thunk (->string (vector 8 8 #f)))
+         exn:fail:contract?
+         "(->to-string (list 8 8 #f)) throws")
+ )
+;; (test-suite
+;;  "rand-val"
+;;  (for ((v (list 1000 "foo" 'bar)))
+;;  (let ((r (rand-val 1000)))
+;;    (is-type r string?)
+;;    (ok (regexp-match #rx"^1000-\\d+" r) "rand-value is as expected")
+;;    )
+;;  );;test-suite
+
+(test-suite
  "safe-hash-set"
  (define hash-imm (hash 'a 1 'b 2 'c 3))
  (ok (immutable? hash-imm) "using immutable hash for next test")
