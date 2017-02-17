@@ -133,6 +133,18 @@
      (apply hash '(key-a 2 key-b 3 key-c  4))
      "list->dict can transform the dict after creation")
 
+ (is (list->dict null
+                 '(65 66 67)
+                 #:make-keys integer->char)
+     (make-hash '((#\A . 65) (#\B . 66) (#\C . 67)))
+     "(list->dict null '(65 66 67) #:make-keys integer->char) works")
+
+ (is (list->dict '("foo" "bar" "baz")
+                 '(65 66 67)
+                 #:make-keys integer->char)
+     (make-hash '((#\A . 65) (#\B . 66) (#\C . 67)))
+     "(list->dict '(foo bar baz) '(65 66 67)  #:make-keys integer->char) works")
+  
  (is (vector->dict '(a b c)
                    (vector 1 2 3))
      (make-hash '((a . 1) (b . 2) (c . 3)))

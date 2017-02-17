@@ -173,25 +173,33 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (list->dict keys
+(define/contract (list->dict raw-keys
                              data
                              #:dict-maker [dict-maker make-hash]
                              #:transform-dict [transform-dict identity]
                              #:transform-data [transform-data cons]
+                             #:make-keys  (key-maker #f)
                              )
   (->* (list? list?)         ;; keys and data
-       (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
-        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
+       (#:dict-maker     (-> (listof pair?) dict?) ; takes an assoc list, returns a dict
+        #:transform-data (-> any/c any/c pair?)    ; transform the input of dict-maker
+        #:transform-dict (-> dict? dict?)          ; transform the output of dict-maker
+        #:make-keys      (-> any/c any/c)          ; generate the keys list based on data
         )
        dict?)
 
-  (unless (= (length data) (length keys))
-    (raise-argument-error 'list->dict
-                          "data and keys must be the same length"
-                          (format "keys, data: '~a', '~a'" keys data)))
+  (let ((keys (if key-maker (map key-maker data) raw-keys)))
+    (unless (= (length data) (length keys))
+      (raise-argument-error 'list->dict
+                            (string-append "data and "
+                                           (if key-maker
+                                               "(map <make-keys-func> data)"
+                                               "keys")
+                                           " must be the same length")
+                            (format "keys, data: '~a', '~a'" keys data)))
 
-  (transform-dict (dict-maker (map transform-data keys data)))
+    (transform-dict (dict-maker (map transform-data keys data)))
+    )
   )
 
 ;;----------------------------------------------------------------------
