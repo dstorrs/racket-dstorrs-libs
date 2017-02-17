@@ -142,11 +142,11 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-hash-remove h k v)
-  (-> hash? any/c any/c hash?)
+(define/contract (safe-hash-remove h k)
+  (-> hash? any/c hash?)
   (if (immutable? h)
-      (hash-remove h k v)
-      (begin (hash-remove! h k v) h)))
+      (hash-remove h k)
+      (begin (hash-remove! h k) h)))
 
 ;;----------------------------------------------------------------------
 

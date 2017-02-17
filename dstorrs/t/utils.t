@@ -100,6 +100,29 @@
  );;test-suite
 
 (test-suite
+ "safe-hash-remove"
+
+ (define hash-imm (hash 'a 1 'b 2 'c 3))
+ (define (hash-mut) (make-hash '((a . 1) (b . 2) (c . 3))))
+
+ (is (safe-hash-remove hash-imm 'a)
+     (hash 'b 2 'c 3)
+     "(safe-hash-remove hash-imm 'a) worked")
+ 
+ (is (safe-hash-remove hash-imm 'x)
+     (hash 'a 1 'b 2 'c 3)
+     "(safe-hash-remove hash-imm 'x) worked")
+ 
+ (is (safe-hash-remove (hash-mut) 'a)
+     (make-hash '((b . 2) (c . 3)))
+     "(safe-hash-remove hash-mut 'a) worked")
+
+ (is (safe-hash-remove (hash-mut) 'x)
+     (make-hash '((a . 1) (b . 2) (c . 3)))
+     "(safe-hash-remove hash-mut 'x) worked")
+ );; test-suite
+
+(test-suite
  "safe-hash-set"
  (define hash-imm (hash 'a 1 'b 2 'c 3))
  (ok (immutable? hash-imm) "using immutable hash for next test")
