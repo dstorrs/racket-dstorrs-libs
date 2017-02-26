@@ -14,9 +14,9 @@
 
 
 
-(struct exn:fail:num-rows exn:fail (expected got) #:transparent)
-(struct exn:fail:num-rows:zero exn:fail:num-rows () #:transparent)
-(struct exn:fail:num-rows:many exn:fail:num-rows () #:transparent)
+(struct exn:fail:db:num-rows exn:fail (expected got) #:transparent)
+(struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
+(struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
 
 (define/contract (refine-db-exn e)
   (-> exn? exn?)
@@ -33,8 +33,8 @@
   (match msg
     [(regexp wrong-number-of-rows (list _ expected got))
      (create-exn (if (= (num got) 0)
-                     exn:fail:num-rows:zero
-                     exn:fail:num-rows:many
+                     exn:fail:db:num-rows:zero
+                     exn:fail:db:num-rows:many
                      )
                  msg (num expected) (num got))]
 
