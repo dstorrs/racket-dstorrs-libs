@@ -17,6 +17,8 @@
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) say : macro that uses 'displayln' to output all
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
+;; *) symbol->keyword
+;; *) symbols->keywords  : takes a list of symbols, returns a sorted list of keywords
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 
@@ -162,6 +164,14 @@
   (syntax-case stx ()
 	[(_ a b ...)
 	 #'(displayln (~a a b ...))]))
+
+;;----------------------------------------------------------------------
+
+(define symbol->keyword (compose string->keyword symbol->string))
+
+(define/contract (symbols->keywords lst)
+  (-> (listof symbol?) (listof keyword?))
+  (map symbol->keyword (sort lst symbol<?)))
 
 ;;----------------------------------------------------------------------
 

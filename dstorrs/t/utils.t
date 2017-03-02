@@ -142,4 +142,11 @@
        "safe-hash-set requires a hash")
  )
 
+(test-suite
+ "symbols->keywords"
+ (is (symbols->keywords '(foo bar baz))
+     '(#:bar #:baz #:foo)
+     "correctly converted '(foo bar baz)")
+ )
+
 (say "Done testing.")
