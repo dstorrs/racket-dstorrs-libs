@@ -1,5 +1,12 @@
 #lang racket
 
+;;    TODO:
+;; - Make it show got and expected when test fails
+;; - Add 'disable this test suite' keyword
+;; - Add 'TODO this test suite' keyword
+;; - Add 'too few tests ran' detection
+;; - Fix the issue where it sometimes shows 'expected #f got #f'
+
 (require racket
 		 racket/splicing
 		 dstorrs/utils
