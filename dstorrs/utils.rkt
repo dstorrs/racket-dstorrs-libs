@@ -21,6 +21,7 @@
 ;; *) symbols->keywords  : takes a list of symbols, returns a sorted list of keywords
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
+;; *) verify-struct  : test correctness of just parts of a structure
 
 ;;----------------------------------------------------------------------
 
@@ -188,8 +189,30 @@
 ;;    Useful for coercing values to boolean for, e.g., inserting into DB
 (define (true? x) (not (false? x)))
 
+;;----------------------------------------------------------------------
 
+(define/contract (verify-struct #:struct    s
+                                #:type      [is-type? identity]
+                                #:funcs     funcs
+                                #:expected  expected)
+  (->* (#:struct any/c #:funcs (listof procedure?) #:expected (or/c any/c (listof any/c)))
+       (#:type (-> any/c boolean?))
+       boolean?)
 
+  (when (and (list? expected)
+             (not (equal? (length funcs) (length expected))))
+    (raise-arguments-error 'verify-struct
+                           "funcs list and expected list must be the same length"
+                           "funcs" (length funcs)
+                           "expected"  (length expected)))
+
+  (and (is-type? s)
+       (cond [(list? expected) (for/and ((f funcs)
+                                         (val expected))
+                                 (equal? (f s) val))]
+             [else (for/and ((f funcs))
+                     (equal? (f s) (f expected)))]))
+  )
 
 
 (provide (all-defined-out))
