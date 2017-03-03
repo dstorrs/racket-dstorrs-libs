@@ -155,7 +155,7 @@
 	[(_ msg body body1 ...)
 	 #'(begin (say "### START test-suite: " msg)
               (void (lives (thunk body body1 ...)
-					 "test-suite completed without throwing exception"))
+					 "test-suite completed without throwing (uncaught) exception"))
               (say "")
               (say "Total tests passed so far: " (tests-passed))
               (say "Total tests failed so far: " (tests-failed))
@@ -169,5 +169,7 @@
 		 test-more-check
 		 like unlike
 		 throws dies lives
-		 test-suite)
+		 test-suite
+         tests-failed tests-passed
+         )
 

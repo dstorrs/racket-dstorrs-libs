@@ -44,15 +44,55 @@
  (isnt 3 "abc")
  )
 
-(test-suite
- "tests that should fail"
+(define (test-gives-correct-output thnk regex msg)
+  (define output (with-output-to-string (thunk (thnk))))
+  (like output regex msg)
+  )
 
- (displayln "\t### Next 5 tests should say 'NOT ok'; second has no message")
- (ok #f "(ok) with message.  Next one is (ok) without message")
- (ok #f)
- (isnt 8 8 "this should say 'NOT ok' (isnt 8 8)")
- (is 8 "8" "(is 8 \"8\") should say 'NOT ok'")
- (unlike "foobar" #px"foo" "/foo/ doesn't match foobar (test should say NOT ok)")
+(test-suite
+ "tests that fail give correct messages"
+
+ (test-gives-correct-output
+  (thunk (ok #f "ok msg"))
+  (pregexp "NOT ok \\d+ - ok msg")
+  "failed 'ok' test that has a msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (ok #f))
+  (pregexp "NOT ok \\d+")
+  "failed 'ok' test that has no msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (isnt 8 8 "isnt msg"))
+  (pregexp "NOT ok \\d+ - isnt msg")
+  "failed 'isnt' test that has a msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (isnt 8 8))
+  (pregexp "NOT ok \\d+")
+  "failed 'isnt' test that has no msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (is 8 9 "is msg"))
+  (pregexp "NOT ok \\d+ - is msg")
+  "failed 'is' test that has a msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (is 8 9))
+  (pregexp "NOT ok \\d+")
+  "failed 'is' test that has no msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (unlike "foobar" #px"foo" "unlike msg"))
+  (pregexp "NOT ok \\d+ - unlike msg")
+  "failed 'unlike' test that has a msg reports correctly")
+ 
+ (test-gives-correct-output
+  (thunk (unlike "foobar" #px"foo"))
+  (pregexp "NOT ok \\d+")
+  "failed 'unlike' test that has no msg reports correctly")
+ 
+ (tests-failed -8) ; reset the counter so it doesn't double-count the ones inside the tests above
  )
 
 (test-suite
