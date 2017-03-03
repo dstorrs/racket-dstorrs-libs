@@ -190,13 +190,14 @@
 
   (let ((keys (if key-maker (map key-maker data) raw-keys)))
     (unless (= (length data) (length keys))
-      (raise-argument-error 'list->dict
-                            (string-append "data and "
-                                           (if key-maker
-                                               "(map <make-keys-func> data)"
-                                               "keys")
-                                           " must be the same length")
-                            (format "keys, data: '~a', '~a'" keys data)))
+      (raise-arguments-error 'list->dict
+                             (string-append "data and "
+                                            (if key-maker
+                                                "(map <make-keys-func> data)"
+                                                "keys")
+                                            " must be the same length")
+                             "keys" (if key-maker keys raw-keys)
+                             "data" data))
 
     (transform-dict (dict-maker (map transform-data keys data)))
     )
