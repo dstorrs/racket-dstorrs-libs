@@ -6,6 +6,7 @@
 ;; - Add 'TODO this test suite' keyword
 ;; - Add 'too few tests ran' detection
 ;; - Fix the issue where it sometimes shows 'expected #f got #f'
+;; - On test-suite, add 'setup' and 'cleanup' keywords that take thunks
 
 (require racket
 		 racket/splicing
