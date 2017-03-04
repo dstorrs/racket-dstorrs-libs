@@ -144,7 +144,7 @@
                  #:make-keys integer->char)
      (make-hash '((#\A . 65) (#\B . 66) (#\C . 67)))
      "(list->dict '(foo bar baz) '(65 66 67)  #:make-keys integer->char) works")
-  
+
  (is (vector->dict '(a b c)
                    (vector 1 2 3))
      (make-hash '((a . 1) (b . 2) (c . 3)))
@@ -253,7 +253,7 @@
                                 d1
                                 d2)
               "make-hash, make-hash"))
- 
+
  (let ((d1 (make-hash))
        (d2 (hash)))
    (test-disj d1
@@ -294,5 +294,46 @@
                                  (make-hash)
                                  d1
                                  d2)))
-               
+
  );; test-suite
+
+(test-suite
+ "sort-*"
+
+ (is (sort-num (list 9 3 15 4 0))
+     (list 0 3 4 9 15)
+     "sort num works with unsorted list of nums")
+
+ (is (sort-num '())
+     '()
+     "sort num works with null")
+
+ (is (sort-str (list "foo" "baz" "glux" "aaaa"))
+     (list "aaaa" "baz" "foo"  "glux" )
+     "sort-str works with unsorted list")
+
+ (is (sort-str '())
+     '()
+     "sort-str works with null")
+
+ (is (sort-sym (list 'foo 'baz 'glux 'aaaa))
+     (list 'aaaa 'baz 'foo  'glux)
+     "sort-sym works with unsorted list")
+
+ (is (sort-str '())
+     '()
+     "sort-sym works with null")
+
+ (is (sort-smart (list 'foo 'baz 'glux 'aaaa))
+     (list 'aaaa 'baz 'foo  'glux)
+     "sort-smart works with unsorted list of symbols")
+
+ (is (sort-smart  (list "foo" "baz" "glux" "aaaa"))
+     (list "aaaa" "baz" "foo"  "glux" )
+     "sort-smart works with unsorted list of strings")
+
+ (is (sort-smart (list 9 3 15 4 0))
+     (list 0 3 4 9 15)
+     "sort-smart works with unsorted list of nums")
+
+ )

@@ -15,6 +15,8 @@
 ;; *) member-rec : finds matching elements in sublist as well as main list
 ;; *) remove-nulls : filter '()s out of a list
 ;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
+;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
+;; *) sort-smart : call sort-num, sort-str, or sort-sym depending on first element of list
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
 ;; *) unique : return a list of the unique non-null elements in a list, in the order seen
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
@@ -59,6 +61,21 @@
 
 (define (list/not-null? l) (and (not (atom? l)) (not (null? l))))
 
+;;----------------------------------------------------------------------
+
+(define/contract (sort-num lst) (-> (listof number?) list?)  (sort lst <))
+(define/contract (sort-str lst) (-> (listof string?) list?)  (sort lst string<?))
+(define/contract (sort-sym lst) (-> (listof symbol?) list?)  (sort lst symbol<?))
+(define/contract (sort-smart lst)
+  (-> (listof any/c) list?)
+  (cond [(null? lst) '()]
+        [(number? (first lst)) (sort-num lst)]
+        [(string? (first lst)) (sort-str lst)]
+        [(symbol? (first lst)) (sort-sym lst)]
+        [else (raise-arguments-error 'sort-smart "all elements of list must of same type (number, string, or symbol)" "(car lst)" (first lst))]))
+
+;;----------------------------------------------------------------------
+
 (define/contract (step-by-n func data [num 2])
   (-> procedure? list? list?)
   (if (null? data)
@@ -68,6 +85,7 @@
                 (step-by-n func
                            l
                            num)))))
+
 
 ;;----------------------------------------------------------------------
 ;; NOTE: This is obsoleted by #lang rackjure.  Prefer that.
