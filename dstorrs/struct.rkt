@@ -1,15 +1,15 @@
-#lang racket/base
+#lang racket
 
 ;;    syntax->keyword and struct/kw were lifted from:
 ;;
 ;; http://www.greghendershott.com/2015/07/keyword-structs-revisited.html
 
-(require (for-syntax racket/base
-                     racket/list
-                     racket/syntax
-                     syntax/parse))
+(require (for-syntax racket/syntax
+                     syntax/parse)
+         dstorrs/list-utils
+         )
 
-(provide struct/kw)
+(provide (all-defined-out))
 
 (begin-for-syntax
   (define syntax->keyword (compose1 string->keyword symbol->string syntax->datum)))
@@ -30,3 +30,17 @@
              (struct-id field.id ...))))]))
 
 
+(define/contract (hash->struct/kw h struct-ctor [keys #f] #:remap-keys [remapped-keys (hash)])
+  (->* ((hash/c symbol? any/c) procedure?)
+       ((non-empty-listof any/c) #:remap-keys (hash/c symbol? symbol?))
+       any/c) ; there's no clean way to say 'a struct'
+
+  (define sorted-keys (sort (if keys keys (hash-keys h)) symbol<?))
+  (define final-keys
+    (for/list ((k sorted-keys))
+      (hash-ref remapped-keys k k)))
+
+  (keyword-apply struct-ctor
+                 (symbols->keywords final-keys)
+                 (map (curry hash-ref h) sorted-keys)
+                 '()))
