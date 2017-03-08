@@ -18,6 +18,7 @@
 ;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
 ;; *) sort-smart : call sort-num, sort-str, or sort-sym depending on first element of list
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
+;; *) symbols->keywords  : takes a list of symbols, returns a sorted list of keywords
 ;; *) unique : return a list of the unique non-null elements in a list, in the order seen
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (by default a mutable hash)
@@ -283,6 +284,12 @@
      (if (hash-has-key? h i)
          '()
          (begin (hash-set! h i 1) i)))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (symbols->keywords lst)
+  (-> (listof symbol?) (listof keyword?))
+  (map (compose string->keyword symbol->string) (sort lst symbol<?)))
 
 ;;----------------------------------------------------------------------
 
