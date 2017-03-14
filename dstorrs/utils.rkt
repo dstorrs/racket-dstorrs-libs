@@ -24,15 +24,10 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (->string x)
-  (-> (or/c path? symbol? string? char? number? list? vector?) string?)
-  (cond ((string? x) x)
-        ((path? x) (path->string x))
-        ((symbol? x) (symbol->string x))
-        ((number? x) (number->string x))
-        ((char? x) (list->string (list x)))  ;; it is phenomenally stupid that there is no char->string
-        ((list?   x) (apply string-append (map ->string x)))
-        ((vector?   x) (apply string-append (map ->string (vector->list x))))))
+(define (->string x)
+  (cond ((list?   x)   (apply string-append (map ->string x)))
+        ((vector?   x) (->string (vector->list x)))
+        (else (~a x))))
 
 ;;----------------------------------------------------------------------
 
