@@ -13,6 +13,7 @@
 ;; *) list/not-null? : is it a pair and not '()? NB: checks for pair,
 ;;     not list, so it treats '(x . y) as a list
 ;; *) member-rec : finds matching elements in sublist as well as main list
+;; *) multi-partition : like the standard partition, but accepts multiple destination lists
 ;; *) remove-nulls : filter '()s out of a list
 ;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
 ;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
@@ -290,6 +291,26 @@
 (define/contract (symbols->keywords lst)
   (-> (listof symbol?) (listof keyword?))
   (map (compose string->keyword symbol->string) (sort lst symbol<?)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (multi-partition #:dests num-dests  #:filter index-chooser #:source source)
+  (-> #:dests exact-positive-integer?
+      #:filter (-> any/c exact-nonnegative-integer?)
+      #:source list?
+      any
+      )
+  (define results (make-vector num-dests '()))
+  (call/cc
+   (lambda (return)
+     (when (= 1 num-dests) (return source))
+
+     (for ((element (reverse source)))
+       (let ((idx (index-chooser element)))
+         (vector-set! results
+                      idx
+                      (cons element (vector-ref results idx)))))))
+  (vector->values results))
 
 ;;----------------------------------------------------------------------
 

@@ -337,3 +337,49 @@
      "sort-smart works with unsorted list of nums")
 
  )
+
+(test-suite
+ "multi-partition"
+
+ (lives (thunk
+         (let-values ([(x y) (multi-partition #:dests 2
+                                              #:filter (lambda (n) 1)
+                                              #:source '())])
+           (ok (thunk (andmap null? (list x y)))
+               "Empty list returns all empty lists for dests 2")))
+        "First empty list check lived"
+        )
+
+ (lives (thunk
+         (let-values ([(x y z) (multi-partition #:dests 3
+                                                #:filter (lambda (n) 1)
+                                                #:source '())])
+           (ok (thunk (andmap null? (list x y z)))
+               "Empty list returns all empty lists for dests 3"))
+         )
+        "Second empty list check lived"
+        )
+
+ (lives (thunk
+         (let ((f (lambda (n) (cond [(zero? (floor n)) 0]
+                                    [(even? (floor n)) 1]
+                                    [(odd?  (floor n)) 2]))))
+           (let-values ([(x y z) (multi-partition #:dests 3
+                                                  #:filter f
+                                                  #:source '(1 7 8 0 15.8 -2))])
+             (ok (thunk
+                  (and (equal? x '(0))
+                       (equal? y '(8 -2))
+                       (equal? z '(1 7 15.8))))
+                 "list of numbers was partitioned correctly"))))
+        "numbers test lived"
+        )
+
+ (throws (thunk
+          (multi-partition #:dests 2
+                           #:filter (lambda (n) #t)
+                           #:source '(1 7 8 0 15.8 -2 a)))
+         @pregexp{multi-partition: contract violation\s+expected:\s+exact-nonnegative-integer\?\s+given:\s+.+?\s+in:\s+the range of\s+the #:filter argument}
+         @~a{If your match function returns something other than a 0+ number then multi-partition throws})
+
+ )
