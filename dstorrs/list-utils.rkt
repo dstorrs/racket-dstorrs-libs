@@ -294,8 +294,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (multi-partition #:dests num-dests  #:filter index-chooser #:source source)
-  (-> #:dests exact-positive-integer?
+(define/contract (multi-partition #:partitions num-dests  #:filter index-chooser #:source source)
+  (-> #:partitions exact-positive-integer?
       #:filter (-> any/c exact-nonnegative-integer?)
       #:source list?
       any

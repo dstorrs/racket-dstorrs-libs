@@ -342,7 +342,7 @@
  "multi-partition"
 
  (lives (thunk
-         (let-values ([(x y) (multi-partition #:dests 2
+         (let-values ([(x y) (multi-partition #:partitions 2
                                               #:filter (lambda (n) 1)
                                               #:source '())])
            (ok (thunk (andmap null? (list x y)))
@@ -351,7 +351,7 @@
         )
 
  (lives (thunk
-         (let-values ([(x y z) (multi-partition #:dests 3
+         (let-values ([(x y z) (multi-partition #:partitions 3
                                                 #:filter (lambda (n) 1)
                                                 #:source '())])
            (ok (thunk (andmap null? (list x y z)))
@@ -364,7 +364,7 @@
          (let ((f (lambda (n) (cond [(zero? (floor n)) 0]
                                     [(even? (floor n)) 1]
                                     [(odd?  (floor n)) 2]))))
-           (let-values ([(x y z) (multi-partition #:dests 3
+           (let-values ([(x y z) (multi-partition #:partitions 3
                                                   #:filter f
                                                   #:source '(1 7 8 0 15.8 -2))])
              (ok (thunk
@@ -376,7 +376,7 @@
         )
 
  (throws (thunk
-          (multi-partition #:dests 2
+          (multi-partition #:partitions 2
                            #:filter (lambda (n) #t)
                            #:source '(1 7 8 0 15.8 -2 a)))
          @pregexp{multi-partition: contract violation\s+expected:\s+exact-nonnegative-integer\?\s+given:\s+.+?\s+in:\s+the range of\s+the #:filter argument}
