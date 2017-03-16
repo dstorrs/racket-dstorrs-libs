@@ -60,23 +60,22 @@
  (is (->string (list "x" "y" "z")) "xyz" "worked for (list string)")
  (is (->string (vector "x" "y" "z")) "xyz" "worked for (vector string, string, string)")
  (is (->string (vector 8 "y" "z")) "8yz" "worked for (vector num, string, string)")
+ 
+ (is (->string #f)
+     "#f"
+     "(->string #f) works")
 
- (throws (thunk (->string #f))
-         exn:fail:contract?
-         "(->to-string #f) throws")
  (struct test-struct (x))
- (throws (thunk (->string (test-struct 'x)))
-         exn:fail:contract?
-         "(->to-string struct) throws")
- (throws (thunk (->string (exn:fail "foo" (current-continuation-marks))))
-         exn:fail:contract?
-         "(->to-string exn:fail) throws")
- (throws (thunk (->string (list 8 8 #f)))
-         exn:fail:contract?
-         "(->to-string (list 8 8 #f)) throws")
- (throws (thunk (->string (vector 8 8 #f)))
-         exn:fail:contract?
-         "(->to-string (list 8 8 #f)) throws")
+ (is (->string (test-struct 'x))
+     "#<test-struct>"
+     "(->string struct) works")
+
+ (lives (thunk (->string (exn:fail "foo" (current-continuation-marks))))
+        "(->string exn:fail) lives")
+ (lives (thunk (->string (list 8 8 #f)))
+        "(->string (list 8 8 #f)) throws")
+ (lives (thunk (->string (vector 8 8 #f)))
+        "(->string (list 8 8 #f)) throws")
  )
 
 (test-suite
@@ -143,13 +142,6 @@
  )
 
 (test-suite
- "symbols->keywords"
- (is (symbols->keywords '(foo bar baz))
-     '(#:bar #:baz #:foo)
-     "correctly converted '(foo bar baz)")
- )
-
-(test-suite
  "verify-struct"
 
  (struct foo (a b c))
@@ -176,4 +168,13 @@
          "correctly reports that they are not equal if you have it check a field that is not equal")
  
  )
+
+(test-suite
+ "dir-and-filename"
+
+ (define-values (dir fname) (dir-and-filename "/foo/bar"))
+ (is dir (string->path "/foo/") "got correct dir")
+ (is fname (string->path "bar") "got correct filename")
+ )
+
 (say "Done testing.")

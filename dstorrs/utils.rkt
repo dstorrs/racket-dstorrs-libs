@@ -4,6 +4,7 @@
 ;; *) ->string   : general purpose "convert stuff to string"
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
+;; *) dir-and-filename : split-path without the third return value
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) not-null?       : what it says on the tin
@@ -24,7 +25,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define (->string x)
+(define/contract (->string x)
+  (-> any/c string?)
   (cond ((list?   x)   (apply string-append (map ->string x)))
         ((vector?   x) (->string (vector->list x)))
         (else (~a x))))
@@ -204,5 +206,11 @@
                      (equal? (f s) (f expected)))]))
   )
 
+;;----------------------------------------------------------------------
+
+(define/contract (dir-and-filename fp)
+  (-> path-string? (values path? path?))
+  (define-values (d f ignore) (split-path fp))
+  (values d f))
 
 (provide (all-defined-out))
