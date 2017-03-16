@@ -192,6 +192,12 @@
  (is (unique '(2 #t 2 1 #t)) '(2 #t 1) "(2 #t 2 1) ")
  (is (unique '(2 #f 2 1 #t)) '(2 #f 1 #t) "(2 #f 2 1 #t) ")
  (is (unique '(2 "apple" 2 "apple" 1)) '(2 "apple" 1) "(2 apple 2 apple 1) [apple => string]")
+ (isnt (unique '((2 a) (2 b) (3 a)))
+       '((2 a) (3 a))
+       "Without using a #:key,  '((2 a) (2 b) (3 a))) is returned unchanged")
+ (is (unique #:key car '((2 a) (2 b) (3 a)))
+     '((2 a) (3 a))
+     "When using #:key car,  '((2 a) (2 b) (3 a))) returns '((2 a) (3 a))")
  )
 
 (test-suite

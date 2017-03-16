@@ -277,14 +277,15 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (unique lst)
-  (-> list? list?)
+(define/contract (unique lst #:key [key-maker identity])
+  (->* (list?) (#:key (-> any/c any/c)) list?)
   (define h (make-hash))
   (remove-nulls
    (for/list ((i lst))
-     (if (hash-has-key? h i)
+     (define key  (key-maker i))
+     (if (hash-has-key? h key)
          '()
-         (begin (hash-set! h i 1) i)))))
+         (begin (hash-set! h key 1) i)))))
 
 ;;----------------------------------------------------------------------
 
