@@ -1,8 +1,8 @@
 #lang at-exp rackjure
 
 (require db
-		 dstorrs/utils
-		 dstorrs/list-utils
+         dstorrs/utils
+         dstorrs/list-utils
          )
 
 
@@ -116,6 +116,29 @@
         (if (null? vals)
             (query-rows db sql)
             (apply (curry query-rows db sql) vals))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (query-row-as-dict keys
+                                    db
+                                    sql
+                                    [vals '()]
+                                    #:dict-maker [dict-maker make-hash]
+                                    #:transform-dict [transform-dict identity]
+                                    #:transform-data [transform-data cons])
+  (->* ((non-empty-listof any/c) connection? string?)
+       (list?
+        #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
+        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
+        )
+       dict?)
+
+  (car (query-rows-as-dicts keys db sql vals 
+                            #:dict-maker     dict-maker
+                            #:transform-dict transform-dict
+                            #:transform-data transform-data
+                            )))
 
 ;;----------------------------------------------------------------------
 
