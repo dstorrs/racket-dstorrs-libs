@@ -382,4 +382,11 @@
          @pregexp{multi-partition: contract violation\s+expected:\s+exact-nonnegative-integer\?\s+given:\s+.+?\s+in:\s+the range of\s+the #:filter argument}
          @~a{If your match function returns something other than a 0+ number then multi-partition throws})
 
- )
+ (let-values ([(x y) (multi-partition #:partitions 2
+                                      #:source '(1 2 3 4 1)
+                                      #:post unique
+                                      #:filter (lambda (i) (if (odd? i) 0 1)))])
+   (is x '(1 3) "all odd numbers are in x and it was uniqueified")
+   (is y '(2 4) "all even numbers are in y")
+   )
+)

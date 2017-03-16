@@ -294,12 +294,17 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (multi-partition #:partitions num-dests  #:filter index-chooser #:source source)
-  (-> #:partitions exact-positive-integer?
-      #:filter (-> any/c exact-nonnegative-integer?)
-      #:source list?
-      any
-      )
+(define/contract (multi-partition #:partitions num-dests
+                                  #:filter index-chooser
+                                  #:source source
+                                  #:post [post identity]
+                                  )
+  (->* (#:partitions exact-positive-integer?
+        #:filter (-> any/c exact-nonnegative-integer?)
+        #:source list?)
+       (#:post   (-> list? any/c))
+       any
+       )
   (define results (make-vector num-dests '()))
   (call/cc
    (lambda (return)
@@ -309,7 +314,10 @@
        (let ((idx (index-chooser element)))
          (vector-set! results
                       idx
-                      (cons element (vector-ref results idx)))))))
+                      (cons element (vector-ref results idx)))))
+     (for ((i (vector-length results)))
+       (vector-set! results i (post (vector-ref results i))))))
+
   (vector->values results))
 
 ;;----------------------------------------------------------------------
