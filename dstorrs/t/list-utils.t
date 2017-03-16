@@ -345,6 +345,14 @@
  )
 
 (test-suite
+ "symbols->keywords"
+ (is (symbols->keywords '(foo bar baz))
+     '(#:bar #:baz #:foo)
+     "correctly converted '(foo bar baz)")
+ )
+
+
+(test-suite
  "multi-partition"
 
  (lives (thunk
