@@ -18,7 +18,7 @@
      "collaborations_to_files"
      "join-table-name works")
 
- (is (join-tables c f)
+ (is (join-clause c f)
      "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
      "join-clause works")
  )
