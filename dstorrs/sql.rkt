@@ -19,6 +19,46 @@
 
 ;;--------------------------------------------------------------------------------
 
+(define/contract (placeholders-for-multiple-rows data)
+  (-> list? string?)
+
+  (when (null? data)
+    (raise-argument-error 'placeholders-for-multiple-rows
+                          "data can't be null"
+                          data))
+
+  ;(say "data is: " data)
+
+  ;; Turn this:   (("collab1" "desc1") ("collab2" "desc2"))
+  ;; Into this:   "($1,$2), ($3,$4)"
+  ;;
+  ;;    Be permissive if we were given a list instead of a list of
+  ;;    lists.
+  (let ((vals (if (list? (car data)) data (list data))))
+    ;;    (say "vals: " vals)
+    (define-values (row-placeholders ignored)
+      (for/fold ([lst '()]
+                 [placeholder-num 1])
+                ((v vals))
+        ;; (say "lst: " lst)
+        ;; (say "v: "  v)
+        ;; (say "pl v: "  (placeholders-for v))
+        ;; (say "pl num: " placeholder-num)
+        (cons (string-append "(" (placeholders-for v placeholder-num) ")")  lst)
+
+        (values
+         (cons (string-append "(" (placeholders-for v placeholder-num) ")")  lst)
+         (+ placeholder-num (length v)))
+        ))
+    ;    (say "row pl: " row-placeholders)
+    ;    (say "returning: " (string-join (reverse row-placeholders) ","))
+
+    (string-join (reverse row-placeholders) ",")
+    )
+  )
+
+;;----------------------------------------------------------------------
+
 (define/contract (sql-IN-clause lst)
   (-> list? string?)
   (string-append "IN ("

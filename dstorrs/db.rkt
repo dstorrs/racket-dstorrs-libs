@@ -3,74 +3,35 @@
 (require db
          dstorrs/utils
          dstorrs/list-utils
+         dstorrs/sql
          )
 
 
 ;;----------------------------------------------------------------------
 
-(define/contract (sql-IN-clause lst [start-from 1])
-  (->* (list?) (exact-positive-integer?) string?)
-  (define res (~a "IN (" (placeholders-for lst start-from) ")"))
-  ;(say "res: '" res "'")
-  res)
+;; (define/contract (sql-IN-clause lst [start-from 1])
+;;   (->* (list?) (exact-positive-integer?) string?)
+;;   (define res (~a "IN (" (placeholders-for lst start-from) ")"))
+;;   ;(say "res: '" res "'")
+;;   res)
 
 ;;----------------------------------------------------------------------
 
-(define/contract (placeholders-for lst [start-from 1])
-  (->* (list?) (exact-positive-integer?) string?)
-  ;;    Create a string that can be used as placeholder values for a
-  ;;    group of values suitable for inclusion in a SELECT, INSERT,
-  ;;    etc.
-  ;; (placeholders-for '(foo bar baz))  => "$1,$2,$3"
-  ;; (placeholders-for '())             => ""
-  ;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
-  ;;
-  (string-join
-   (for/list ((i (in-naturals start-from))
-              (ignored lst))
-     (~a "$" i))
-   ","))
+;; (define/contract (placeholders-for lst [start-from 1])
+;;   (->* (list?) (exact-positive-integer?) string?)
+;;   ;;    Create a string that can be used as placeholder values for a
+;;   ;;    group of values suitable for inclusion in a SELECT, INSERT,
+;;   ;;    etc.
+;;   ;; (placeholders-for '(foo bar baz))  => "$1,$2,$3"
+;;   ;; (placeholders-for '())             => ""
+;;   ;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
+;;   ;;
+;;   (string-join
+;;    (for/list ((i (in-naturals start-from))
+;;               (ignored lst))
+;;      (~a "$" i))
+;;    ","))
 
-
-;;----------------------------------------------------------------------
-
-(define/contract (placeholders-for-multiple-rows data)
-  (-> list? string?)
-
-  (when (null? data)
-    (raise-argument-error 'placeholders-for-multiple-rows
-                          "data can't be null"
-                          data))
-
-  ;(say "data is: " data)
-
-  ;; Turn this:   (("collab1" "desc1") ("collab2" "desc2"))
-  ;; Into this:   "($1,$2), ($3,$4)"
-  ;;
-  ;;    Be permissive if we were given a list instead of a list of
-  ;;    lists.
-  (let ((vals (if (list? (car data)) data (list data))))
-    ;;    (say "vals: " vals)
-    (define-values (row-placeholders ignored)
-      (for/fold ([lst '()]
-                 [placeholder-num 1])
-                ((v vals))
-        ;; (say "lst: " lst)
-        ;; (say "v: "  v)
-        ;; (say "pl v: "  (placeholders-for v))
-        ;; (say "pl num: " placeholder-num)
-        (cons (string-append "(" (placeholders-for v placeholder-num) ")")  lst)
-
-        (values
-         (cons (string-append "(" (placeholders-for v placeholder-num) ")")  lst)
-         (+ placeholder-num (length v)))
-        ))
-    ;    (say "row pl: " row-placeholders)
-    ;    (say "returning: " (string-join (reverse row-placeholders) ","))
-
-    (string-join (reverse row-placeholders) ",")
-    )
-  )
 
 ;;----------------------------------------------------------------------
 
@@ -199,4 +160,5 @@
 
 (provide (all-defined-out)
          (except-out (all-from-out db) disconnect)
+         (all-from-out dstorrs/sql)
          )
