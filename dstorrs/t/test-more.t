@@ -39,61 +39,81 @@
  (isnt (hash 'a 1 'b 2)
        7
        "a hash is not 7")
- 
+
  (displayln "\t### Next test deliberately has no message")
  (isnt 3 "abc")
  )
 
-(define (test-gives-correct-output thnk regex msg)
+(define (test-gives-correct-output thnk regex msg [inc 0])
   (define output (with-output-to-string (thunk (thnk))))
+  (_inc-test-num! -1) ; don't count the test inside the thunk
+  (tests-failed inc)
   (like output regex msg)
   )
 
-(test-suite
- "tests that fail give correct messages"
+(when #t
+  (test-suite
+   "tests that fail give correct messages"
 
- (test-gives-correct-output
-  (thunk (ok #f "ok msg"))
-  (pregexp "NOT ok \\d+ - ok msg")
-  "failed 'ok' test that has a msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (ok #f))
-  (pregexp "NOT ok \\d+")
-  "failed 'ok' test that has no msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (isnt 8 8 "isnt msg"))
-  (pregexp "NOT ok \\d+ - isnt msg")
-  "failed 'isnt' test that has a msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (isnt 8 8))
-  (pregexp "NOT ok \\d+")
-  "failed 'isnt' test that has no msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (is 8 9 "is msg"))
-  (pregexp "NOT ok \\d+ - is msg")
-  "failed 'is' test that has a msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (is 8 9))
-  (pregexp "NOT ok \\d+")
-  "failed 'is' test that has no msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (unlike "foobar" #px"foo" "unlike msg"))
-  (pregexp "NOT ok \\d+ - unlike msg")
-  "failed 'unlike' test that has a msg reports correctly")
- 
- (test-gives-correct-output
-  (thunk (unlike "foobar" #px"foo"))
-  (pregexp "NOT ok \\d+")
-  "failed 'unlike' test that has no msg reports correctly")
- 
- (tests-failed -8) ; reset the counter so it doesn't double-count the ones inside the tests above
- )
+   (test-gives-correct-output
+    (thunk (ok #f "ok msg"))
+    (pregexp "^NOT ok \\d+ - ok msg\n$")
+    "failed 'ok' test that has a msg reports correctly"
+    -1
+    )
+
+   (test-gives-correct-output
+    (thunk (ok #f))
+    (pregexp "^NOT ok \\d+\n$")
+    "failed 'ok' test that has no msg reports correctly"
+    -1
+    )
+
+   (test-gives-correct-output
+    (thunk (isnt 8 8 "isnt msg"))
+    (pregexp "^NOT ok \\d+ - isnt msg\n  Got:\\s+8\n  Expected: <anything but 8>\n$")
+    "failed 'isnt' test that has a msg reports correctly"
+    -1
+    )
+    
+
+   (test-gives-correct-output
+    (thunk (isnt 8 8))
+    (pregexp "NOT ok \\d+\n  Got:\\s+8\n  Expected: <anything but 8>\n$")
+    "failed 'isnt' test that has no msg reports correctly"
+    -1
+    )
+   (test-gives-correct-output
+    (thunk (is 8 9 "is msg"))
+    (pregexp "NOT ok \\d+ - is msg\n  Got:\\s+8\n  Expected: 9")
+    "failed 'is' test that has a msg reports correctly"
+    -1
+    )
+    
+   (test-gives-correct-output
+    (thunk (is 8 9))
+    (pregexp "NOT ok \\d+\n  Got:\\s+8\n  Expected: 9")
+    "failed 'is' test that has no msg reports correctly"
+    -1
+    )
+   
+
+   (test-gives-correct-output
+    (thunk (unlike "foobar" #px"foo" "unlike msg"))
+    (pregexp "NOT ok \\d+ - unlike msg\n  Got:\\s+foobar\n  Expected: <something NOT matching #px\"foo\">")
+    "failed 'unlike' test that has a msg reports correctly"
+    -1
+    )
+
+   (test-gives-correct-output
+    (thunk (unlike "foobar" #px"foo"))
+    (pregexp "NOT ok \\d+\n  Got:\\s+foobar\n  Expected: <something NOT matching #px\"foo\">")
+    "failed 'unlike' test that has no msg reports correctly"
+    -1
+    )
+
+   ); test-suite
+  ); when
 
 (test-suite
  "'like' and 'unlike' work"
@@ -104,7 +124,7 @@
 
 (test-suite
  "'throws' and 'dies' work"
- 
+
  (define (boom) (raise-argument-error 'boom "PEBKAC" 18))
  (throws boom
          exn:fail:contract?
@@ -125,11 +145,11 @@
  (dies boom
        "'dies' doesn't care why it died, just that it did.")
 )
- 
 
- ;; ;;  @@TODO
- ;; ;; https://docs.racket-lang.org/overeasy/index.html
- ;; ;; - catch exceptions and report on them without terminating
- ;; ;; - specify the equal? op as something else
- ;; ;; - capture data from stdout and stderr, report on that
- ;; ;; - test groups
+
+;; ;;  @@TODO
+;; ;; https://docs.racket-lang.org/overeasy/index.html
+;; ;; - catch exceptions and report on them without terminating
+;; ;; - specify the equal? op as something else
+;; ;; - capture data from stdout and stderr, report on that
+;; ;; - test groups
