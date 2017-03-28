@@ -404,3 +404,28 @@
    (is y '(2 4) "all even numbers are in y")
    )
 )
+
+(test-suite
+ "hash->keyword-apply"
+ (define (foo #:x x #:y y #:z z) (list x y z))
+ (define (bar [a 1] #:x x #:y y #:z [z 0]) (list a x y z))
+
+ (is (hash->keyword-apply foo (hash 'x 7 'y 8 'z 9))
+     '(7 8 9)
+     "hash->keyword-apply works with a correct hash and no positionals")
+
+ (is (hash->keyword-apply bar (hash 'x 7 'y 8 'z 9) '(11))
+     '(11 7 8 9)
+     "hash->keyword-apply works with a correct hash and positionals")
+
+ (is (hash->keyword-apply bar (hash 'x 7 'y 8))
+     '(1 7 8 0)
+     "hash->keyword-apply handles optional params")
+
+ (throws (thunk (hash->keyword-apply bar (hash 'a 1 'x 7 'y 8 'z 9)))
+         #px"procedure does not expect an argument with given keyword\\s+procedure: bar\\s+given keyword: #:a"
+         "throws when the hash has a key that isn't a param")
+ )
+
+
+ 
