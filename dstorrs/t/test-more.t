@@ -2,6 +2,9 @@
 
 #lang racket
 (require "../test-more.rkt")
+(require dstorrs/utils)
+
+
 
 (test-suite
  "simple 'ok' tests"
@@ -46,9 +49,11 @@
 
 (define (test-gives-correct-output thnk regex msg [inc 0])
   (define output (with-output-to-string (thunk (thnk))))
+  ;; (say "output is: '" output "'")
+  ;; (say "regex is: '" regex "'")
   (_inc-test-num! -1) ; don't count the test inside the thunk
   (tests-failed inc)
-  (like output regex msg)
+  (ok (regexp-match regex output) msg)
   )
 
 (when #t
@@ -75,7 +80,7 @@
     "failed 'isnt' test that has a msg reports correctly"
     -1
     )
-    
+
 
    (test-gives-correct-output
     (thunk (isnt 8 8))
@@ -89,14 +94,14 @@
     "failed 'is' test that has a msg reports correctly"
     -1
     )
-    
+
    (test-gives-correct-output
     (thunk (is 8 9))
     (pregexp "NOT ok \\d+\n  Got:\\s+8\n  Expected: 9")
     "failed 'is' test that has no msg reports correctly"
     -1
     )
-   
+
 
    (test-gives-correct-output
     (thunk (unlike "foobar" #px"foo" "unlike msg"))
@@ -123,9 +128,21 @@
  )
 
 (test-suite
- "'throws' and 'dies' work"
+ "'throws' works"
 
  (define (boom) (raise-argument-error 'boom "PEBKAC" 18))
+
+ (define str 
+   (with-output-to-string
+     (thunk
+      (throws (thunk "doesn't throw") "this string not used"))))
+ (tests-failed -1)   ; undo the inner test above -- it was supposed to fail.
+ (_inc-test-num! -1) ; undo the inner test above -- it was supposed to fail.
+ 
+ (like str
+       #px"NOT ok.+?\\[DID NOT THROW\\]"
+       "'throws' correctly handles it when it doesn't throw")
+
  (throws boom
          exn:fail:contract?
          "(throws) can use builtin func ")
@@ -142,14 +159,100 @@
          #px"KAC"
          "(throws): exception has the expected message (match by regex)")
 
- (dies boom
+
+ (throws (thunk (raise 'foo))
+         'foo
+         "'throws' notices if you throw a symbol instead of an exn? object")
+
+ (throws (thunk (raise 7))
+         7
+         "'throws' will notice if you raise a number instead of an exn? object")
+ 
+ (throws (thunk (raise "foo"))
+         "foo"
+         "'throws' will notice if you raise a string instead of an exn? object")
+ 
+ (throws (thunk (raise #t))
+         #t
+         "'throws' will notice if you raise #t instead of an exn? object")
+
+ );test-suite
+
+(test-suite
+ "'dies' handles non-exn values"
+
+ (dies (thunk (raise-argument-error 'foo "bar" 8))
        "'dies' doesn't care why it died, just that it did.")
-)
 
+ (dies (thunk (raise 7))
+       "'dies' will notice if you raise a number instead of an exn? object")
+ 
+ (dies (thunk (raise "foo"))
+       "'dies' will notice if you raise a string instead of an exn? object")
+ 
+ (dies (thunk (raise #t))
+       "'dies' will notice if you raise #t instead of an exn? object")
+ )
 
-;; ;;  @@TODO
-;; ;; https://docs.racket-lang.org/overeasy/index.html
-;; ;; - catch exceptions and report on them without terminating
-;; ;; - specify the equal? op as something else
-;; ;; - capture data from stdout and stderr, report on that
-;; ;; - test groups
+(test-suite
+ "tests return their final value"
+
+ (define (inner-test thnk [should-pass #t])
+   (define result #f)
+   (with-output-to-string
+     (thunk (set! result (thnk))))
+   ((if should-pass tests-passed tests-failed) -1)   ; only count the outer test
+   (_inc-test-num! -1) ; only count the outer test
+   result)
+
+ (is (inner-test (thunk (lives (thunk 8.2)) 8.2))
+     8.2
+     "Got the correct value from lives")
+
+ (is (inner-test (thunk (dies (thunk (raise "foo")))))
+     "foo"
+     "Got the correct value from dies")
+
+ (is (inner-test (thunk
+                  (throws (thunk (raise "8.2"))
+                          #px"8.2")))
+     "8.2"
+     "Got the correct value from throws")
+
+ (is (inner-test (thunk (ok 8.2)))
+     8.2
+     "Got the correct value from ok")
+
+ 
+ (is (inner-test (thunk (not-ok #f)))
+     #t
+     "Got the correct value from ok")
+
+ (is (inner-test (thunk (is 8.2 8.2)))
+     8.2
+     "Got the correct value from is")
+
+ (is (inner-test (thunk (isnt 8.2 9)))
+     8.2
+     "Got the correct value from isnt")
+
+ (is (inner-test (thunk (is-type 8 exact-positive-integer?)))
+     8
+     "Got the correct value from is-type")
+
+ (is (inner-test (thunk (like "foo" #px"foo")))
+     '("foo")
+     "Got the correct value from like")
+
+ (is (inner-test (thunk (unlike "foo" #px"bar")))
+     "foo"
+     "Got the correct value from unlike")
+
+ );test-suite
+
+;; ;; ;;  @@TODO
+;; ;; ;; https://docs.racket-lang.org/overeasy/index.html
+;; ;; ;; - catch exceptions and report on them without terminating
+;; ;; ;; - specify the equal? op as something else
+;; ;; ;; - capture data from stdout and stderr, report on that
+;; ;; ;; - test groups

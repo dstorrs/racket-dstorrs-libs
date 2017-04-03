@@ -34,28 +34,32 @@
 
 (define (_unwrap-val val) (if (procedure? val) (val) val))
 
+;;----------------------------------------------------------------------
+
 (define/contract
   (test-more-check  #:got           got
                     #:expected      [expected #t]
                     #:msg           [msg ""]
                     #:op            [op equal?]
                     #:show-expected/got? [show-expected/got? #t]
-                    #:report-expected-as [expected-str #f]
-                    #:report-got-as      [got-str #f]
+                    #:report-expected-as [report-expected-as #f]
+                    #:report-got-as      [report-got-as #f]
+                    #:return             [return #f]
                     )
   (->* (#:got any/c)
        (#:expected any/c
         #:msg string?
         #:op (-> any/c any/c any/c)
         #:show-expected/got? boolean?
-        #:report-expected-as string?
-        #:report-got-as string?
+        #:report-expected-as any/c
+        #:report-got-as any/c
+        #:return any/c
         )
        any/c)
   (let* ([success (op got expected)]
          [ok-str (if success "ok " "NOT ok ")]
-         [expected-msg (or expected-str expected)]
-         [got-msg (or got-str got)]
+         [expected-msg (~a (or report-expected-as expected))]
+         [got-msg (~a (or report-got-as got))]
          [msg-str (format "~a~a"
                           (if (non-empty-string? msg)
                               (format " - ~a" msg)
@@ -74,8 +78,12 @@
                        (next-test-num)
                        msg-str
                        ))
-    success)
+    (if return 
+        return ; if we were told what to return, return that
+        got))  ; otherwise, return the result
   )
+
+;;----------------------------------------------------------------------
 
 (define (ok val [msg ""])
   (test-more-check #:got (_unwrap-val val)
@@ -94,6 +102,7 @@
   (test-more-check #:got (type-pred val)
                    #:msg msg
                    #:op op
+                   #:return val
                    ))
 
 (define (is val expected [msg ""] [op equal?])
@@ -101,6 +110,7 @@
                    #:expected expected
                    #:msg msg
                    #:op op
+                   #:return val
                    ))
 
 (define (isnt val
@@ -113,13 +123,16 @@
                    #:report-expected-as (~a "<anything but " expected ">")
                    #:op (negate equal?)))
 
+;;----------------------------------------------------------------------
 
 (define (like val regex [msg ""])
-  (test-more-check #:got (_unwrap-val val)
-                   #:expected #t
+  (define res (regexp-match regex (_unwrap-val val)))
+  (test-more-check #:got (true? res) ; force to boolean
+                   #:return res
                    #:msg msg
-                   #:report-expected-as (~a "<something matching " regex ">")
-                   #:op (lambda (a b) (regexp-match regex val))))
+                   #:report-expected-as (~a "<something matching " regex ">")))
+
+;;----------------------------------------------------------------------
 
 (define/contract (unlike val regex [msg ""])
   (->* (any/c regexp?)
@@ -138,43 +151,55 @@
   (with-handlers ((exn? (lambda (e)
                           (test-more-check #:got #f
                                            #:msg (format "Exception thrown! Test message: '~a'.  Exception: '~a'" msg (exn-message e))))))
-    (begin
-      (thunk)
-      (test-more-check #:got #t  #:msg msg))))
+    (define result (thunk))
+    (test-more-check #:got result  #:expected result  #:msg msg)))
 
+;;----------------------------------------------------------------------
 
 ;; note that if you give it a function predicate that predicate must
 ;; take one argument but it can be anything, not just an (exn?)
 (define/contract (throws thnk pred [msg ""])
-  (->* ((-> any) (or/c string? regexp? (-> any/c boolean?)))
+  (->* ((-> any)
+        any/c
+        )
        (string?)
        any/c)
+
   ;;    'thnk' should generate an exception
   ;;    'msg'  is what test-more-check will report
   ;;    'pred' could be a string, a proc, or a regex
-  ;;        - string: Check if it is the (non-boilerplate) exn message
+  ;;        - string: Check if it is exactly the (non-boilerplate) exn message
   ;;        - proc:   Pass it the exn, see if it returns #t
-  ;;        - regex:  Check if the regex matches the exn message
+  ;;        - regex:  Check if the regex matches the (exn message || string) thrown
   ;;
+  (define (get-msg e) (if (exn? e) (exn-message e) e))
   (define (remove-exn-boilerplate s)
-    (let* ([str (regexp-replace #px"^.+?expected: " s "")]
+    (let* ([str (regexp-replace #px"^.+?expected: " (get-msg s) "")]
            [str (regexp-replace #px"(.+)\n.+$" str "\\1")])
       str))
 
-  (test-more-check #:got
-                   (with-handlers
-                     ([exn?
-                       (lambda (e)
-                         (let ((msg (exn-message e)))
-                           (cond
-                             ((string? pred) (equal? pred (remove-exn-boilerplate (exn-message e))))
-                             ((regexp? pred)  (regexp-match? pred msg))
-                             ((procedure? pred) (pred e))
-                             (else #f)
-                             )))]
-                      [exn? (lambda (e) #f)])
-                     (thnk))
-                   #:msg msg))
+  (define (accept-all e) #t)
+  (define-values (e threw)
+    (with-handlers ((exn:break? (lambda (e) (raise e))) ; if user hit ^C, don't eat it
+                    (accept-all (lambda (e) (values e #t))))
+      (values (thnk) #f)))
+    
+  (define pred-needs-string (or (string? pred) (regexp? pred)))
+  (define e-can-be-string   (or (string? e) (exn? e)))
+  (when (and pred-needs-string (not e-can-be-string))
+    (raise-arguments-error 'throws
+                           "predicate was (string or regexp) but thrown value was not (string or exn)"
+                           "thrown value" e))
+
+  (cond [(false? threw)    (test-more-check #:got #f  #:msg (~a msg " [DID NOT THROW]")  #:return e)]
+        [(procedure? pred) (test-more-check #:msg msg #:got (pred e) #:report-got-as e #:return e)]
+        [(string? pred)    (test-more-check #:msg msg #:got (equal? pred (remove-exn-boilerplate e)) #:report-got-as e  #:return e)]
+        [(regexp? pred)    (test-more-check #:msg msg #:got (regexp-match? pred (get-msg e)) #:report-got-as e  #:return e)]
+        [else              (test-more-check #:msg msg #:got e  #:expected pred #:return e)]
+        )
+  )
+
+;;----------------------------------------------------------------------
 
 ;;    When all you care about is that it dies, not why
 (define/contract (dies thunk [msg ""])
@@ -182,6 +207,8 @@
        (string?)
        any/c)
   (throws thunk (lambda (e) #t) msg))
+
+;;----------------------------------------------------------------------
 
 (define-syntax (test-suite stx)
   (syntax-case stx ()
@@ -195,6 +222,7 @@
               (say "")
               (say "### END test-suite: " msg))]))
 
+;;----------------------------------------------------------------------
 
 (provide ok not-ok
          is isnt
