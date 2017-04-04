@@ -281,7 +281,6 @@
 
 (define/contract (unique lst [same? equal?] #:key [key-maker identity])
   (->* (list?) ((-> any/c any/c boolean?) #:key (-> any/c any/c)) list?)
-  (define h (make-hash))
   (remove-nulls
    (remove-duplicates lst same? #:key key-maker)))
 
