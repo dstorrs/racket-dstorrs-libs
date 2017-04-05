@@ -298,7 +298,7 @@
                                   #:post [post identity]
                                   )
   (->* (#:partitions exact-positive-integer?
-        #:filter (-> any/c exact-nonnegative-integer?)
+        #:filter (-> any/c (or/c #f exact-nonnegative-integer?))
         #:source list?)
        (#:post   (-> list? any/c))
        any
@@ -310,9 +310,10 @@
 
      (for ((element (reverse source)))
        (let ((idx (index-chooser element)))
-         (vector-set! results
-                      idx
-                      (cons element (vector-ref results idx)))))
+         (when idx
+           (vector-set! results
+                        idx
+                        (cons element (vector-ref results idx))))))
      (for ((i (vector-length results)))
        (vector-set! results i (post (vector-ref results i))))))
 
@@ -324,7 +325,7 @@
   (->* (procedure? (hash/c symbol? any/c)) (list?) any)
 
   (define keys (sort (hash-keys hsh) symbol<?))
-  
+
   (keyword-apply func
                  (symbols->keywords keys)
                  (map (curry hash-ref hsh) keys)

@@ -393,8 +393,15 @@
           (multi-partition #:partitions 2
                            #:filter (lambda (n) #t)
                            #:source '(1 7 8 0 15.8 -2 a)))
-         @pregexp{multi-partition: contract violation\s+expected:\s+exact-nonnegative-integer\?\s+given:\s+.+?\s+in:\s+the range of\s+the #:filter argument}
-         @~a{If your match function returns something other than a 0+ number then multi-partition throws})
+         @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f exact-nonnegative-integer\?\).+? given: #t}
+         @~a{Returned #t : If your match function returns something other than #f or a 0+ exact-positive-integer number then multi-partition throws})
+
+ (throws (thunk
+          (multi-partition #:partitions 2
+                           #:filter (lambda (n) 8.2)
+                           #:source '(1 7 8 0 15.8 -2 a)))
+         @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f exact-nonnegative-integer\?\).+? given: 8.2}
+         @~a{Returned 8.2 : If your match function returns something other than #f or a 0+ exact-positive-integer number then multi-partition throws})
 
  (let-values ([(x y) (multi-partition #:partitions 2
                                       #:source '(1 2 3 4 1)
@@ -403,7 +410,19 @@
    (is x '(1 3) "all odd numbers are in x and it was uniqueified")
    (is y '(2 4) "all even numbers are in y")
    )
-)
+
+ (let-values ([(x y) (multi-partition #:partitions 2
+                                      #:source '(1 2 3 4 1)
+                                      #:post unique
+                                      #:filter (lambda (i)
+                                                 (cond [(odd? i) 0]
+                                                       [(= 4 i) #f]
+                                                       [else     1]))
+                                      )])
+   (is x '(1 3) "all odd numbers are in x and it was uniqueified")
+   (is y '(2) "2 is in y, 4 is not")
+   )
+ )
 
 (test-suite
  "hash->keyword-apply"
@@ -426,6 +445,3 @@
          #px"procedure does not expect an argument with given keyword\\s+procedure: bar\\s+given keyword: #:a"
          "throws when the hash has a key that isn't a param")
  )
-
-
- 
