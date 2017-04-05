@@ -393,14 +393,14 @@
           (multi-partition #:partitions 2
                            #:filter (lambda (n) #t)
                            #:source '(1 7 8 0 15.8 -2 a)))
-         @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f exact-nonnegative-integer\?\).+? given: #t}
+         @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? exact-nonnegative-integer\?\).+? given: #t}
          @~a{Returned #t : If your match function returns something other than #f or a 0+ exact-positive-integer number then multi-partition throws})
 
  (throws (thunk
           (multi-partition #:partitions 2
                            #:filter (lambda (n) 8.2)
                            #:source '(1 7 8 0 15.8 -2 a)))
-         @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f exact-nonnegative-integer\?\).+? given: 8.2}
+         @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? exact-nonnegative-integer\?\).+? given: 8.2}
          @~a{Returned 8.2 : If your match function returns something other than #f or a 0+ exact-positive-integer number then multi-partition throws})
 
  (let-values ([(x y) (multi-partition #:partitions 2
@@ -421,6 +421,16 @@
                                       )])
    (is x '(1 3) "all odd numbers are in x and it was uniqueified")
    (is y '(2) "2 is in y, 4 is not")
+   )
+ (let-values ([(x y) (multi-partition #:partitions 2
+                                      #:source '(1 2 3 4 1)
+                                      #:post unique
+                                      #:filter (lambda (i)
+                                                 (cond [(odd? i) 0]
+                                                       [(= 8 i)    1]))
+                                      )])
+   (is x '(1 3) "all odd numbers are in x and it was uniqueified")
+   (is y '() "y is empty")
    )
  )
 

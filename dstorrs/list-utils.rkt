@@ -298,7 +298,7 @@
                                   #:post [post identity]
                                   )
   (->* (#:partitions exact-positive-integer?
-        #:filter (-> any/c (or/c #f exact-nonnegative-integer?))
+        #:filter (-> any/c (or/c #f void? exact-nonnegative-integer?))
         #:source list?)
        (#:post   (-> list? any/c))
        any
@@ -310,7 +310,7 @@
 
      (for ((element (reverse source)))
        (let ((idx (index-chooser element)))
-         (when idx
+         (when (and idx (not (void? idx)))
            (vector-set! results
                         idx
                         (cons element (vector-ref results idx))))))
