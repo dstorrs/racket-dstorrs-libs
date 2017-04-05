@@ -9,7 +9,39 @@
          dstorrs/list-utils
          )
 
-(provide (all-defined-out))
+(provide struct/kw hash->struct/kw)
+
+;;; Example usage:
+;;
+;; Define a struct type
+;; (struct/kw foo (a b [c 42]) #:transparent)
+;;
+;; Use normal ctor
+;; (foo 1 2 3)                ; => (foo 1 2 3)
+;;
+;; Use keyword ctor
+;; (foo/kw #:a 1 #:b 2 #:c 3) ; => (foo 1 2 3)
+;;
+;; Use keyword ctor, taking advantage of default arg for #:c field
+;; (foo/kw #:a 1 #:b 2)       ; => (foo 1 2 42)
+;;
+;; Use a hash to create the struct
+;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'c 3)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
+;;
+;; Use a hash that has more keys than you need:
+;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'c 3 'd 5 'e 8)
+;;                         '(a b c)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
+;;
+;; Use a hash and rename some of the keys
+;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'charlie 3) 
+;;                         #:remap-keys (hash 'charlie 'c)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
+;;
+;; Use a hash, only some of the keys, and rename some of the keys
+;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'charlie 3 'd 5 'e 8) 
+;;                         '(a b charlie)
+;;                         #:remap-keys (hash 'charlie 'c)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
+
+;;----------------------------------------------------------------------
 
 (begin-for-syntax
   (define syntax->keyword (compose1 string->keyword symbol->string syntax->datum)))
@@ -29,11 +61,12 @@
            (define (ctor-id ctor-arg ... ...) ;i.e. append*
              (struct-id field.id ...))))]))
 
+;;----------------------------------------------------------------------
 
-(define/contract (hash->struct/kw h struct-ctor [keys #f] #:remap-keys [remapped-keys (hash)])
-  (->* ((hash/c symbol? any/c) procedure?)
+(define/contract (hash->struct/kw struct-ctor h [keys #f] #:remap-keys [remapped-keys (hash)])
+  (->* (procedure? (hash/c symbol? any/c))
        ((non-empty-listof any/c) #:remap-keys (hash/c symbol? symbol?))
-       any/c) ; there's no clean way to say 'a struct'
+       struct?)
 
   (define sorted-keys (sort (if keys keys (hash-keys h)) symbol<?))
   (define final-keys
