@@ -55,7 +55,7 @@
         #:report-got-as any/c
         #:return any/c
         )
-       any/c)
+       any)
   (let* ([success (op got expected)]
          [ok-str (if success "ok " "NOT ok ")]
          [expected-msg (~a (or report-expected-as expected))]
