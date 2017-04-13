@@ -57,6 +57,12 @@
 
 (define-syntax (try stx)
   (syntax-case stx ()
+    [(try [body0 body1 ...])
+     #'(with-handlers ((identity identity))
+         body0
+         body1
+         ...
+         )]
     [(try [body0 body1 ...][catch catch0 catch1 ...])
      #'(with-handlers (catch0 catch1 ...)
          body0
