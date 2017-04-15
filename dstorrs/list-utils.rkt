@@ -27,8 +27,8 @@
 ;;     dict (by default a mutable hash)
 
 (define L list)
-(define (safe-first l) (if (null? l) '() (first l)))
-(define (safe-rest  l) (if (null? l) '() (rest l)))
+(define/contract (safe-first l) (-> list? any/c) (if (null? l) '() (first l)))
+(define/contract (safe-rest  l) (-> list? list?) (if (null? l) '() (rest l)))
 
 (define (atom? x) (not (pair? x)))
 
