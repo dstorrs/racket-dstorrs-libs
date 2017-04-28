@@ -9,32 +9,6 @@
 
 ;;----------------------------------------------------------------------
 
-;; (define/contract (sql-IN-clause lst [start-from 1])
-;;   (->* (list?) (exact-positive-integer?) string?)
-;;   (define res (~a "IN (" (placeholders-for lst start-from) ")"))
-;;   ;(say "res: '" res "'")
-;;   res)
-
-;;----------------------------------------------------------------------
-
-;; (define/contract (placeholders-for lst [start-from 1])
-;;   (->* (list?) (exact-positive-integer?) string?)
-;;   ;;    Create a string that can be used as placeholder values for a
-;;   ;;    group of values suitable for inclusion in a SELECT, INSERT,
-;;   ;;    etc.
-;;   ;; (placeholders-for '(foo bar baz))  => "$1,$2,$3"
-;;   ;; (placeholders-for '())             => ""
-;;   ;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
-;;   ;;
-;;   (string-join
-;;    (for/list ((i (in-naturals start-from))
-;;               (ignored lst))
-;;      (~a "$" i))
-;;    ","))
-
-
-;;----------------------------------------------------------------------
-
 ;;    Run a query against the database, return the result as a
 ;;    list of dicts. (By default hashes, but you can override
 ;;    if desired.)  You can also provide transformer functions
