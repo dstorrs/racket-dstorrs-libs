@@ -14,6 +14,8 @@
 ;; *) px : alias for pregexp
 ;; *) rand-val : get a random string value, optionally with
 ;;     prefix. e.g: (rand-val) or (rand-val "employee-id")
+;; *) running-file-dir: get the dir to the running file
+;; *) running-file-path: get the complete path to the running file
 ;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) say : macro that uses 'displayln' to output all
@@ -212,5 +214,17 @@
   (-> path-string? (values path? path?))
   (define-values (d f ignore) (split-path fp))
   (values d f))
+
+;;----------------------------------------------------------------------
+
+(define (running-file-path)
+  (path->complete-path (find-system-path 'run-file)))
+
+;;----------------------------------------------------------------------
+
+(define (running-file-dir)
+  (path-only (path->complete-path (find-system-path 'run-file))))
+
+;;----------------------------------------------------------------------
 
 (provide (all-defined-out))
