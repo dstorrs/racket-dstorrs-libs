@@ -3,8 +3,8 @@
 #lang racket
 
 (require "../test-more.rkt"
-		 "../sql.rkt"
-		 )
+         "../sql.rkt"
+         )
 
 (void (ok #t "test harness is working"))
 
@@ -23,4 +23,17 @@
      "join-clause works")
  )
 
+(test-suite
+ "date- and timestamp-related functions"
+ (is (clause-convert-epoch->timestamp)
+     "SELECT timestamp 'epoch' + INTERVAL '1 second' * $1"
+     "got correct string back for no params")
 
+ (is (clause-convert-epoch->timestamp 3)
+     "SELECT timestamp 'epoch' + INTERVAL '1 second' * $3"
+     "got correct string back for one param")
+
+ (is (clause-convert-epoch->timestamp #:subquery #t)
+     "(SELECT timestamp 'epoch' + INTERVAL '1 second' * $1)"
+     "got correct string back for subquery")
+ )

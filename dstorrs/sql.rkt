@@ -98,3 +98,9 @@
 
 ;;--------------------------------------------------------------------------------
 
+(define/contract (clause-convert-epoch->timestamp [param-num 1] #:subquery [sub #f])
+  (->* () (natural-number/c #:subquery boolean?) string?)
+  @~a{@(if sub "(" "")SELECT timestamp 'epoch' + INTERVAL '1 second' * $@|param-num|@(if sub ")" "")})
+
+;;--------------------------------------------------------------------------------
+
