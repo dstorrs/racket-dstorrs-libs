@@ -27,13 +27,27 @@
  "date- and timestamp-related functions"
  (is (clause-convert-epoch->timestamp)
      "SELECT timestamp 'epoch' + INTERVAL '1 second' * $1"
-     "got correct string back for no params")
+     "clause-convert-epoch->timestamp: got correct string back for no params")
 
  (is (clause-convert-epoch->timestamp 3)
      "SELECT timestamp 'epoch' + INTERVAL '1 second' * $3"
-     "got correct string back for one param")
+     "clause-convert-epoch->timestamp: got correct string back for one param")
 
  (is (clause-convert-epoch->timestamp #:subquery #t)
      "(SELECT timestamp 'epoch' + INTERVAL '1 second' * $1)"
-     "got correct string back for subquery")
+     "clause-convert-epoch->timestamp: got correct string back for subquery")
+
+ (is (clause-convert-timestamp->epoch)
+     "SELECT extract('epoch' from $1)"
+     "clause-convert-timestamp->epoch: got correct string back for no param")
+
+ (is (clause-convert-timestamp->epoch 3)
+     "SELECT extract('epoch' from $3)"
+     "clause-convert-timestamp->epoch: got correct string back for integer param")
+
+ (is (clause-convert-timestamp->epoch (clause-convert-epoch->timestamp #:subquery #t))
+     "SELECT extract('epoch' from (SELECT timestamp 'epoch' + INTERVAL '1 second' * $1))"
+     "clause-convert-timestamp->epoch: got correct string back for string param")
+
+
  )

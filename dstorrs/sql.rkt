@@ -104,3 +104,17 @@
 
 ;;--------------------------------------------------------------------------------
 
+(define/contract (clause-convert-timestamp->epoch [source 1] #:subquery [sub #f])
+  (->* () ((or/c string? natural-number/c) #:subquery boolean?) string?)
+
+  (string-append
+   (if sub "(" "")
+   "SELECT extract('epoch' from "
+   (if (string? source) source @~a{$@source})
+   ")"
+   (if sub ")" "")
+   ))
+   
+
+;;--------------------------------------------------------------------------------
+
