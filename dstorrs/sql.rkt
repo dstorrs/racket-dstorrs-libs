@@ -98,21 +98,26 @@
 
 ;;--------------------------------------------------------------------------------
 
-(define/contract (clause-convert-epoch->timestamp [param-num 1] #:subquery [sub #f])
-  (->* () (natural-number/c #:subquery boolean?) string?)
-  @~a{@(if sub "(" "")SELECT timestamp 'epoch' + INTERVAL '1 second' * $@|param-num|@(if sub ")" "")})
+(define/contract (clause-convert-epoch->timestamp [param-num 1] #:subquery [subquery #f] #:complete [complete #f])
+  (->* () (natural-number/c #:complete boolean? #:subquery boolean?) string?)
+  (string-append
+   (if subquery "(" "")
+   (if (or complete subquery) "SELECT " "")
+   @~a{timestamp 'epoch' + INTERVAL '1 second' * $@param-num}
+   (if subquery ")" "")))
 
 ;;--------------------------------------------------------------------------------
 
-(define/contract (clause-convert-timestamp->epoch [source 1] #:subquery [sub #f])
-  (->* () ((or/c string? natural-number/c) #:subquery boolean?) string?)
+(define/contract (clause-convert-timestamp->epoch [source 1] #:subquery [subquery #f] #:complete [complete #f])
+  (->* () ((or/c string? natural-number/c) #:complete boolean? #:subquery boolean?) string?)
 
   (string-append
-   (if sub "(" "")
-   "SELECT extract('epoch' from "
+   (if subquery "(" "")
+   (if (or complete subquery) "SELECT " "")
+   "extract('epoch' from "
    (if (string? source) source @~a{$@source})
    ")"
-   (if sub ")" "")
+   (if subquery ")" "")
    ))
    
 
