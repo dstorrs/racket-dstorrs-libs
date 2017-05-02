@@ -250,6 +250,36 @@
 
  );test-suite
 
+(test-suite
+ "make-test-file"
+
+ (define filepath (build-path "/tmp/test-file-foo"))
+
+ (define (delete-test-file)
+   (with-handlers ((exn:fail? identity)) ; ignore exceptions
+     (delete-file filepath)))
+
+ (delete-test-file)
+ (not-ok (file-exists? filepath) "before creation, file does not exist")
+ 
+ (lives (thunk (make-test-file filepath)) "after creation, file exists")
+ 
+ (delete-test-file)
+
+ (not-ok (file-exists? filepath) "file successfully removed")
+ (lives (thunk (make-test-file filepath "this is the right text"))
+        "lived: make-test-file filepath with specified text"
+        )
+
+ (ok (file-exists? filepath) "file created")
+
+ (is (with-input-from-file filepath port->string)
+     "this is the right text"
+     "file was correctly populated")
+ 
+ ;(delete-test-file)
+ )
+
 ;; ;; ;;  @@TODO
 ;; ;; ;; https://docs.racket-lang.org/overeasy/index.html
 ;; ;; ;; - catch exceptions and report on them without terminating

@@ -224,6 +224,16 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (make-test-file filepath [text (rand-val "test file contents")])
+  (->* (path-string?) (string?) path-string?)
+  (with-output-to-file
+    filepath
+    (thunk (display text)))
+
+  filepath)
+
+;;----------------------------------------------------------------------
+
 (provide ok not-ok
          is isnt
          is-type
@@ -233,4 +243,5 @@
          test-suite
          tests-failed tests-passed
          _inc-test-num!
+         make-test-file
          )
