@@ -280,9 +280,10 @@
  (throws (thunk (make-test-file filepath "this is new text" #:overwrite #f))
          #px"file exists"
          "make-test-file dies if the file exists and you say '#:overwrite #f'"
-        )
- 
- ;(delete-test-file)
+         )
+ (let ((the-path (lives (thunk (make-test-file "/tmp")) "made test file")))
+   (ok (file-exists? the-path) "a random filename was generated and returned")) 
+      
  )
 
 ;; ;; ;;  @@TODO

@@ -224,8 +224,18 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (make-test-file filepath [text (rand-val "test file contents")] #:overwrite [overwrite #t])
+(define/contract (make-test-file fpath [text (rand-val "test file contents")] #:overwrite [overwrite #t])
   (->* (path-string?) (string? #:overwrite boolean?) path-string?)
+  (define-values (dir fn ignore) (split-path fpath))
+
+  (when (not (directory-exists? dir))
+    (make-directory dir))
+  
+  (define filepath
+    (cond [(file-exists? fpath) fpath]
+          [(directory-exists? fpath) (build-path fpath (rand-val "test-file"))]
+          [else fpath]))
+  
   (with-output-to-file
     filepath
     (thunk (display text))
