@@ -276,6 +276,11 @@
  (is (with-input-from-file filepath port->string)
      "this is the right text"
      "file was correctly populated")
+
+ (throws (thunk (make-test-file filepath "this is new text" #:overwrite #f))
+         #px"file exists"
+         "make-test-file dies if the file exists and you say '#:overwrite #f'"
+        )
  
  ;(delete-test-file)
  )

@@ -224,12 +224,12 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (make-test-file filepath [text (rand-val "test file contents")])
-  (->* (path-string?) (string?) path-string?)
+(define/contract (make-test-file filepath [text (rand-val "test file contents")] #:overwrite [overwrite #t])
+  (->* (path-string?) (string? #:overwrite boolean?) path-string?)
   (with-output-to-file
     filepath
-    (thunk (display text)))
-
+    (thunk (display text))
+    #:exists (if overwrite 'replace 'error))
   filepath)
 
 ;;----------------------------------------------------------------------
