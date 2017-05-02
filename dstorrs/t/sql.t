@@ -72,6 +72,16 @@
  (is (clause-convert-timestamp->epoch #:complete #t (clause-convert-epoch->timestamp #:subquery #t))
      "SELECT extract('epoch' from (SELECT timestamp 'epoch' + INTERVAL '1 second' * $1))"
      "clause-convert-timestamp->epoch: got correct string back for string param with #:complete")
+)
 
+(test-suite
+ "sql-IN-clause"
 
- )
+ (is (sql-IN-clause '(foo bar))
+     "IN ($1,$2)"
+     "correct: (sql-IN-clause '(foo bar))")
+
+ (is (sql-IN-clause '(foo bar) 3)
+     "IN ($3,$4)"
+     "correct: (sql-IN-clause '(foo bar) 3)")  
+)

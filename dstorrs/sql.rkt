@@ -59,10 +59,10 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (sql-IN-clause lst)
-  (-> list? string?)
+(define/contract (sql-IN-clause lst [start-from 1])
+  (->* (list?) (natural-number/c) string?)
   (string-append "IN ("
-                 (placeholders-for lst)
+                 (placeholders-for lst start-from)
                  ")"))
 
 ;;--------------------------------------------------------------------------------
