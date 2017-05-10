@@ -177,4 +177,53 @@
  (is fname (string->path "bar") "got correct filename")
  )
 
+(test-suite
+ "path-string->(path | string)"
+
+ (define vals (list "foo" "/bar" "/baz/foo"))
+ (define dirs (map (curryr string-append "/") vals))
+                
+ (say "vals: " vals)
+ (say "dirs: " dirs)
+
+  (say "NOT setting #:dir")
+
+ ;;    If you pass in a string without setting #:dir then you
+ ;;    should get the same string back.  Checks strings both
+ ;;    with and without a trailing slash.
+ (for ((p (append vals dirs)))
+   (is (path-string->string p)
+       p
+       @~a{path-string->string @p works}))
+
+ (say "setting #:dir")
+ ;;    If you pass in strings and set #:dir then what you get
+ ;;    back should have a trailing slash.
+ (for ((p vals)
+       (d dirs))
+   (is (path-string->string p #:dir #t)
+       @~a{@|p|/}
+       @~a{(path-string->string @p #:dir #t) works})
+   
+   (is (path-string->string d #:dir #t)
+       d
+       @~a{(path-string->string @d #:dir #t) works}))
+
+ (say "passing paths")
+
+ ;;    If you pass in a path then you should get back the
+ ;;    equivalent string as per path->string.  It doesn't
+ ;;    matter if you set #:dir or not.
+ (for ((p (map string->path vals))
+       (d (map string->path dirs)))
+   (for ((x (list p d)))
+     (is (path-string->string x)
+         (path->string x)
+         @~a{(path-string->string @x) works})
+
+     (is (path-string->string x #:dir #t)
+         (path->string (path->directory-path x))
+         @~a{(path-string->string @x #:dir #t) works})))
+ ); test-suite
+ 
 (say "Done testing.")
