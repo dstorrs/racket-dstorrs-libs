@@ -172,9 +172,34 @@
 (test-suite
  "dir-and-filename"
 
- (define-values (dir fname) (dir-and-filename "/foo/bar"))
- (is dir (string->path "/foo/") "got correct dir")
- (is fname (string->path "bar") "got correct filename")
+ (let-values (((dir fname) (dir-and-filename "/foo/bar")))
+   (is dir (string->path "/foo/") "got correct dir for /foo/bar")
+   (is fname (string->path "bar") "got correct filename for /foo/bar"))
+ 
+ (let-values (((dir fname) (dir-and-filename "foo/bar")))
+   (is dir (string->path "foo/") "got correct dir for foo/bar")
+   (is fname (string->path "bar") "got correct filename for foo/bar"))
+ 
+ (let-values (((dir fname) (dir-and-filename "foo/bar/")))
+   (is dir (string->path "foo/") "got correct dir for foo/bar")
+   (is fname (string->path "bar/") "got correct filename for foo/bar/"))
+ 
+ (let-values (((dir fname) (dir-and-filename "/foo")))
+   (is dir (string->path "/") "got correct dir for /foo")
+   (is fname (string->path "foo") "got correct filename for /foo"))
+
+ (throws (thunk (dir-and-filename "foo"))
+         #rx"Cannot accept single-element relative paths"
+         "dir-and-filename throws if given a one-element relative path WITHOUT training slash ('foo')") 
+ 
+ (throws (thunk (dir-and-filename "foo/"))
+         #rx"Cannot accept single-element relative paths"
+         "dir-and-filename throws if given a one-element relative path WITH a training slash ('foo/')")
+
+ (throws (thunk (dir-and-filename "/"))
+         #rx"Cannot accept root path"
+         "dir-and-filename throws if given the root path")
+
  )
 
 (test-suite

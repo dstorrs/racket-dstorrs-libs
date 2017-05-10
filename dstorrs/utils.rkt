@@ -39,8 +39,8 @@
 ;;    returns as number but you can ask for it as string.
 (define/contract (12hr->24hr tm pm [as-str #f])
   (->* ((or/c string? exact-integer?) boolean?)
-	   (boolean?)
-	   (or/c string? exact-integer?))
+       (boolean?)
+       (or/c string? exact-integer?))
   (define t (if (string? tm) (string->number tm) tm))
   (define res (+ t (if pm 12 0)))
   (if as-str (->string res) res))
@@ -149,9 +149,9 @@
        any) ;; generally returns string but converter-proc can change that
   (converter-proc
    (~a (if prefix
-		   (string-append (->string prefix) "-")
-		   "")
-	   (->string (random 1000000)))))
+           (string-append (->string prefix) "-")
+           "")
+       (->string (random 1000000)))))
 
 ;;----------------------------------------------------------------------
 
@@ -173,8 +173,8 @@
 
 (define-syntax (say stx)
   (syntax-case stx ()
-	[(_ a b ...)
-	 #'(displayln (~a a b ...))]))
+    [(_ a b ...)
+     #'(displayln (~a a b ...))]))
 
 ;;----------------------------------------------------------------------
 
@@ -224,8 +224,18 @@
 
 (define/contract (dir-and-filename fp)
   (-> path-string? (values path? path?))
-  (define-values (d f ignore) (split-path fp))
-  (values d f))
+  (define-values (d f is-dir) (split-path fp))
+  (when (equal? d 'relative)
+    (raise-arguments-error  'dir-and-filename
+                           "Cannot accept single-element relative paths"
+                           "path" (path-string->string fp)))
+  (when (false? d)
+    (raise-arguments-error  'dir-and-filename
+                            "Cannot accept root path (/)"
+                            "path" (path-string->string fp)))
+  
+  (define convert (if is-dir path->directory-path identity))
+  (values d (convert f)))
 
 ;;----------------------------------------------------------------------
 
