@@ -235,7 +235,7 @@
                             "path" (path-string->string fp)))
   
   (define convert (if is-dir path->directory-path identity))
-  (values d (convert f)))
+  (values (convert d) (convert f)))
 
 ;;----------------------------------------------------------------------
 
