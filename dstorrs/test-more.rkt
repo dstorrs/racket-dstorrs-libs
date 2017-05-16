@@ -214,8 +214,8 @@
   (syntax-case stx ()
     [(_ msg body body1 ...)
      #'(begin (say "### START test-suite: " msg)
-              (void (lives (thunk body body1 ...)
-                           "test-suite completed without throwing (uncaught) exception"))
+              (lives (thunk body body1 ...  (void)) ; discard return values
+                     "test-suite completed without throwing (uncaught) exception")
               (say "")
               (say "Total tests passed so far: " (tests-passed))
               (say "Total tests failed so far: " (tests-failed))
