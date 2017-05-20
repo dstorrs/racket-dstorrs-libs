@@ -1,5 +1,8 @@
 #lang at-exp racket
 
+;; Parameters
+;; *) prefix-for-say : A string that will be prepended to all 'say' calls. Default: ""
+;;
 ;; List of functions:
 ;; *) ->string   : general purpose "convert stuff to string"
 ;; *) 12hr->24hr : for time displays
@@ -20,6 +23,7 @@
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) say : macro that uses 'displayln' to output all
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
+;; *) simple-guard
 ;; *) symbol->keyword
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
@@ -171,10 +175,12 @@
 
 ;;----------------------------------------------------------------------
 
+(define prefix-for-say (make-parameter ""))
 (define-syntax (say stx)
   (syntax-case stx ()
-    [(_ a b ...)
-     #'(displayln (~a a b ...))]))
+    [(say a b ...)
+     #'(displayln (~a (prefix-for-say) a b ...))]
+    ))
 
 ;;----------------------------------------------------------------------
 
