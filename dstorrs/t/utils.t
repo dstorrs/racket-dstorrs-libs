@@ -250,5 +250,22 @@
          (path->string (path->directory-path x))
          @~a{(path-string->string @x #:dir #t) works})))
  ); test-suite
+
+(test-suite
+ "__FILE__, __LINE__, __WHERE__"
+ (is __LINE__
+     (- (syntax-line #'here) 1)
+     "__LINE__ works")
+ 
+ (is __FILE__
+     (syntax-source #'here)
+     "__FILE__ works")
+
+ (is __WHERE__
+     (let ((line (- (syntax-line #'here) 1))
+           (fpath (syntax-source #'here)))
+       (~a "file:" fpath " (line:" line ")"))
+     "__WHERE__ works")
+ );test-suite
  
 (say "Done testing.")

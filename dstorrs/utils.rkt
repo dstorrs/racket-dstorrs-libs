@@ -4,6 +4,7 @@
 ;; *) prefix-for-say : A string that will be prepended to all 'say' calls. Default: ""
 ;;
 ;; List of functions:
+;; *) __FILE__, __LINE__, __WHERE__: current filepath/line/string of both
 ;; *) ->string   : general purpose "convert stuff to string"
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
@@ -28,6 +29,28 @@
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 ;; *) verify-struct  : test correctness of just parts of a structure
+
+;;----------------------------------------------------------------------
+
+(define-syntax (__LINE__ stx)
+  (with-syntax ((line (syntax-line stx)))
+    (syntax-case stx ()
+        [_ #'line])))
+
+;;----------------------------------------------------------------------
+
+(define-syntax (__FILE__ stx)
+  (with-syntax ((this-file (syntax-source stx)))
+    (syntax-case stx ()
+      [_ #'this-file])))
+
+;;----------------------------------------------------------------------
+
+(define-syntax (__WHERE__ stx)
+  (with-syntax ((fpath (syntax-source stx))
+                (line  (syntax-line stx)))
+    (syntax-case stx ()
+      [_ #'(~a "file:" fpath " (line:" line ")")])))
 
 ;;----------------------------------------------------------------------
 
