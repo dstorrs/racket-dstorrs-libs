@@ -128,28 +128,32 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (path-string->string p #:dir [is-dir? #f])
-  (->* ((or/c "" path-string?)) (#:dir boolean?) string?)
+(define/contract (path-string->string p #:dir? [is-dir? #f] #:reject-empty-string [reject-empty-string #f])
+  (->* ((or/c "" path-string?)) (#:dir? boolean? #:reject-empty-string boolean?) string?)
   ;; This will return a string corresponding to a path as
-  ;; Racket would interpret it.  If you pass #:dir #t then
+  ;; Racket would interpret it.  If you pass #:dir? #t then
   ;; it will ensure the trailing path separator is on it.
   ;;
   ;; As a special case, if you pass "" (empty string) then
   ;; it will return "" instead of throwing an exception as
-  ;; path->string would do.
+  ;; path->string would do.  You can disable this behavior
+  ;; by setting #:reject-empty-string to #t
 
   (call/cc
    (lambda (return)
-     (when (equal? p "") (return ""))
-     (define appender  (if is-dir? path->directory-path identity))
-     (define converter (if (string? p) string->path identity))
-     (path->string (appender (converter p))))))
+     (cond [(and (equal? p "")
+                 (not reject-empty-string))
+            (return "")]
+           [else 
+            (define appender  (if is-dir? path->directory-path identity))
+            (define converter (if (string? p) string->path identity))
+            (path->string (appender (converter p)))]))))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (path-string->path   p #:dir [is-dir? #f])
-  (->* (path-string?) (#:dir boolean?) path?)
-  (string->path (path-string->string p #:dir is-dir?)))
+(define/contract (path-string->path   p #:dir? [is-dir? #f])
+  (->* (path-string?) (#:dir? boolean?) path?)
+  (string->path (path-string->string p #:dir? is-dir?)))
 
 ;;----------------------------------------------------------------------
 

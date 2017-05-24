@@ -211,9 +211,9 @@
  (say "vals: " vals)
  (say "dirs: " dirs)
 
-  (say "NOT setting #:dir")
+ (say "NOT setting #:dir?")
 
- ;;    If you pass in a string without setting #:dir then you
+ ;;    If you pass in a string without setting #:dir? then you
  ;;    should get the same string back.  Checks strings both
  ;;    with and without a trailing slash.
  (for ((p (append vals dirs)))
@@ -221,36 +221,53 @@
        p
        @~a{path-string->string @p works}))
 
- (say "setting #:dir")
- ;;    If you pass in strings and set #:dir then what you get
+ (say "setting #:dir?")
+ ;;    If you pass in strings and set #:dir? then what you get
  ;;    back should have a trailing slash.
  (for ((p vals)
        (d dirs))
-   (is (path-string->string p #:dir #t)
+   (is (path-string->string p #:dir? #t)
        @~a{@|p|/}
-       @~a{(path-string->string @p #:dir #t) works})
+       @~a{(path-string->string @p #:dir? #t) works})
    
-   (is (path-string->string d #:dir #t)
+   (is (path-string->string d #:dir? #t)
        d
-       @~a{(path-string->string @d #:dir #t) works}))
+       @~a{(path-string->string @d #:dir? #t) works}))
 
  (say "passing paths")
 
  (is (path-string->string "")
      ""
-     "path-string->string handles the empty string when #:dir not set")
+     "path-string->string handles the empty string when #:dir? not set")
 
- (is (path-string->string "" #:dir #t)
+ (is (path-string->string "" #:dir? #t)
      ""
-     "path-string->string handles the empty string when #:dir IS set")
+     "path-string->string handles the empty string when #:dir? IS set")
  
- (is (path-string->string "" #:dir #f)
+ (is (path-string->string "" #:dir? #f)
      ""
-     "path-string->string handles the empty string when #:dir IS set and is #f")
- 
+     "path-string->string handles the empty string when #:dir? IS set and is #f")
+
+ (throws (thunk (path-string->string "" #:reject-empty-string #t))
+         exn:fail:contract?
+         "path-string->string handles the empty string when #:dir? IS set and is #f")
+
+ (throws (thunk (path-string->string "" #:reject-empty-string? #t))
+         exn:fail:contract?
+         @~a{path-string->string fails on empty string with #:reject-empty-string? set but no #:dir})
+
+ (throws (thunk (path-string->string "" #:reject-empty-string? #t #:dir? #t))
+         exn:fail:contract?
+         @~a{path-string->string fails on empty string with #:reject-empty-string? #t and #:dir #t})
+
+ (throws (thunk (path-string->string "" #:reject-empty-string? #t #:dir? #f))
+         exn:fail:contract?
+         @~a{path-string->string fails on empty string with #:reject-empty-string? #t and #:dir #f})
+
+      
  ;;    If you pass in a path then you should get back the
  ;;    equivalent string as per path->string.  It doesn't
- ;;    matter if you set #:dir or not.
+ ;;    matter if you set #:dir? or not.
  (for ((p (map string->path vals))
        (d (map string->path dirs)))
    (for ((x (list p d)))
@@ -258,9 +275,9 @@
          (path->string x)
          @~a{(path-string->string @x) works})
 
-     (is (path-string->string x #:dir #t)
+     (is (path-string->string x #:dir? #t)
          (path->string (path->directory-path x))
-         @~a{(path-string->string @x #:dir #t) works})))
+         @~a{(path-string->string @x #:dir? #t) works})))
  ); test-suite
 
 (test-suite
