@@ -236,6 +236,18 @@
 
  (say "passing paths")
 
+ (is (path-string->string "")
+     ""
+     "path-string->string handles the empty string when #:dir not set")
+
+ (is (path-string->string "" #:dir #t)
+     ""
+     "path-string->string handles the empty string when #:dir IS set")
+ 
+ (is (path-string->string "" #:dir #f)
+     ""
+     "path-string->string handles the empty string when #:dir IS set and is #f")
+ 
  ;;    If you pass in a path then you should get back the
  ;;    equivalent string as per path->string.  It doesn't
  ;;    matter if you set #:dir or not.

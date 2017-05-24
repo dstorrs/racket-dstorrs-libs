@@ -129,13 +129,21 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (path-string->string p #:dir [is-dir? #f])
-  (->* (path-string?) (#:dir boolean?) string?)
+  (->* ((or/c "" path-string?)) (#:dir boolean?) string?)
   ;; This will return a string corresponding to a path as
   ;; Racket would interpret it.  If you pass #:dir #t then
   ;; it will ensure the trailing path separator is on it.
-  (define appender  (if is-dir? path->directory-path identity))
-  (define converter (if (string? p) string->path identity))
-  (path->string (appender (converter p))))
+  ;;
+  ;; As a special case, if you pass "" (empty string) then
+  ;; it will return "" instead of throwing an exception as
+  ;; path->string would do.
+
+  (call/cc
+   (lambda (return)
+     (when (equal? p "") (return ""))
+     (define appender  (if is-dir? path->directory-path identity))
+     (define converter (if (string? p) string->path identity))
+     (path->string (appender (converter p))))))
 
 ;;----------------------------------------------------------------------
 
