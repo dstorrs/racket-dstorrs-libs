@@ -4,8 +4,35 @@
          dstorrs/utils
          dstorrs/list-utils
          dstorrs/sql
+         dstorrs/exceptions
          )
 
+
+(struct exn:fail:db:num-rows exn:fail (expected got) #:transparent)
+(struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
+(struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
+
+(define/contract (refine-db-exn e)
+  (-> exn? exn?)
+
+  (define msg (exn-message e))
+
+  (define wrong-number-of-rows (pregexp
+                                @~a{returned wrong number of rows.+?expected:\s+(\d+).+?got:\s+(\d+)}
+                                ))
+
+  (define num string->number) ;; for convenience
+
+  (match msg
+    [(regexp wrong-number-of-rows (list _ expected got))
+     (create-exn (if (= (num got) 0)
+                     exn:fail:db:num-rows:zero
+                     exn:fail:db:num-rows:many
+                     )
+                 msg (num expected) (num got))]
+
+    [_ e])
+  )
 
 ;;----------------------------------------------------------------------
 
@@ -22,14 +49,14 @@
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks")
 ;;
-;; ;Run a query with params    
+;; ;Run a query with params
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1")
 ;;                      7)
 ;;
 ;; ;Run a query but return the results as a list of 2-item lists
-;; ;instead of a list of hashes.  
+;; ;instead of a list of hashes.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1")
@@ -52,7 +79,7 @@
 ;;                      7
 ;;                      #:transform-dict (lambda (d)
 ;;                                         (for/hash ((k (hash-keys d)))
-;;                                           (values (symbol->string k) (hash-ref d k))) 
+;;                                           (values (symbol->string k) (hash-ref d k)))
 (define/contract (query-rows-as-dicts keys db sql
                                       #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
@@ -68,12 +95,12 @@
        #:rest list?
        list?)
 
-       ;;  #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-       ;;  #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
-       ;;  #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
-       ;;  )
-       ;; #:rest (listof any/c)
-       ;; (listof dict?))
+  ;;  #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+  ;;  #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
+  ;;  #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
+  ;;  )
+  ;; #:rest (listof any/c)
+  ;; (listof dict?))
 
   (define vals (flatten params))
   (define (v->d v)

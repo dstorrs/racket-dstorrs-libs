@@ -11,32 +11,3 @@
 (define/contract (create/raise-exn ctor msg . args)
   (->* (procedure? string?) () #:rest (listof any/c) any)
   (raise (apply create-exn (append (list ctor msg) args))))
-
-
-
-(struct exn:fail:db:num-rows exn:fail (expected got) #:transparent)
-(struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
-(struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
-
-(define/contract (refine-db-exn e)
-  (-> exn? exn?)
-
-  (define msg (exn-message e))
-
-  (define wrong-number-of-rows (pregexp
-                                @~a{returned wrong number of rows.+?expected:\s+(\d+).+?got:\s+(\d+)}
-                                ))
-
-
-  (define num string->number) ;; for convenience
-
-  (match msg
-    [(regexp wrong-number-of-rows (list _ expected got))
-     (create-exn (if (= (num got) 0)
-                     exn:fail:db:num-rows:zero
-                     exn:fail:db:num-rows:many
-                     )
-                 msg (num expected) (num got))]
-
-    [_ e])
-  )
