@@ -208,11 +208,6 @@
  (define vals (list "foo" "/bar" "/baz/foo"))
  (define dirs (map (curryr string-append "/") vals))
                 
- (say "vals: " vals)
- (say "dirs: " dirs)
-
- (say "NOT setting #:dir?")
-
  ;;    If you pass in a string without setting #:dir? then you
  ;;    should get the same string back.  Checks strings both
  ;;    with and without a trailing slash.
@@ -221,7 +216,6 @@
        p
        @~a{path-string->string @p works}))
 
- (say "setting #:dir?")
  ;;    If you pass in strings and set #:dir? then what you get
  ;;    back should have a trailing slash.
  (for ((p vals)
@@ -233,8 +227,6 @@
    (is (path-string->string d #:dir? #t)
        d
        @~a{(path-string->string @d #:dir? #t) works}))
-
- (say "passing paths")
 
  (is (path-string->string "")
      ""
@@ -296,5 +288,47 @@
        (~a "file:" fpath " (line:" line ")"))
      "__WHERE__ works")
  );test-suite
- 
+
+(test-suite
+ "say"
+
+ (is (with-output-to-string
+       (thunk (say "foo")))
+     "foo\n"
+     "basic 'say foo' works")
+
+ (is (with-output-to-string
+       (thunk (say "foo" "bar")))
+     "foobar\n"
+     "'say foo bar' works")
+
+ (is (with-output-to-string
+       (thunk (say)))
+     "\n"
+     "'(say)' works")
+
+ (parameterize ((prefix-for-say "foo"))
+   (is (with-output-to-string
+         (thunk (say "bar")))
+       "foobar\n"
+       "prefix-for-say 'foo' is respected"))
+
+ (parameterize ((prefix-for-say 87))
+   (is (with-output-to-string
+         (thunk (say "bar")))
+       "87bar\n"
+       "prefix-for-say with number is respected"))
+
+ (parameterize ((prefix-for-say (hash)))
+   (is (with-output-to-string
+         (thunk (say "bar")))
+       "#hash()bar\n"
+       "prefix-for-say with number is respected"))
+
+ (parameterize ((prefix-for-say (hash 'a 67 'b "foo")))
+   (is (with-output-to-string
+         (thunk (say "bar")))
+       "#hash((a . 67) (b . foo))bar\n"
+       "prefix-for-say with hash is respected"))
+ )
 (say "Done testing.")

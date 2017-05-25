@@ -213,8 +213,8 @@
 (define prefix-for-say (make-parameter ""))
 (define-syntax (say stx)
   (syntax-case stx ()
-    [(say a b ...)
-     #'(displayln (~a (prefix-for-say) a b ...))]
+    [(say a ...)
+     #'(displayln (~a (prefix-for-say) a ...))]
     ))
 
 ;;----------------------------------------------------------------------
