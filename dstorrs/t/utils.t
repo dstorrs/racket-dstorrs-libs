@@ -8,8 +8,13 @@
 
 (ok #t "testing harness works")
 
-(for ((v (list 0 0.0 -0 -0.0 "" #f (void) null)))
-  (ok (perl-false? v) @~a{@v is false}))
+(test-suite
+ "perl-false?"
+ (for ((v (list 0 0.0 -0 -0.0 "" #f (void) null)))
+   (ok (perl-false? v) @~a{@v is false}))
+ (not-ok (perl-false? "0foo")
+         "'0foo' is not perl-false? but also not an exception" )
+ )
 
 (test-suite
  "append-file"

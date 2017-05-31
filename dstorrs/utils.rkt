@@ -159,15 +159,18 @@
 
 ;;    Because the Racket concept of booleans is inflexible.
 ;;    Things that are perl-false:
-;;        #f, "", '(), #<void>, and anything matching (zero?)
+;;        #f, "", '(), #<void>, anything matching (zero?),
+;;        and any string that equals 0
 (define (perl-true? x) (not (perl-false? x)))
 (define (perl-false? x)
   (cond
-    ((string? x) (= 0 (string-length x)))
-    ((number? x) (zero? x))
-    ((list?   x) (null? x))
-    (else (or (void? x)
-              (false? x)))))
+    [(string? x) (or (with-handlers ((exn:fail? (lambda (e) #f)))
+                       (= 0 (string->number x)))
+                     (= 0 (string-length x)))]
+    [(number? x) (zero? x)]
+    [(list?   x) (null? x)]
+    [else (or (void? x)
+              (false? x))]))
 
 ;;----------------------------------------------------------------------
 
