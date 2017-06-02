@@ -11,6 +11,7 @@
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
+;; *) not-equal?      : what it says on the tin
 ;; *) not-null?       : what it says on the tin
 ;; *) pad-digits : convert, e.g. "9" to "09"
 ;; *) path-string->string and path-string->path
@@ -111,6 +112,12 @@
       h
       (make-hash (for/list ((k (hash-keys h)))
                    (cons k (hash-ref h k))))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (not-equal? x y)
+  (-> any/c any/c boolean?)
+  (not (equal? x y)))
 
 ;;----------------------------------------------------------------------
 
