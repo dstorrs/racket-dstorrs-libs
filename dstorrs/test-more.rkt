@@ -13,26 +13,32 @@
          dstorrs/utils
          )
 
-(define tp 0)
-(define tf 0)
+(define _tp 0)
+(define _tf 0)
 
 (define (tests-passed [inc 0])
-  (set! tp (+ tp inc))
-  tp)
+  (set! _tp (+ _tp inc))
+  _tp)
 
 (define (tests-failed [inc 0])
-  (set! tf (+ tf inc))
-  tf)
+  (set! _tf (+ _tf inc))
+  _tf)
+(define (_unwrap-val val) (if (procedure? val) (val) val))
+
+;;----------------------------------------------------------------------
+;;----------------------------------------------------------------------
+;;----------------------------------------------------------------------
+
 
 (splicing-let ([test-num 0])
   (define (_inc-test-num! inc)
     (set! test-num (+ test-num inc))
     )
-  (define (next-test-num)
-    (set! test-num (add1 test-num))
+  (define (next-test-num #:inc [should-increment #t])
+    (define next (add1 test-num))
+    (when should-increment
+      (set! test-num (add1 test-num)))
     test-num))
-
-(define (_unwrap-val val) (if (procedure? val) (val) val))
 
 ;;----------------------------------------------------------------------
 
@@ -97,13 +103,29 @@
       msg))
 
 
-;;    (is-type (my-func) hash? "(my-func) returns a hash")
-(define (is-type val type-pred [msg ""] [op equal?])
-  (test-more-check #:got (type-pred val)
+;;    (matches (my-func) hash? "(my-func) returns a hash")
+(define (matches val predicate [msg ""] [op equal?])
+  (test-more-check #:got (predicate val)
                    #:msg msg
                    #:op op
                    #:return val
                    ))
+;;    (not-matches 'foo hash? "symbol foo is not a hash")
+(define (not-matches val type-pred [msg ""] [op equal?])
+  (test-more-check #:got ((negate type-pred) val)
+                   #:msg msg
+                   #:op op
+                   #:return val
+                   ))
+
+;;    alias for 'matches'
+(define (is-type val type-pred [msg ""] [op equal?])
+  (matches val type-pred msg op))
+
+;;    alias for 'not-matches'
+(define (isnt-type val type-pred [msg ""] [op equal?])
+  (not-matches val type-pred msg op))
+
 
 (define (is val expected [msg ""] [op equal?])
   (test-more-check #:got (_unwrap-val val)
@@ -125,7 +147,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define (like val regex [msg ""])
+(define/contract (like val regex [msg ""])
+  (->* (any/c regexp?) (string?) any)
   (define res (regexp-match regex (_unwrap-val val)))
   (test-more-check #:got (true? res) ; force to boolean
                    #:return res
@@ -202,11 +225,11 @@
 ;;----------------------------------------------------------------------
 
 ;;    When all you care about is that it dies, not why
-(define/contract (dies thunk [msg ""])
+(define/contract (dies thnk [msg ""])
   (->* (procedure?)
        (string?)
        any/c)
-  (throws thunk (lambda (e) #t) msg))
+  (throws thnk (lambda (e) #t) msg))
 
 ;;----------------------------------------------------------------------
 
@@ -244,14 +267,7 @@
 
 ;;----------------------------------------------------------------------
 
-(provide ok not-ok
-         is isnt
-         is-type
-         test-more-check
-         like unlike
-         throws dies lives
-         test-suite
-         tests-failed tests-passed
-         _inc-test-num!
-         make-test-file
-         )
+(provide (except-out (all-defined-out)
+                     _tp _tf
+                     _unwrap-val
+                     ))

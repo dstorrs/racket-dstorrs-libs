@@ -4,6 +4,14 @@
 (require "../test-more.rkt")
 (require dstorrs/utils)
 
+(define (inner-test thnk [should-pass #t])
+  (define result #f)
+  (with-output-to-string
+    (thunk (set! result (thnk))))
+  ((if should-pass tests-passed tests-failed) -1)   ; only count the outer test
+  (_inc-test-num! -1) ; only count the outer test
+  result)
+
 
 
 (test-suite
@@ -132,13 +140,13 @@
 
  (define (boom) (raise-argument-error 'boom "PEBKAC" 18))
 
- (define str 
+ (define str
    (with-output-to-string
      (thunk
       (throws (thunk "doesn't throw") "this string not used"))))
  (tests-failed -1)   ; undo the inner test above -- it was supposed to fail.
  (_inc-test-num! -1) ; undo the inner test above -- it was supposed to fail.
- 
+
  (like str
        #px"NOT ok.+?\\[DID NOT THROW\\]"
        "'throws' correctly handles it when it doesn't throw")
@@ -167,11 +175,11 @@
  (throws (thunk (raise 7))
          7
          "'throws' will notice if you raise a number instead of an exn? object")
- 
+
  (throws (thunk (raise "foo"))
          "foo"
          "'throws' will notice if you raise a string instead of an exn? object")
- 
+
  (throws (thunk (raise #t))
          #t
          "'throws' will notice if you raise #t instead of an exn? object")
@@ -186,24 +194,45 @@
 
  (dies (thunk (raise 7))
        "'dies' will notice if you raise a number instead of an exn? object")
- 
+
  (dies (thunk (raise "foo"))
        "'dies' will notice if you raise a string instead of an exn? object")
- 
+
  (dies (thunk (raise #t))
        "'dies' will notice if you raise #t instead of an exn? object")
  )
 
 (test-suite
- "tests return their final value"
+ "is-type/isnt-type, matches/not-matches"
 
- (define (inner-test thnk [should-pass #t])
-   (define result #f)
-   (with-output-to-string
-     (thunk (set! result (thnk))))
-   ((if should-pass tests-passed tests-failed) -1)   ; only count the outer test
-   (_inc-test-num! -1) ; only count the outer test
-   result)
+ (define (check-it funcs val pred)
+   (for ((func funcs))
+     (is (func val pred (format "(~a ~a ~a)" (object-name func) val  (object-name pred)))
+         val
+         (format "(~a ~a) returns ~a" (object-name func) val val))))
+
+ (define check-is-good (curry check-it (list is-type matches)))
+
+ (define greater-than-one? (lambda (x) (> x 1)))
+ (check-is-good  7 greater-than-one?) 
+ (check-is-good  7 integer?) 
+ (check-is-good "foo" string?) 
+ (check-is-good 'foo symbol?) 
+ (check-is-good (hash) hash?) 
+ (check-is-good (vector) vector?) 
+
+ (define check-is-bad  (curry check-it (list isnt-type not-matches)))
+ (check-is-bad  0 greater-than-one?) 
+ (check-is-bad  -7 exact-positive-integer?) 
+ (check-is-bad "foo" symbol?) 
+ (check-is-bad 'foo string?) 
+ (check-is-bad (hash) vector?) 
+ (check-is-bad (vector) hash?) 
+ 
+ )
+
+(test-suite
+ "tests return their final value"
 
  (is (inner-test (thunk (lives (thunk 8.2)) 8.2))
      8.2
@@ -223,7 +252,7 @@
      8.2
      "Got the correct value from ok")
 
- 
+
  (is (inner-test (thunk (not-ok #f)))
      #t
      "Got the correct value from ok")
@@ -261,9 +290,9 @@
 
  (delete-test-file)
  (not-ok (file-exists? filepath) "before creation, file does not exist")
- 
+
  (lives (thunk (make-test-file filepath)) "after creation, file exists")
- 
+
  (delete-test-file)
 
  (not-ok (file-exists? filepath) "file successfully removed")
@@ -282,8 +311,8 @@
          "make-test-file dies if the file exists and you say '#:overwrite #f'"
          )
  (let ((the-path (lives (thunk (make-test-file "/tmp")) "made test file")))
-   (ok (file-exists? the-path) "a random filename was generated and returned")) 
-      
+   (ok (file-exists? the-path) "a random filename was generated and returned"))
+
  )
 
 ;; ;; ;;  @@TODO
