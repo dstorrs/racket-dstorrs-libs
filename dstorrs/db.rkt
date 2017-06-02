@@ -8,7 +8,11 @@
          )
 
 
-(struct exn:fail:db:num-rows exn:fail (expected got) #:transparent)
+(struct exn:fail:db exn:fail () #:transparent)
+(struct exn:fail:db:create exn:fail:db () #:transparent)
+(struct exn:fail:db:not-exists exn:fail:db () #:transparent)
+(struct exn:fail:db:exists exn:fail:db () #:transparent)
+(struct exn:fail:db:num-rows exn:fail:db (expected got) #:transparent)
 (struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
 (struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
 
