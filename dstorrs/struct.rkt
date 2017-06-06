@@ -33,11 +33,11 @@
 ;;                         '(a b c)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
 ;;
 ;; Use a hash and rename some of the keys
-;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'charlie 3) 
+;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'charlie 3)
 ;;                         #:remap-keys (hash 'charlie 'c)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
 ;;
 ;; Use a hash, only some of the keys, and rename some of the keys
-;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'charlie 3 'd 5 'e 8) 
+;; (hash->struct/kw foo/kw (hash 'a 1 'b 2 'charlie 3 'd 5 'e 8)
 ;;                         '(a b charlie)
 ;;                         #:remap-keys (hash 'charlie 'c)) ; => (foo/kw #:a 1 #:b 2 #:c 3)
 
@@ -63,17 +63,19 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash->struct/kw struct-ctor h [keys #f] #:remap-keys [remapped-keys (hash)])
+(define/contract (hash->struct/kw struct-ctor h [restricted-keys #f] #:remap-keys [remapped-keys (hash)])
   (->* (procedure? (hash/c symbol? any/c))
        ((non-empty-listof any/c) #:remap-keys (hash/c symbol? symbol?))
        struct?)
 
-  (define sorted-keys (sort (if keys keys (hash-keys h)) symbol<?))
-  (define final-keys
-    (for/list ((k sorted-keys))
-      (hash-ref remapped-keys k k)))
+  (define keys-used (if restricted-keys restricted-keys (hash-keys h)))
+  (define mapping
+    (for/hash ((k keys-used))
+      (values (hash-ref remapped-keys k k)
+              (hash-ref h k))))
 
+  (define sorted-keys (sort (hash-keys mapping) symbol<?))
   (keyword-apply struct-ctor
-                 (symbols->keywords final-keys)
-                 (map (curry hash-ref h) sorted-keys)
+                 (symbols->keywords sorted-keys)
+                 (map (curry hash-ref mapping) sorted-keys)
                  '()))
