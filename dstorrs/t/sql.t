@@ -113,7 +113,46 @@
      "var->column \"FOO-BAR-BAX\" works")
 
  (throws (thunk (var->column ""))
-         #px"expected:\\s+symbol\\s+or\\s+non-empty-string"
+         #px"expected:\\s+\\(or/c\\s+non-empty-string\\?\\s+symbol\\?\\)"
          "var->column throws on empty string")
+ )
+ 
+(test-suite
+ "var-list->column-clause"
+ (is (var-list->column-clause (list "foo" "bar"))
+     "foo,bar"
+     "var-list->column-clause '(\"foo\" \"bar\" works")
+
+ (is (var-list->column-clause '(foo "bar"))
+     "foo,bar"
+     "var-list->column-clause '(foo \"bar\" works")
+  
+ (is (var-list->column-clause 'foo "bar")
+     "foo,bar"
+     "var-list->column-clause '(foo \"bar\" works")
+  
+ (is (var-list->column-clause '("foo-bar"))
+     "foo_bar"
+     "var-list->column-clause '(\"foo-bar\") works")
+
+ (is (var-list->column-clause 'foo-bar)
+     "foo_bar"
+     "var-list->column-clause 'foo-bar works")
+
+ (is (var-list->column-clause "FOO-BAR" 'BAZ-quux)
+     "foo_bar,baz_quux"
+     "var-list->column-clause \"FOO-BAR\" 'BAZ-quux works")
+
+ (is (var-list->column-clause "FOO-BAR-BAX" "glop,blig")
+     "foo_bar_bax,glop,blig"
+     "var-list->column-clause \"FOO-BAR-BAX\" \"glop,blig\" works")
+
+ ;; (is (var-list->column-clause)
+ ;;     ""
+ ;;     "var-list->column-clause returns empty string")
+
+ (is (var-list->column-clause '())
+     ""
+     "var-list->column-clause '() returns empty string")
  )
  

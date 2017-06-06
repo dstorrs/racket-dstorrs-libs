@@ -123,10 +123,17 @@
 ;;--------------------------------------------------------------------------------
 
 (define/contract (var->column v)
-  (-> (or/c string? symbol?) string?)
-  (let ((name (~a v)))
-    (when (equal? "" name)
-      (raise-argument-error 'var->column "symbol or non-empty-string" name))
-    (string-downcase (regexp-replace* #px"-" name "_"))))
+  (-> (or/c non-empty-string? symbol?) string?)
+  (string-downcase (regexp-replace* #px"-" (~a v) "_")))
+
+;;--------------------------------------------------------------------------------
+
+(define/contract (var-list->column-clause . vars)
+  (->* () () #:rest (listof (or/c non-empty-string? symbol?
+                                  (listof (or/c non-empty-string? symbol?))))
+       string?)
+  (let ((lst (flatten vars)))
+    (cond [(null? lst) ""]
+          [else (string-join (map var->column lst) ",")])))
 
 ;;--------------------------------------------------------------------------------
