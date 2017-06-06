@@ -92,7 +92,7 @@
   (define t2-link     (~a jta "." (singular table2) "_id")); c2f.file_id
 
   ;; collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id
-    
+
   @~a{@table1 @t1a JOIN @join-table @jta ON @t1-id = @t1-link JOIN @table2 @t2a ON @t2-link = @t2-id}
   )
 
@@ -119,7 +119,14 @@
    ")"
    (if subquery ")" "")
    ))
-   
 
 ;;--------------------------------------------------------------------------------
 
+(define/contract (var->column v)
+  (-> (or/c string? symbol?) string?)
+  (let ((name (~a v)))
+    (when (equal? "" name)
+      (raise-argument-error 'var->column "symbol or non-empty-string" name))
+    (string-downcase (regexp-replace* #px"-" name "_"))))
+
+;;--------------------------------------------------------------------------------

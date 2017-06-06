@@ -85,3 +85,35 @@
      "IN ($3,$4)"
      "correct: (sql-IN-clause '(foo bar) 3)")  
 )
+
+(test-suite
+ "var->column"
+ (is (var->column "foo")
+     "foo"
+     "var->column \"foo\" works")
+
+ (is (var->column 'foo)
+     "foo"
+     "var->column 'foo works")
+  
+ (is (var->column "foo-bar")
+     "foo_bar"
+     "var->column \"foo-bar\" works")
+
+ (is (var->column 'foo-bar)
+     "foo_bar"
+     "var->column 'foo-bar works")
+
+ (is (var->column "FOO-BAR")
+     "foo_bar"
+     "var->column \"FOO-BAR\" works")
+
+ (is (var->column "FOO-BAR-BAX")
+     "foo_bar_bax"
+     "var->column \"FOO-BAR-BAX\" works")
+
+ (throws (thunk (var->column ""))
+         #px"expected:\\s+symbol\\s+or\\s+non-empty-string"
+         "var->column throws on empty string")
+ )
+ 
