@@ -8,8 +8,9 @@
 
 (ok 1 "test harness is working")
 
-(test-suite
- "original tests"
+(when #t
+  (test-suite
+ "get"
  (define l '(foo "bar" ("baz" (quux))))
  (define h (make-hash
             `(("foo" . "bar")
@@ -49,32 +50,78 @@
      "not found"
      "defaults correctly if key was not found in hash")
 
- (is (autobox "foo") '("foo") "(autobox \"foo\" returns '(\"foo\")")
- (is (autobox '("foo")) '("foo") "(autobox '(\"foo\") returns '(\"foo\")")
+ (is (get '(a b c) '(0)) 'a)
+ )
+  )
 
- (is (atom? "foo") #t "atom? detects string as atom")
- (is (atom? 7) #t "atom? detects string as atom")
- (is (atom? (hash 'a 7)) #t "atom? detects hash as atom")
- (is (atom? '("foo")) #f "atom? detects list as non-atom")
+(when #t
+  (test-suite
+   "safe-first and safe-rest"
+   
+   (is (safe-first '(foo bar)) 'foo "safe-first '(foo bar) is 'foo")
+   (is (safe-first '()) '() "safe-first '() is '()")
+   (for ((args (list (cons 1 2) 'a 7)))
+     (throws (thunk (safe-first args))
+             #px"expected:\\s+list\\?"
+             (format "(safe-first ~a) throws because not valid list" args)))
+   
+   (is (safe-rest '(foo bar)) '(bar) "safe-first '(foo bar) is '(bar)")
+   (is (safe-rest '()) '() "safe-rest '() is '()")
+   (for ((args (list (cons 1 2) 'a 7)))
+     (throws (thunk (safe-rest args))
+             #px"expected:\\s+list\\?"
+             (format "(safe-rest ~a) throws because not valid list" args)))
+   )
+  )
 
+(when #t
+  (test-suite
+   "autobox"
+   
+   (is (autobox "foo") '("foo") "(autobox \"foo\" returns '(\"foo\")")
+   (is (autobox '("foo")) '("foo") "(autobox '(\"foo\") returns '(\"foo\")")
+   (is (autobox '()) '() "(autobox '()) returns '()")
+   )
+  )
+
+(when #t
+  (test-suite
+   "atom?"
+
+   (struct foo (x y))
+   (for ((x (list 7 "foo" #"foo" 'foo #t #f (integer->char 65)
+                  (void) (hash) (vector) (in-range 8) (foo 1 2)
+                  '()
+                  )))
+     (is (atom? x) #t (format "atom? detects ~a as an atom" x)))
+
+   (for ((x (list '(foo) (cons 'x 'y))))
+     (is (atom? x) #f (format "atom? detects ~a as not an atom" x)))
+   )
+  )
+
+(when #t
+  (test-suite
+   "remove-nulls"
+   
+ (is (remove-nulls '()) '() "remove-nulls leaves null list unchanged")
  (is (remove-nulls '(foo bar)) '(foo bar) "remove-nulls leaves list unchanged if it contains no null list")
  (is (remove-nulls '(foo () bar)) '(foo bar) "remove-nulls removes one null")
  (is (remove-nulls '(foo (()) bar)) '(foo (()) bar) "remove-nulls does not remove (())")
+ )
+  )
 
+(when #t
+  (test-suite
+   "list/not-null?"
+   
  (for ((v `(#f #t "foo" 7 list? () ,(make-hash '((x . 7))) ,(make-vector 8))))
    (not-ok (list/not-null? v) (format "list/not-null? ~a is #f" v)))
 
  (for ((v '((foo) (()))))
    (ok (list/not-null? v) (format "(list/not-null? ~a is #t" v)))
-
- (is (get '(a b c) '(0)) 'a)
-
- (is (safe-first '(foo bar)) 'foo "safe-first '(foo bar) is 'foo")
- (is (safe-first '()) '() "safe-first '() is '()")
-
- (is (safe-rest '(foo bar)) '(bar) "safe-first '(foo bar) is '(bar)")
- (is (safe-rest '()) '() "safe-rest '() is '()")
  )
+  )
 
 
 (test-suite
@@ -314,6 +361,7 @@
      '()
      "sort num works with null")
 
+ 
  (is (sort-str (list "foo" "baz" "glux" "aaaa"))
      (list "aaaa" "baz" "foo"  "glux" )
      "sort-str works with unsorted list")
@@ -322,6 +370,7 @@
      '()
      "sort-str works with null")
 
+ 
  (is (sort-sym (list 'foo 'baz 'glux 'aaaa))
      (list 'aaaa 'baz 'foo  'glux)
      "sort-sym works with unsorted list")
@@ -330,6 +379,7 @@
      '()
      "sort-sym works with null")
 
+ 
  (is (sort-smart (list 'foo 'baz 'glux 'aaaa))
      (list 'aaaa 'baz 'foo  'glux)
      "sort-smart works with unsorted list of symbols")
@@ -342,6 +392,14 @@
      (list 0 3 4 9 15)
      "sort-smart works with unsorted list of nums")
 
+
+ (define bad-lst  (list 7 8 'a "x"))
+ (for ((f (list sort-num sort-str sort-sym sort-smart)))
+   (throws (thunk (f bad-lst))
+           exn:fail:contract?
+           (format "~a fails when given list containing multiple types (~a)"
+                   (object-name f)
+                   bad-lst)))
  )
 
 (test-suite
@@ -455,3 +513,126 @@
          #px"procedure does not expect an argument with given keyword\\s+procedure: bar\\s+given keyword: #:a"
          "throws when the hash has a key that isn't a param")
  )
+
+(when #t
+  (test-suite
+   "step-by-n"
+
+   ;;  Happy path: data is divisible by number of items to step by
+   ;;  (which defaults to 2)
+   (is (step-by-n list '(1 2 3 4))
+       '((1 2) (3 4))
+       "(step-by-n (compose list list) '(1 2 3 4)) returns '((1 2) (3 4))")
+
+   (is (step-by-n list '(1 2 3 4 5 6) 3)
+       '((1 2 3) (4 5 6))
+       "(step-by-n list '(1 2 3 4 5 6) 3) returns '((1 2 3) (4 5 6))")
+
+   (is (step-by-n list '(1 2 3 4) #:flat #t)
+       '(1 2 3 4)
+       "(step-by-n list '(1 2 3 4 #:flat #t)) returns '(1 2 3 4)")
+
+
+   ;; Handles it gracefully if there are leftover elements
+   (is (step-by-n + '(1 2 3 4 5))
+       '((3) (7) (5))
+       "Handles leftover elements: (step-by-n + '(1 2 3 4 5)) returns '((3) (7) (5))")
+   
+   ;; Passing various functions does the expected thing
+   (is (step-by-n + '(1 2 3 4))
+       '((3) (7))
+       "(step-by-n + '(1 2 3 4)) returns '((3) (7))")
+
+   (is (step-by-n * '(1 2 3 4))
+       '((2) (12))
+       "(step-by-n * '(1 2 3 4)) returns '((2) (12))")
+
+   (is (step-by-n list '(1 2 3 4))
+       '((1 2) (3 4))
+       "(step-by-n list '(1 2 3 4)) returns '((1 2) (3 4))")
+
+   
+   ;; If you pass the empty list it just returns empty list
+   (is (step-by-n + '())
+       '()
+       "step-by-n will return empty list if given empty list and no specified step num")
+   
+   (is (step-by-n + '() 3)
+       '()
+       "step-by-n will return empty list if given empty list and an arbitrary step num")
+
+
+   ;; If the processor function dies then the exception is propagated
+   (define (needs-exactly-two-args y z) (+ y z))
+   (throws (thunk (step-by-n needs-exactly-two-args '(1 2 3 4 5) 3))
+           #px"the expected number of arguments does not match the given number"
+           "the exception propagates if the processor can't handle variable number of args")
+   (define (needs-ints y z) (+ y z))
+   (throws (thunk (step-by-n needs-ints '(a b) 2))
+           #px"expected:\\s+number"
+           "the exception propagates if the processor can't handle the type of the args")
+
+   
+   
+   ;; Dies when you pass a step number that is 0 or negative
+   (throws (thunk (step-by-n + '() 0))
+           exn:fail:contract?
+           "step-by-n dies when you pass step number 0")
+   (throws (thunk (step-by-n + '() -3))
+           exn:fail:contract?
+           "step-by-n dies when you pass a negative step number")
+
+   
+   ;; Dies if the processor function returns multiple values
+   (throws (thunk (step-by-n values '(a b c d)))
+           #px"arity mismatch"
+           "dies if the processor function returns multiple values")
+   )
+  )
+;; (test-suite  @@TODO
+;;  "slice"
+;;  (define lst '(1 2 3 4 5))
+
+;;  ;;    With no start index it just returns the original list
+;;  (is (slice lst)
+;;      lst
+;;      "(slice lst) returns original list")
+
+;;  ;;  Happy path: index is inside list, drops that many elements and
+;;  ;;  then returns the rest of the list
+;;  (is (slice lst 2)
+;;      '(3 4 5)
+;;      "(slice lst 2) returns '(3 4 5)")
+
+;;  ;;  Happy path: index inside list, num elements provided.  Drops that
+;;  ;;  many elements from list, returns specified number of elements.
+;;  (is (slice '(1 2 3 4 5 6) 2 2)
+;;      '(3 4)
+;;      "(slice '(1 2 3 4 5 6) 2 2) returns '(3 4)")
+
+ 
+;;  ;;  Does not die on null list
+;;  (is (slice '() 2)
+;;      '()
+;;      "(slice '() 2) returns '()")
+
+;;  (is (slice '() 2 2)
+;;      '()
+;;      "(slice '() 2 2) returns '()")
+
+ 
+;;  ;;  Does not die when index out of bound
+;;  (is (slice '(x y) 3)
+;;      '()
+;;      "(slice '(x y) 3) returns '()")
+
+;;  (is (slice '(x y) 3 1)
+;;      '()
+;;      "(slice '(x y) 3 1) returns '()")
+
+ 
+;;  ;;  Can retrieve elements from the end of the list with negative index
+;;  (is (slice '(1 2 3 4 5) -3)
+;;      '(3 4 5)
+;;      "(slice '(x y) 3) returns '()")
+;;  )

@@ -76,20 +76,41 @@
         [(number? (first lst)) (sort-num lst)]
         [(string? (first lst)) (sort-str lst)]
         [(symbol? (first lst)) (sort-sym lst)]
-        [else (raise-arguments-error 'sort-smart "all elements of list must of same type (number, string, or symbol)" "(car lst)" (first lst))]))
+        [else (raise-arguments-error 'sort-smart
+                                     "all elements of list must of same type (number, string, or symbol)"
+                                     "args list" lst)]))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (step-by-n func data [num 2])
-  (-> procedure? list? list?)
+(define/contract (step-by-n func data [step-size 2] #:flat [flat #f])
+  (->* ((unconstrained-domain-> any/c) list?) (exact-positive-integer? #:flat boolean?) list?)
+  ;; if the data is null, return null
+  ;; if the data is shorter than the step size, use whatever remains and then return
+  ;; if the data is >= step size, process step-size elements and recur
+
   (if (null? data)
       '()
-      (append (autobox (apply func (take data num)))
-              (let ((l (drop data num)))
-                (step-by-n func
-                           l
-                           num)))))
-
+      (let ()
+        (define data-length (length data))
+        (define-values (step-data remaining-data)
+          (if (> step-size data-length)
+              (values data '())
+              (split-at data step-size)))
+        
+        (define step-result
+          (apply func step-data))
+        
+        (define aggregator (if flat
+                               append
+                               (lambda (x y)
+                                 (append (list x) y))))
+        
+        (aggregator (autobox step-result)
+                    (step-by-n func
+                               remaining-data
+                               step-size
+                               #:flat flat
+                               )))))
 
 ;;----------------------------------------------------------------------
 ;; NOTE: This is obsoleted by #lang rackjure.  Prefer that.
