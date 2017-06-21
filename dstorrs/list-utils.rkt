@@ -84,10 +84,37 @@
 
 (define/contract (step-by-n func data [step-size 2] #:flat [flat #f])
   (->* ((unconstrained-domain-> any/c) list?) (exact-positive-integer? #:flat boolean?) list?)
-  ;; if the data is null, return null
-  ;; if the data is shorter than the step size, use whatever remains and then return
-  ;; if the data is >= step size, process step-size elements and recur
+  ;; if data is null, return null
+  ;; if data is shorter than the step size, use whatever remains and then return
+  ;; if data is >= step size, process step-size elements and recur
+  ;;
+  ;; func can take any number of arguments.  It will be executed via
+  ;; (apply func <step-data>)
+  ;;
+  ;; By default step-by-n returns the result as a list of lists where
+  ;; each sublist is the results of one particular step. If you pass
+  ;; #:flat #t then results will be returned as a single list.  So,
+  ;; for example:
+  ;;
+  ;;    -> (define h '(1 2 3 4 5 6 7))
+  ;;    -> (step-by-n + h 2)
+  ;;    '((3) (7) (11) (7))
+  ;;    -> (step-by-n + h 2 #:flat #t)
+  ;;    '(3 7 11 7)
+  ;;    -> (step-by-n list h 2)
+  ;;    '((1 2) (3 4) (5 6) (7))
+  ;;
+  ;; NB: Passing '#:flat' does not actually do a flatten, it just
+  ;; controls whether the step results are wrapped in a list before
+  ;; being appended to the existing result.  For example:
+  ;;
+  ;;    -> (step-by-n (compose list list) h 2 #:flat #f)
+  ;;    '(((1 2)) ((3 4)) ((5 6)) ((7)))
+  ;;    -> (step-by-n (compose list list) h 2 #:flat #t)
+  ;;    '((1 2) (3 4) (5 6) (7))
 
+
+  
   (if (null? data)
       '()
       (let ()
