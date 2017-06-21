@@ -5,6 +5,7 @@
 ;;
 ;; List of functions:
 ;; *) __FILE__, __LINE__, __WHERE__: current filepath/line/string of both
+;; *) __FILE:__, __WHERE:__: same as previous but with ": " appended
 ;; *) ->string   : general purpose "convert stuff to string"
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
@@ -45,6 +46,11 @@
     (syntax-case stx ()
       [_ #'this-file])))
 
+(define-syntax (__FILE:__ stx) ; Note the ':'
+  (with-syntax ((this-file (syntax-source stx)))
+    (syntax-case stx ()
+      [_ #'(~a this-file ": ")])))
+
 ;;----------------------------------------------------------------------
 
 (define-syntax (__WHERE__ stx)
@@ -52,6 +58,12 @@
                 (line  (syntax-line stx)))
     (syntax-case stx ()
       [_ #'(~a "file:" fpath " (line:" line ")")])))
+
+(define-syntax (__WHERE:__ stx) ; Note the ':'
+  (with-syntax ((fpath (syntax-source stx))
+                (line  (syntax-line stx)))
+    (syntax-case stx ()
+      [_ #'(~a "file:" fpath " (line:" line "): ")])))
 
 ;;----------------------------------------------------------------------
 
@@ -78,12 +90,16 @@
 (define/contract (append-file source dest)
   (-> path-string? path-string? exact-positive-integer?)
 
+  (say __WHERE__ ": @@TODO: append-file reads everything into RAM. have it check filesize and use a loop when needed")
+  
   ;;    Append file, return number of bytes in file afterwards so that
   ;;    we could verify the append if so desired.
   ;;
   ;; @@TODO: This reads the entire source file into RAM, so will work
   ;; poorly on large files.  Should add a file-size check and make it
   ;; do the transfer in a loop if it's too big.
+  (say __WHERE__ " \n\t- source: " source "\n\t - dest: " dest "\n\t - source start size: " (file-size source) "\n\t - dest start size: " (file-size dest))
+
   (with-output-to-file
     dest
     #:mode 'binary
@@ -94,6 +110,7 @@
        (thunk
         (display (port->bytes))))))
 
+  (say __WHERE__ " \n\t- dest end size: " (file-size dest))
   (file-size dest)
   )
 

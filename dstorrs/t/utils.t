@@ -278,7 +278,7 @@
  ); test-suite
 
 (test-suite
- "__FILE__, __LINE__, __WHERE__"
+ "__FILE__, __LINE__, __WHERE__, and their ...: versions"
  (is __LINE__
      (- (syntax-line #'here) 1)
      "__LINE__ works")
@@ -287,11 +287,22 @@
      (syntax-source #'here)
      "__FILE__ works")
 
+ (is __FILE:__
+     (~a (syntax-source #'here) ": ")
+     "__FILE:__ works")
+
  (is __WHERE__
      (let ((line (- (syntax-line #'here) 1))
            (fpath (syntax-source #'here)))
        (~a "file:" fpath " (line:" line ")"))
      "__WHERE__ works")
+
+ (is __WHERE:__
+     (let ((line (- (syntax-line #'here) 1))
+           (fpath (syntax-source #'here)))
+       (~a "file:" fpath " (line:" line "): "))
+     "__WHERE__ works")
+
  );test-suite
 
 (test-suite
