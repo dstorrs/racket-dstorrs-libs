@@ -90,16 +90,12 @@
 (define/contract (append-file source dest)
   (-> path-string? path-string? exact-positive-integer?)
 
-  (say __WHERE__ ": @@TODO: append-file reads everything into RAM. have it check filesize and use a loop when needed")
-  
   ;;    Append file, return number of bytes in file afterwards so that
   ;;    we could verify the append if so desired.
   ;;
   ;; @@TODO: This reads the entire source file into RAM, so will work
   ;; poorly on large files.  Should add a file-size check and make it
   ;; do the transfer in a loop if it's too big.
-  (say __WHERE__ " \n\t- source: " source "\n\t - dest: " dest "\n\t - source start size: " (file-size source) "\n\t - dest start size: " (file-size dest))
-
   (with-output-to-file
     dest
     #:mode 'binary
@@ -110,7 +106,6 @@
        (thunk
         (display (port->bytes))))))
 
-  (say __WHERE__ " \n\t- dest end size: " (file-size dest))
   (file-size dest)
   )
 
