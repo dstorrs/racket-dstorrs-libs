@@ -115,9 +115,6 @@
      #:transform-data transform-data
      #:transform-dict transform-dict)
     )
-  (say "get-rows-as-dicts, vals: " vals)
-  (say "db: " db)
-  (say "sql: " sql)
   (map  v->d
         (if (null? vals)
             (query-rows db sql)
