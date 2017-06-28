@@ -70,27 +70,6 @@
 ;;----------------------------------------------------------------------
 
 (test-suite
- "take-directory-snapshot"
-
- (define db (new-db))
- (refresh-test-data)
-
- (let ((numrows (query-rows db "select count(1) from watched_files")))
-   (is numrows 0  "started off with no rows"))
-
- (define snapshot (take-directory-snapshot testdir))
-
- (define base (path->string testdir))
-
- (let ((rows (query-rows db "select path, file_size_bytes from watched_files order by path")))
-   (is rows
-       snapshot
-       "take-directory-snapshot did the right thing"))
- )
-
-;;----------------------------------------------------------------------
-
-(test-suite
  "compare-directory"
 
  (ok #f "not implemented")
