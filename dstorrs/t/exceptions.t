@@ -2,9 +2,8 @@
 
 #lang at-exp racket
 
-(require dstorrs/utils)
-
-(require dstorrs/try
+(require dstorrs/utils
+         dstorrs/try
          dstorrs/test-more
          dstorrs/exceptions
          )
@@ -13,56 +12,38 @@
 
 (when #t
   (test-suite
-   "refine-db-exn: exn:fail:db:num-rows"
+   "verify-arg"
 
-   (define wrong-rows-0 (refine-db-exn (create-exn exn:fail
-                                                 @~a{query-value: query returned wrong number of rows
-                                                                  statement: "SELECT id FROM users WHERE username = $1"
-                                                                  expected: 1
-                                                                  got: 0})))
-   (is-type wrong-rows-0
-            exn:fail:db:num-rows?
-            "wrong-rows-0 is an exn:fail:db:num-rows")
+   (lives (thunk
+           (verify-arg "requested-space" 7 exact-positive-integer? 'has-sufficient-space)
+           )
+          @~a{Lives: (verify-arg "requested-space" 7 exact-positive-integer? 'has-sufficient-space)})
 
-   (is-type wrong-rows-0
-            exn:fail:db:num-rows:zero?
-            "wrong-rows-0 is also an exn:fail:db:num-rows:zero")
+   (lives (thunk
+           (verify-arg "next-piece" 'apple (or/c 'apple 'pear) 'check-fruit-type))
+          @~a{Lives: (verify-arg "next-piece" 'apple (or/c 'apple 'pear) 'check-fruit-type)}
+          )
 
-   (is (exn:fail:db:num-rows-expected wrong-rows-0)
-       1
-       "it expected 1 row")
+   (throws (thunk 
+            (verify-arg "requested-space" 'bob exact-positive-integer? 'has-sufficient-space))
+           @pregexp{has-sufficient-space:\s+'requested-space' must be exact-positive-integer\?\s+requested-space:\s+'bob}   
+           @~a{throws expected message: (verify-arg "requested-space" 'bob exact-positive-integer? 'has-sufficient-space)})
+   ;; )
 
-   (is (exn:fail:db:num-rows-got wrong-rows-0)
-       0
-       "correctly said that it got 0 rows")
+   (throws (thunk
+            (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type)
+            )
+           @pregexp{check-fruit-type:\s+'next-piece' must be flat-or/c\s+next-piece:\s+'banana}
+           @~a{throws expected message: (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type)}
+           )
 
-
-   ;;--------------------
-   
-   (define wrong-rows-2 (refine-db-exn (create-exn exn:fail
-                                                 @~a{query-value: query returned wrong number of rows
-                                                                  statement: "SELECT id FROM users WHERE username = $1"
-                                                                  expected: 1
-                                                                  got: 2})))
-   (is-type wrong-rows-2
-            exn:fail:db:num-rows?
-            "wrong-rows-2 is an exn:fail:db:num-rows")
-
-   (is-type wrong-rows-2
-            exn:fail:db:num-rows:many?
-            "wrong-rows-2 is also an exn:fail:db:num-rows:many")
-
-   (is (exn:fail:db:num-rows-expected wrong-rows-2)
-       1
-       "it expected 1 row")
-
-   (is (exn:fail:db:num-rows-got wrong-rows-2)
-       2
-       "correctly said that it got 0 rows")
-
-
-   
-   ) ; test-suite
-  ) ; when
+   (throws (thunk
+            (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type "apple or pear")
+            )
+           @pregexp{check-fruit-type:\s+'next-piece' must be apple or pear\s+next-piece:\s+'banana}
+           @~a{throws expected message: (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type "apple or pear")}
+           )
+   )
+  )
 
 (displayln "Done testing.")
