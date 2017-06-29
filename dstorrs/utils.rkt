@@ -10,6 +10,7 @@
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
+;; *) directory-empty? : does the directory exist and contain nothing?
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) not-equal?      : what it says on the tin
@@ -300,6 +301,21 @@
   (define convert (if is-dir path->directory-path identity))
   (values (convert d) (convert f)))
 
+;;----------------------------------------------------------------------
+
+(define/contract (directory-empty? dir)
+  (-> path-string? boolean?)
+  ;;    All we need to know is if there is SOMETHING in
+  ;;    the directory.  Using directory-list would be
+  ;;    overkill and could be slow on heavily populated
+  ;;    directories.
+  (call/cc
+   (lambda (return)
+     (parameterize ([current-directory dir])
+       (for ((p (in-directory)))
+         (return #f))
+       (return #t)))))
+                 
 ;;----------------------------------------------------------------------
 
 (define (running-file-path)

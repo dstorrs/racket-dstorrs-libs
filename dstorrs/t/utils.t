@@ -3,8 +3,8 @@
 #lang at-exp rackjure
 
 (require dstorrs/utils
-		 dstorrs/test-more
-		 )
+         dstorrs/test-more
+         )
 
 (ok #t "testing harness works")
 
@@ -347,4 +347,33 @@
        "#hash((a . 67) (b . foo))bar\n"
        "prefix-for-say with hash is respected"))
  )
+
+(test-suite
+ "directory-empty?"
+
+ (call/cc
+  (lambda (return)
+    (define homedir (find-system-path 'home-dir))
+    (define test-dir (build-path homedir (rand-val "jlfkgjlahkfjhkfjhkdshwouwou")))
+    (when (directory-exists? test-dir)
+      (return (say (string-append "Not doing tests for directory-empty? because testdir '" (path->string test-dir) "' exists"))))
+
+    (dynamic-wind
+      (thunk 
+       (make-directory test-dir)
+       (ok (directory-exists? test-dir) "Successfully created test directory")
+       (ok (directory-empty? test-dir) "Newly created directory is empty")
+       )
+      (thunk
+       (with-output-to-file
+         (build-path test-dir "test-file")
+         (thunk
+          (display "test value")))
+       (not-ok (directory-empty? test-dir) "as expected, found that directory was NOT empty after creating test file"))
+      (thunk (delete-directory/files test-dir)))
+
+    (not-ok (directory-exists? test-dir) "Cleaned up properly; test directory was removed")
+    ))
+)
+    
 (say "Done testing.")
