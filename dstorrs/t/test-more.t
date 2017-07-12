@@ -25,11 +25,15 @@
  )
 
 (test-suite
- "simple 'not-ok' tests"
+ "simple 'not-ok' and 'is-false' tests"
 
  (not-ok #f "not-ok #f works")
  (not-ok (lambda () #f) "not-ok works w/ func returning #f.")
  (not-ok (equal? 8 2) "8 does not equal 2")
+
+ (is-false #f "is-false #f works")
+ (is-false (lambda () #f) "is-false works w/ func returning #f.")
+ (is-false (equal? 8 2) "is-false confirms that 8 does not equal 2")
 
  (displayln "\t### Next two tests deliberately have no message")
  (not-ok #f)
@@ -314,7 +318,7 @@
    (ok (file-exists? the-path) "a random filename was generated and returned"))
 
  )
-
+ 
 ;;  @@TODO
 ;; https://docs.racket-lang.org/overeasy/index.html
 ;; - capture data from stdout and stderr, report on that

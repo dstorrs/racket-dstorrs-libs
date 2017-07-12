@@ -102,6 +102,11 @@
   (ok (false? (_unwrap-val val))
       msg))
 
+(define (is-false val [msg ""]) ; reads a little better than not-ok
+  (ok (false? (_unwrap-val val))
+      msg))
+
+;;----------------------------------------------------------------------
 
 ;;    (matches (my-func) hash? "(my-func) returns a hash")
 (define (matches val predicate [msg ""] [op equal?])
@@ -110,6 +115,7 @@
                    #:op op
                    #:return val
                    ))
+
 ;;    (not-matches 'foo hash? "symbol foo is not a hash")
 (define (not-matches val type-pred [msg ""] [op equal?])
   (test-more-check #:got ((negate type-pred) val)
