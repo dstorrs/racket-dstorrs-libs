@@ -315,9 +315,6 @@
 
  )
 
-;; ;; ;;  @@TODO
-;; ;; ;; https://docs.racket-lang.org/overeasy/index.html
-;; ;; ;; - catch exceptions and report on them without terminating
-;; ;; ;; - specify the equal? op as something else
-;; ;; ;; - capture data from stdout and stderr, report on that
-;; ;; ;; - test groups
+;;  @@TODO
+;; https://docs.racket-lang.org/overeasy/index.html
+;; - capture data from stdout and stderr, report on that
