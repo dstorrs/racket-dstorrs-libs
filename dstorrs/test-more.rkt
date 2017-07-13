@@ -13,8 +13,11 @@
          dstorrs/utils
          )
 
+
 (define _tp 0)
 (define _tf 0)
+(define saw-done-testing #f)
+(define expect-tests #f)
 
 (define (tests-passed [inc 0])
   (set! _tp (+ _tp inc))
@@ -34,11 +37,30 @@
   (define (_inc-test-num! inc)
     (set! test-num (+ test-num inc))
     )
+  (define (current-test-num) test-num)
   (define (next-test-num #:inc [should-increment #t])
     (define next (add1 test-num))
     (when should-increment
       (set! test-num (add1 test-num)))
     test-num))
+
+;;----------------------------------------------------------------------
+
+(void
+ (plumber-add-flush! (current-plumber)
+                     (lambda (flush-handle)
+                       (let ((test-num (current-test-num)))
+                         (cond [saw-done-testing #t]
+                               [(equal? test-num expect-tests) #t]
+                               [(false? expect-tests)
+                                (say "WARNING: Neither (expect-n-tests N) nor (done-testing) was called.  May not have run all tests.")]
+                               [else
+                                (say (format "ERROR:  Expected ~a tests, only saw ~a"
+                                             expect-tests
+                                             test-num))
+                                #t]))
+                       (plumber-flush-handle-remove! flush-handle)
+                       )))
 
 ;;----------------------------------------------------------------------
 
@@ -84,7 +106,7 @@
                        (next-test-num)
                        msg-str
                        ))
-    (if return 
+    (if return
         return ; if we were told what to return, return that
         got))  ; otherwise, return the result
   )
@@ -212,7 +234,7 @@
     (with-handlers ((exn:break? (lambda (e) (raise e))) ; if user hit ^C, don't eat it
                     (accept-all (lambda (e) (values e #t))))
       (values (thnk) #f)))
-    
+
   (define pred-needs-string (or (string? pred) (regexp? pred)))
   (define e-can-be-string   (or (string? e) (exn? e)))
   (when (and pred-needs-string (not e-can-be-string))
@@ -244,7 +266,7 @@
     [(_ msg body body1 ...)
      #'(begin (say "### START test-suite: " msg)
               (lives (thunk body body1 ...  (void)) ; discard return values
-                     "test-suite completed without throwing (uncaught) exception")
+                     "test-suite completed without throwing uncaught exception")
               (say "")
               (say "Total tests passed so far: " (tests-passed))
               (say "Total tests failed so far: " (tests-failed))
@@ -259,17 +281,30 @@
 
   (when (not (directory-exists? dir))
     (make-directory dir))
-  
+
   (define filepath
     (cond [(file-exists? fpath) fpath]
           [(directory-exists? fpath) (build-path fpath (rand-val "test-file"))]
           [else fpath]))
-  
+
   (with-output-to-file
     filepath
     (thunk (display text))
     #:exists (if overwrite 'replace 'error))
   filepath)
+
+;;----------------------------------------------------------------------
+
+(define/contract (expect-n-tests n)  ;; Call this to say "this script will run 17 tests" or however many
+  (-> exact-positive-integer? any)
+  (set! expect-tests n))
+
+;;----------------------------------------------------------------------
+
+(define/contract (done-testing)  ;; call this as the last line in your script to say "yep, this is where I meant to exit"
+  (-> any)
+  (say "Done.")
+  (set! saw-done-testing #t))
 
 ;;----------------------------------------------------------------------
 
