@@ -93,4 +93,4 @@
 
 
 
-(displayln "Done testing.")
+(done-testing)

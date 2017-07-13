@@ -322,3 +322,5 @@
 ;;  @@TODO
 ;; https://docs.racket-lang.org/overeasy/index.html
 ;; - capture data from stdout and stderr, report on that
+
+(done-testing) ; this should be the last line in the file

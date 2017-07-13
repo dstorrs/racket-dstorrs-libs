@@ -40,4 +40,4 @@
    ) ; test-suite
   ) ; when
 
-(say "Done testing.")
+(done-testing)

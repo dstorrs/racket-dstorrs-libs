@@ -376,4 +376,4 @@
     ))
 )
     
-(say "Done testing.")
+(done-testing) ; this should be the last line in the file

@@ -91,3 +91,5 @@
    (is (bar-e res) (hash-ref arg 'alpha)   "alpha was remapped to e")
    );test-suite
   );when
+
+(done-testing) ; this should be the last line in the file

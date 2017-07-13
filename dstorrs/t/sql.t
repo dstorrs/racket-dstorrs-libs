@@ -156,3 +156,4 @@
      "var-list->column-clause '() returns empty string")
  )
  
+(done-testing)

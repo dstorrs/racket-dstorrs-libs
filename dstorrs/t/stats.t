@@ -9,3 +9,4 @@
 (ok #t "test harness is working")
 
 
+(done-testing)

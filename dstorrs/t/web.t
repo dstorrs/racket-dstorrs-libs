@@ -61,3 +61,5 @@
 			   (and (list? res) (not (null? res))))
 			 "web/call got the page from the net as xexp"))
 	   "web/call lived")
+
+(done-testing) ; this should be the last line in the file

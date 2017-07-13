@@ -589,50 +589,5 @@
            "dies if the processor function returns multiple values")
    )
   )
-;; (test-suite  @@TODO
-;;  "slice"
-;;  (define lst '(1 2 3 4 5))
 
-;;  ;;    With no start index it just returns the original list
-;;  (is (slice lst)
-;;      lst
-;;      "(slice lst) returns original list")
-
-;;  ;;  Happy path: index is inside list, drops that many elements and
-;;  ;;  then returns the rest of the list
-;;  (is (slice lst 2)
-;;      '(3 4 5)
-;;      "(slice lst 2) returns '(3 4 5)")
-
-;;  ;;  Happy path: index inside list, num elements provided.  Drops that
-;;  ;;  many elements from list, returns specified number of elements.
-;;  (is (slice '(1 2 3 4 5 6) 2 2)
-;;      '(3 4)
-;;      "(slice '(1 2 3 4 5 6) 2 2) returns '(3 4)")
-
- 
-;;  ;;  Does not die on null list
-;;  (is (slice '() 2)
-;;      '()
-;;      "(slice '() 2) returns '()")
-
-;;  (is (slice '() 2 2)
-;;      '()
-;;      "(slice '() 2 2) returns '()")
-
- 
-;;  ;;  Does not die when index out of bound
-;;  (is (slice '(x y) 3)
-;;      '()
-;;      "(slice '(x y) 3) returns '()")
-
-;;  (is (slice '(x y) 3 1)
-;;      '()
-;;      "(slice '(x y) 3 1) returns '()")
-
- 
-;;  ;;  Can retrieve elements from the end of the list with negative index
-;;  (is (slice '(1 2 3 4 5) -3)
-;;      '(3 4 5)
-;;      "(slice '(x y) 3) returns '()")
-;;  )
+(done-testing)
