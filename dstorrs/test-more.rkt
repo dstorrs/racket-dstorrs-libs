@@ -195,13 +195,20 @@
                    #:report-expected-as (~a "<something NOT matching " regex ">")
                    #:op (lambda (a b) (not (regexp-match regex val)))))
 
-
+;;----------------------------------------------------------------------
 
 (define/contract (lives thunk [msg ""])
   (->* (procedure?) (string?) any/c)
-  (with-handlers ((exn? (lambda (e)
-                          (test-more-check #:got #f
-                                           #:msg (format "Exception thrown! Test message: '~a'.  Exception: '~a'" msg (exn-message e))))))
+  (define (make-msg e)
+    (cond [(exn? e) (format "Exception thrown! Test message: '~a'.  Exception: '~a'" msg (exn-message e))]
+          [else
+           (format "Exception thrown! Test message: '~a'.  Exception: '~a'" msg (->string e))]
+          ))
+  (with-handlers (((lambda (e) #t) ; Trap everything
+                   (lambda (e)
+                     (test-more-check #:got #f
+                                      #:return e
+                                      #:msg (make-msg e)))))
     (define result (thunk))
     (test-more-check #:got result  #:expected result  #:msg msg)))
 
@@ -218,11 +225,11 @@
 
   ;;    'thnk' should generate an exception
   ;;    'msg'  is what test-more-check will report
-  ;;    'pred' could be a string, a proc, or a regex
+  ;;    'pred' could be anything, but some types are handled specially:
   ;;        - string: Check if it is exactly the (non-boilerplate) exn message
   ;;        - proc:   Pass it the exn, see if it returns #t
   ;;        - regex:  Check if the regex matches the (exn message || string) thrown
-  ;;
+  ;;        - etc:    Check if it's equal? to the exception
   (define (get-msg e) (if (exn? e) (exn-message e) e))
   (define (remove-exn-boilerplate s)
     (let* ([str (regexp-replace #px"^.+?expected: " (get-msg s) "")]

@@ -318,7 +318,35 @@
    (ok (file-exists? the-path) "a random filename was generated and returned"))
 
  )
+
+(test-suite
+ "lives"
+ (lives (thunk 7) "lives succeeds if given a number")
+ (lives (thunk "foo") "lives succeeds if given a string")
+ (lives (thunk 'foo) "lives succeeds if given a symbol")
+
+ (define (do-test thnk type)
+   (with-handlers (( (lambda (e) #t) ; catch everything
+                     (lambda (e)
+                       (ok #f (~a "throws failed to catch a " type))
+                       )))
+     (void (with-output-to-string thnk))
+     ; If we get to here then 'lives' caught the error
+     (tests-failed -1)    ; Don't count 'lives' as an actual failure
+     (_inc-test-num! -1)  ; In fact, don't count it at all
+     (ok #t (~a "lives caught a " type))))
+
  
+ (do-test (thunk (lives (thunk (raise "foo"))))
+          "string")
+  
+ (do-test (thunk (lives (thunk (raise 8))))
+          "number")
+  
+ (do-test (thunk (lives (thunk (raise-argument-error 'foo "foo" 7))))
+          "raise-argument-error exception")
+ )
+
 ;;  @@TODO
 ;; https://docs.racket-lang.org/overeasy/index.html
 ;; - capture data from stdout and stderr, report on that
