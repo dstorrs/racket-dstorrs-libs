@@ -85,7 +85,7 @@
 ;;                                         (for/hash ((k (hash-keys d)))
 ;;                                           (values (symbol->string k) (hash-ref d k)))
 (define/contract (query-rows-as-dicts keys db sql
-                                      #:dict-maker     [dict-maker make-hash]
+                                      #:dict-maker     [dict-maker make-immutable-hash]
                                       #:transform-dict [transform-dict identity]
                                       #:transform-data [transform-data cons]
                                       .
@@ -125,7 +125,7 @@
 (define/contract (query-row-as-dict keys
                                     db
                                     sql
-                                    #:dict-maker [dict-maker make-hash]
+                                    #:dict-maker [dict-maker make-immutable-hash]
                                     #:transform-dict [transform-dict identity]
                                     #:transform-data [transform-data cons]
                                     .
@@ -154,7 +154,7 @@
 (define/contract (query-maybe-row-as-dict keys
                                           db
                                           sql
-                                          #:dict-maker     [dict-maker make-hash]
+                                          #:dict-maker     [dict-maker make-immutable-hash]
                                           #:transform-dict [transform-dict identity]
                                           #:transform-data [transform-data cons]
                                           .
