@@ -92,4 +92,9 @@
          ))]
     ))
 
+(define-syntax (defatalize stx)
+  (syntax-case stx ()
+                [(defatalize body0 body1 ...)
+                 #'(try [body0 body1 ...][catch ((lambda (e) #t) identity)])]))
+
 (provide  (all-defined-out))
