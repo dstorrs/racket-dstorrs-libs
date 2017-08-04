@@ -65,7 +65,7 @@
  (is (->string (list "x" "y" "z")) "xyz" "worked for (list string)")
  (is (->string (vector "x" "y" "z")) "xyz" "worked for (vector string, string, string)")
  (is (->string (vector 8 "y" "z")) "8yz" "worked for (vector num, string, string)")
- 
+
  (is (->string #f)
      "#f"
      "(->string #f) works")
@@ -100,7 +100,7 @@
    (is-type lst list? "got list from #:post string->list")
    (ok (andmap char? lst)
        "when post processing with string->list, we get a list of characters, as expected"))
- 
+
  );;test-suite
 
 (test-suite
@@ -112,11 +112,11 @@
  (is (safe-hash-remove hash-imm 'a)
      (hash 'b 2 'c 3)
      "(safe-hash-remove hash-imm 'a) worked")
- 
+
  (is (safe-hash-remove hash-imm 'x)
      (hash 'a 1 'b 2 'c 3)
      "(safe-hash-remove hash-imm 'x) worked")
- 
+
  (is (safe-hash-remove (hash-mut) 'a)
      (make-hash '((b . 2) (c . 3)))
      "(safe-hash-remove hash-mut 'a) worked")
@@ -152,7 +152,7 @@
  (struct foo (a b c))
  (define x (foo 1 2 3))
  (define y (foo 0 2 3))
- 
+
  (is-type x foo? "x is a foo")
  (is-type y foo? "y is a foo")
 
@@ -161,17 +161,17 @@
                            #:funcs (list foo-b foo-c)
                            #:expected  (list 2 3)))
      "validates when given explicit values")
- 
+
  (ok (thunk (verify-struct #:struct x
                            #:funcs (list foo-b foo-c)
                            #:expected  y))
      "validates when given a comparison struct")
-  
+
  (not-ok (thunk (verify-struct #:struct x
                                #:funcs (list foo-a foo-b foo-c)
                                #:expected  y))
          "correctly reports that they are not equal if you have it check a field that is not equal")
- 
+
  )
 
 (test-suite
@@ -180,26 +180,26 @@
  (let-values (((dir fname) (dir-and-filename "/foo/bar")))
    (is dir (string->path "/foo/") "got correct dir for /foo/bar")
    (is fname (string->path "bar") "got correct filename for /foo/bar"))
- 
+
  (let-values (((dir fname) (dir-and-filename "foo/bar")))
    (is dir (string->path "foo/") "got correct dir for foo/bar")
    (is fname (string->path "bar") "got correct filename for foo/bar"))
- 
+
  (let-values (((dir fname) (dir-and-filename "foo/bar/")))
    (is dir (string->path "foo/") "got correct dir for foo/bar")
    (is fname (string->path "bar/") "got correct filename for foo/bar/"))
- 
+
  (let-values (((dir fname) (dir-and-filename "/foo")))
    (is dir (string->path "/") "got correct dir for /foo")
    (is fname (string->path "foo") "got correct filename for /foo"))
 
  (throws (thunk (dir-and-filename "foo"))
          #rx"Cannot accept single-element relative paths"
-         "dir-and-filename throws if given a one-element relative path WITHOUT training slash ('foo')") 
- 
+         "dir-and-filename throws if given a one-element relative path WITHOUT trailing slash ('foo')")
+
  (throws (thunk (dir-and-filename "foo/"))
          #rx"Cannot accept single-element relative paths"
-         "dir-and-filename throws if given a one-element relative path WITH a training slash ('foo/')")
+         "dir-and-filename throws if given a one-element relative path WITH a trailing slash ('foo/')")
 
  (throws (thunk (dir-and-filename "/"))
          #rx"Cannot accept root path"
@@ -212,7 +212,7 @@
 
  (define vals (list "foo" "/bar" "/baz/foo"))
  (define dirs (map (curryr string-append "/") vals))
-                
+
  ;;    If you pass in a string without setting #:dir? then you
  ;;    should get the same string back.  Checks strings both
  ;;    with and without a trailing slash.
@@ -228,7 +228,7 @@
    (is (path-string->string p #:dir? #t)
        @~a{@|p|/}
        @~a{(path-string->string @p #:dir? #t) works})
-   
+
    (is (path-string->string d #:dir? #t)
        d
        @~a{(path-string->string @d #:dir? #t) works}))
@@ -240,7 +240,7 @@
  (is (path-string->string "" #:dir? #t)
      ""
      "path-string->string handles the empty string when #:dir? IS set")
- 
+
  (is (path-string->string "" #:dir? #f)
      ""
      "path-string->string handles the empty string when #:dir? IS set and is #f")
@@ -261,7 +261,7 @@
          exn:fail:contract?
          @~a{path-string->string fails on empty string with #:reject-empty-string? #t and #:dir #f})
 
-      
+
  ;;    If you pass in a path then you should get back the
  ;;    equivalent string as per path->string.  It doesn't
  ;;    matter if you set #:dir? or not.
@@ -282,7 +282,7 @@
  (is __LINE__
      (- (syntax-line #'here) 1)
      "__LINE__ works")
- 
+
  (is __FILE__
      (syntax-source #'here)
      "__FILE__ works")
@@ -359,7 +359,7 @@
       (return (say (string-append "Not doing tests for directory-empty? because testdir '" (path->string test-dir) "' exists"))))
 
     (dynamic-wind
-      (thunk 
+      (thunk
        (make-directory test-dir)
        (ok (directory-exists? test-dir) "Successfully created test directory")
        (ok (directory-empty? test-dir) "Newly created directory is empty")
@@ -374,6 +374,24 @@
 
     (not-ok (directory-exists? test-dir) "Cleaned up properly; test directory was removed")
     ))
-)
-    
+ )
+
+(when #t
+  (test-suite
+   "silence"
+   (is (with-output-to-string (thunk (display "foo")))
+       "foo"
+       "can catch output as expected")
+   (is (with-output-to-string
+         (thunk
+          (silence (display "foo"))
+          ))
+       ""
+       "(silence) eliminates output")
+   )
+  )
+
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file

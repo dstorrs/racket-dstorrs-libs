@@ -27,7 +27,7 @@
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) say : macro that uses 'displayln' to output all
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
-;; *) simple-guard
+;; *) silence : eliminates all data sent to current-output-port (print, display, etc)
 ;; *) symbol->keyword
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
@@ -239,6 +239,13 @@
     [(say a ...)
      #'(displayln (~a (prefix-for-say) a ...))]
     ))
+
+;;----------------------------------------------------------------------
+
+(define-syntax (silence stx)
+  (syntax-case stx ()
+    [(silence body0 body1 ...)
+     #'(void (with-output-to-string (thunk body0 body1 ...)))]))
 
 ;;----------------------------------------------------------------------
 
