@@ -6,9 +6,9 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (watch-dir-or-tree dir handler [handler-arg #f] #:recursive [recursive #t])
+(define/contract (watch-dir-or-tree dir handler [handler-arg #f] #:recursive [recursive #t] #:pre [preprocessor #f])
   (->* (path-string? (-> path-string? any/c any))
-       (any/c #:recursive boolean?)
+       (any/c #:recursive boolean? #:pre (-> path-string? any))
        any)
 
   ;;    Locate all the directories to watch. If recursive is #f then
@@ -22,7 +22,10 @@
         (list dir))
     )
 
-
+  (when preprocessor
+    (for ((item dirs-to-watch))
+      (preprocessor item)))
+  
   (define (evt-maker dir)
     (handle-evt (filesystem-change-evt dir)
                 (lambda (e)
