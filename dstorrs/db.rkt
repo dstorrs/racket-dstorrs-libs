@@ -85,7 +85,7 @@
 ;;                                         (for/hash ((k (hash-keys d)))
 ;;                                           (values (symbol->string k) (hash-ref d k)))
 (define/contract (query-rows-as-dicts keys db sql
-                                      #:dict-maker     [dict-maker make-immutable-hash]
+                                      #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
                                       #:transform-data [transform-data cons]
                                       .
@@ -97,7 +97,7 @@
         #:transform-data procedure?
         )
        #:rest list?
-       list?)
+       (listof dict?)
 
   ;;  #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
   ;;  #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
@@ -125,7 +125,7 @@
 (define/contract (query-row-as-dict keys
                                     db
                                     sql
-                                    #:dict-maker [dict-maker make-immutable-hash]
+                                    #:dict-maker [dict-maker make-hash]
                                     #:transform-dict [transform-dict identity]
                                     #:transform-data [transform-data cons]
                                     .
@@ -154,7 +154,7 @@
 (define/contract (query-maybe-row-as-dict keys
                                           db
                                           sql
-                                          #:dict-maker     [dict-maker make-immutable-hash]
+                                          #:dict-maker     [dict-maker make-hash]
                                           #:transform-dict [transform-dict identity]
                                           #:transform-data [transform-data cons]
                                           .
