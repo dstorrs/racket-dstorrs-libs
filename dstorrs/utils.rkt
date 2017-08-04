@@ -245,7 +245,8 @@
 (define-syntax (silence stx)
   (syntax-case stx ()
     [(silence body0 body1 ...)
-     #'(void (with-output-to-string (thunk body0 body1 ...)))]))
+     #'(parameterize ((current-output-port (open-output-nowhere)))
+         body0 body1 ...)]))
 
 ;;----------------------------------------------------------------------
 

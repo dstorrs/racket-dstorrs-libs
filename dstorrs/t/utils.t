@@ -382,15 +382,19 @@
    (is (with-output-to-string (thunk (display "foo")))
        "foo"
        "can catch output as expected")
+
    (is (with-output-to-string
          (thunk
           (silence (display "foo"))
           ))
        ""
        "(silence) eliminates output")
-   )
-  )
 
+   (is (silence (display "foo") 7)
+       7 "silence does not eat the normal return value")
+
+   );test-suite
+  );when
 
 ;;----------------------------------------------------------------------
 
