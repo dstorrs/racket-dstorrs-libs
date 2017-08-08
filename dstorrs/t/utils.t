@@ -398,4 +398,25 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "ensure-directory-exists"
+
+   (define dir (rand-val "/tmp/test-dir"))
+   
+   (is-false (directory-exists? dir) "at start of testing, directory does not exist")
+   (ok (ensure-directory-exists dir) "ensure-directory-exists returns true when the directory didn't exist")
+   (ok (directory-exists? dir) "after call to ensure, directory exists")
+   (ok (ensure-directory-exists dir) "ensure-directory-exists returns true when the directory did exist")
+   (file-or-directory-permissions dir 0)
+   (throws (thunk (ensure-directory-exists (build-path dir "foo")))
+           exn:fail:filesystem?
+           "throws when could not create a directory due to permissions")
+   (file-or-directory-permissions dir 511)
+   (delete-directory dir)
+   )
+  )
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file

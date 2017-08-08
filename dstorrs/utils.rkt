@@ -11,6 +11,7 @@
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
+;; *) ensure-directory-exists : directory will exist or this will throw 
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) not-equal?      : what it says on the tin
@@ -324,6 +325,15 @@
          (return #f))
        (return #t)))))
                  
+;;----------------------------------------------------------------------
+
+(define/contract (ensure-directory-exists dir)
+  (-> path-string? boolean?)
+  (or (directory-exists? dir)
+      (and (make-directory* dir) #f) ; make-directory* returns void, which is true, but we need to continue
+      (directory-exists? dir)
+      (raise (exn:fail:filesystem (~a "directory does not exist and could not be created: " dir) (current-continuation-marks)))))
+
 ;;----------------------------------------------------------------------
 
 (define (running-file-path)
