@@ -1,6 +1,6 @@
 #!/usr/bin/env racket
 
-#lang racket
+#lang at-exp racket
 
 (require "../test-more.rkt"
          "../sql.rkt"
@@ -13,7 +13,7 @@
 
  (define c "collaborations")
  (define f "files")
- 
+
  (is (join-table-name c f)
      "collaborations_to_files"
      "join-table-name works")
@@ -72,7 +72,7 @@
  (is (clause-convert-timestamp->epoch #:complete #t (clause-convert-epoch->timestamp #:subquery #t))
      "SELECT extract('epoch' from (SELECT timestamp 'epoch' + INTERVAL '1 second' * $1))"
      "clause-convert-timestamp->epoch: got correct string back for string param with #:complete")
-)
+ )
 
 (test-suite
  "sql-IN-clause"
@@ -83,8 +83,8 @@
 
  (is (sql-IN-clause '(foo bar) 3)
      "IN ($3,$4)"
-     "correct: (sql-IN-clause '(foo bar) 3)")  
-)
+     "correct: (sql-IN-clause '(foo bar) 3)")
+ )
 
 (test-suite
  "var->column"
@@ -95,7 +95,7 @@
  (is (var->column 'foo)
      "foo"
      "var->column 'foo works")
-  
+
  (is (var->column "foo-bar")
      "foo_bar"
      "var->column \"foo-bar\" works")
@@ -116,7 +116,7 @@
          #px"expected:\\s+\\(or/c\\s+non-empty-string\\?\\s+symbol\\?\\)"
          "var->column throws on empty string")
  )
- 
+
 (test-suite
  "var-list->column-clause"
  (is (var-list->column-clause (list "foo" "bar"))
@@ -126,11 +126,11 @@
  (is (var-list->column-clause '(foo "bar"))
      "foo,bar"
      "var-list->column-clause '(foo \"bar\" works")
-  
+
  (is (var-list->column-clause 'foo "bar")
      "foo,bar"
      "var-list->column-clause '(foo \"bar\" works")
-  
+
  (is (var-list->column-clause '("foo-bar"))
      "foo_bar"
      "var-list->column-clause '(\"foo-bar\") works")
@@ -155,5 +155,37 @@
      ""
      "var-list->column-clause '() returns empty string")
  )
- 
+
+(when #t
+  (test-suite
+   "placeholders-for"
+
+   (for ((args (list '() '(foo) '(foo bar) '(foo bar 3) '(foo bar (1 2))))
+         (res  (list "" "$1" "$1,$2" "$1,$2,$3" "$1,$2,$3" )))
+     (is (placeholders-for args) res @~a{(placeholders-for @args) is @res})
+     )
+   (is (placeholders-for '(foo bar 3) 3)
+       "$3,$4,$5"
+       @~a{(placeholders-for '(foo bar 3) 3) is "$3,$4,$5"})
+   )
+  )
+
+(when #t
+  (test-suite
+   "placeholders-for-multiple-rows"
+
+   (is (placeholders-for-multiple-rows '((a b c) (d e f)))
+       "($1,$2,$3),($4,$5,$6)"
+       "correctly built multiple-rows placeholders")
+
+   (is (placeholders-for-multiple-rows '(a b c))
+       "($1,$2,$3)"
+       "correctly built one-row placeholders from list")
+
+   (is (placeholders-for-multiple-rows '((a b c)))
+       "($1,$2,$3)"
+       "correctly built one-row placeholders from LoL")
+   )
+  )
+
 (done-testing)
