@@ -75,7 +75,7 @@
 
 ;;--------------------------------------------------------------------------------
 
-(define/contract (join-clause table1 table2)
+(define/contract (join-clause-many-to-many table1 table2)
   (-> string? string? string?)
   ;; Given:  "collaborations" "files"
   ;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
