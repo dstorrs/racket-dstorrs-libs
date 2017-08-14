@@ -236,7 +236,7 @@
   (->* (list? vector?)                           ; keys and data
        (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
         #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
-        #:transform-data (-> any/c any/c pair?)  ; transform the output of dict-maker
+        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
         )
        dict?)
 
