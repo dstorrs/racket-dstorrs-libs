@@ -27,8 +27,16 @@
 ;;     dict (by default a mutable hash)
 
 (define L list)
-(define/contract (safe-first l) (-> list? any/c) (if (null? l) '() (first l)))
-(define/contract (safe-rest  l) (-> list? list?) (if (null? l) '() (rest l)))
+(define/contract (safe-first l [default '()])
+  (->* (list?) (any/c) any/c)
+  (cond [(null? l) default]
+        [else (first l)]))
+
+(define/contract (safe-rest  l [default '()])
+  (->* (list?) (any/c) any/c)
+  (cond [(null? l) default]
+        [else (rest l)]))
+
 
 (define (atom? x) (not (pair? x)))
 
@@ -114,7 +122,7 @@
   ;;    '((1 2) (3 4) (5 6) (7))
 
 
-  
+
   (if (null? data)
       '()
       (let ()
@@ -123,15 +131,15 @@
           (if (> step-size data-length)
               (values data '())
               (split-at data step-size)))
-        
+
         (define step-result
           (apply func step-data))
-        
+
         (define aggregator (if flat
                                append
                                (lambda (x y)
                                  (append (list x) y))))
-        
+
         (aggregator (autobox step-result)
                     (step-by-n func
                                remaining-data

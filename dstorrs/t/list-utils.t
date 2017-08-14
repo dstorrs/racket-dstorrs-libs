@@ -64,6 +64,7 @@
      (throws (thunk (safe-first args))
              #px"expected:\\s+list\\?"
              (format "(safe-first ~a) throws because not valid list" args)))
+   (is (safe-first '() 7) 7 "safe-first will accept a default argument and return it on null list")
    
    (is (safe-rest '(foo bar)) '(bar) "safe-first '(foo bar) is '(bar)")
    (is (safe-rest '()) '() "safe-rest '() is '()")
@@ -71,6 +72,7 @@
      (throws (thunk (safe-rest args))
              #px"expected:\\s+list\\?"
              (format "(safe-rest ~a) throws because not valid list" args)))
+   (is (safe-rest '() 7) 7 "safe-rest will accept a default argument and return it on null list")
    )
   )
 
