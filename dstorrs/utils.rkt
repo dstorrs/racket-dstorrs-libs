@@ -24,6 +24,7 @@
 ;;     prefix. e.g: (rand-val) or (rand-val "employee-id")
 ;; *) running-file-dir: get the dir to the running file
 ;; *) running-file-path: get the complete path to the running file
+;; *) safe-build-path : build-path, but ignores "", #f, or 'relative
 ;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) say : macro that uses 'displayln' to output all
@@ -344,6 +345,17 @@
 (define (running-file-dir)
   (path-only (path->complete-path (find-system-path 'run-file))))
 
+;;----------------------------------------------------------------------
+
+(define/contract (safe-build-path #:as-str [as-str #f] . args)
+  (->* ()
+       (#:as-str boolean?)
+       #:rest (listof (or/c #f 'relative "" path-string?))
+       path-string?)
+
+  ((if as-str path->string identity)
+   (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
+  
 ;;----------------------------------------------------------------------
 
 (provide (all-defined-out))

@@ -403,7 +403,7 @@
    "ensure-directory-exists"
 
    (define dir (rand-val "/tmp/test-dir"))
-   
+
    (is-false (directory-exists? dir) "at start of testing, directory does not exist")
    (ok (ensure-directory-exists dir) "ensure-directory-exists returns true when the directory didn't exist")
    (ok (directory-exists? dir) "after call to ensure, directory exists")
@@ -414,6 +414,40 @@
            "throws when could not create a directory due to permissions")
    (file-or-directory-permissions dir 511)
    (delete-directory dir)
+   )
+  )
+
+;;----------------------------------------------------------------------
+
+(when #t
+  (test-suite
+   "safe-build-path"
+
+   (define bp build-path)
+   (is (safe-build-path "/foo") (bp "/foo") "(sbp \"/foo\")")
+   (is (safe-build-path "/foo" "bar") (bp "/foo" "bar") "(sbp \"/foo\" \"bar\")")
+   (is (safe-build-path "/foo" "bar" #:as-str #t)
+       (path->string (bp "/foo" "bar"))
+       "(sbp \"/foo\" \"bar\" #:as-str #t)")
+   (is (safe-build-path "/foo" "")
+       (bp "/foo")
+       "(sbp \"/foo\" \"\")")
+   (is (safe-build-path "/foo" "" "")
+       (bp "/foo")
+       "(sbp \"/foo\" \"\" \"\")")
+   (is (safe-build-path "" "/foo" "" "baz")
+       (bp "/foo/baz")
+       "(sbp \"\" \"/foo\" \"\" \"baz\")")
+   (is (safe-build-path "" "/foo" "" "baz" #:as-str #t)
+       (path->string (bp "/foo/baz"))
+       "(sbp \"\" \"/foo\" \"\" \"baz\" #:as-str #t)")
+   (is (safe-build-path #f "/foo" #f "baz" #:as-str #t)
+       (path->string (bp "/foo/baz"))
+       "(sbp #f \"/foo\" #f \"baz\" #:as-str #t)")
+   (is (safe-build-path 'relative "foo")
+       (bp "foo")
+       "(safe-build-path 'relative \"foo\"")
+   
    )
   )
 
