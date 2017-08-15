@@ -80,7 +80,9 @@
   ;; Given:  "collaborations" "files"
   ;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
 
-  (define (singular str) (second (regexp-match #px"^(.+)s$" str)))
+  (define (singular str)
+    (define res (regexp-match #px"^(.+)s$" str))
+    (if res (second res) str))
 
   (define join-table  (join-table-name table1 table2))     ; collaborations_to_files
   (define t1a         (~a (string-ref table1 0)))          ; c

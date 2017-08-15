@@ -20,7 +20,7 @@
 
  (is (many-to-many-join c f)
      "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
-     "join-clause works")
+     "many-to-many-join works")
  )
 
 (test-suite
