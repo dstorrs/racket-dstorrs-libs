@@ -351,29 +351,42 @@
 (define/contract (multi-partition #:partitions num-dests
                                   #:filter index-chooser
                                   #:source source
-                                  #:post [post identity]
+                                  #:post-process-partition [post-process-partition identity]
+                                  #:post-process-element   [post-process-element   identity]
                                   )
   (->* (#:partitions exact-positive-integer?
         #:filter (-> any/c (or/c #f void? exact-nonnegative-integer?))
         #:source list?)
-       (#:post   (-> list? any/c))
+       (
+        #:post-process-partition (-> list? any/c)
+        #:post-process-element   (-> any/c any/c)
+        )
        any
        )
-  (define results (make-vector num-dests '()))
-  (call/cc
-   (lambda (return)
-     (when (= 1 num-dests) (return source))
+  (cond [(= 1 num-dests) source]
+        [else
+         (define max-idx (sub1 num-dests))
+         (define results (make-vector num-dests '()))
 
-     (for ((element (reverse source)))
-       (let ((idx (index-chooser element)))
-         (when (and idx (not (void? idx)))
+         (for ((element (reverse source)))
+           (let ((idx (index-chooser element)))
+             (cond [(or (false? idx)
+                        (void? idx)) 'do-nothing]
+                   [(> idx max-idx)
+                    (raise-result-error 'multi-partition
+                                        "index between 0 and one less than number of partitions"
+                                        idx)]
+                   [else (vector-set! results
+                                      idx
+                                      (cons (post-process-element element)
+                                            (vector-ref results idx)))])))
+         (for ((i (vector-length results)))
            (vector-set! results
-                        idx
-                        (cons element (vector-ref results idx))))))
-     (for ((i (vector-length results)))
-       (vector-set! results i (post (vector-ref results i))))))
+                        i
+                        (post-process-partition
+                         (vector-ref results i))))
 
-  (vector->values results))
+         (vector->values results)]))
 
 ;;----------------------------------------------------------------------
 

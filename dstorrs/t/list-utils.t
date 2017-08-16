@@ -415,6 +415,21 @@
 (test-suite
  "multi-partition"
 
+ (define lst  '(a b c))
+ (throws (thunk
+          (multi-partition #:partitions 2
+                           #:filter (lambda (x) 18)
+                           #:source lst))
+         #px"index between 0 and one less than number of partitions"
+         "index chooser result must be less than number of partitions")
+
+ (is (multi-partition #:partitions 1
+                      #:filter (lambda (x) (raise "should not get here"))
+                      #:source lst)
+     lst
+     "one partition just returns its argument"
+     eq?)
+ 
  (lives (thunk
          (let-values ([(x y) (multi-partition #:partitions 2
                                               #:filter (lambda (n) 1)
@@ -465,7 +480,7 @@
 
  (let-values ([(x y) (multi-partition #:partitions 2
                                       #:source '(1 2 3 4 1)
-                                      #:post unique
+                                      #:post-process-partition unique
                                       #:filter (lambda (i) (if (odd? i) 0 1)))])
    (is x '(1 3) "all odd numbers are in x and it was uniqueified")
    (is y '(2 4) "all even numbers are in y")
@@ -473,7 +488,7 @@
 
  (let-values ([(x y) (multi-partition #:partitions 2
                                       #:source '(1 2 3 4 1)
-                                      #:post unique
+                                      #:post-process-partition unique
                                       #:filter (lambda (i)
                                                  (cond [(odd? i) 0]
                                                        [(= 4 i) #f]
@@ -484,12 +499,22 @@
    )
  (let-values ([(x y) (multi-partition #:partitions 2
                                       #:source '(1 2 3 4 1)
-                                      #:post unique
+                                      #:post-process-partition unique
                                       #:filter (lambda (i)
                                                  (cond [(odd? i) 0]
                                                        [(= 8 i)    1]))
                                       )])
    (is x '(1 3) "all odd numbers are in x and it was uniqueified")
+   (is y '() "y is empty")
+   )
+ (let-values ([(x y) (multi-partition #:partitions 2
+                                      #:source '(1 2 3 4 1)
+                                      #:post-process-element add1
+                                      #:filter (lambda (i)
+                                                 (cond [(odd? i) 0]
+                                                       [(= 8 i)    1]))
+                                      )])
+   (is x '(2 4 2) "all odd numbers were put in x and were incremented")
    (is y '() "y is empty")
    )
  )
