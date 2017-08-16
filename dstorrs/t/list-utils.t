@@ -10,54 +10,54 @@
 
 (when #t
   (test-suite
- "get"
- (define l '(foo "bar" ("baz" (quux))))
- (define h (make-hash
-            `(("foo" . "bar")
-              (baz . 7)
-              (quux . (foo bar))
-              (blag . ,(make-hash '(["baz" . "jaz"]))))))
+   "get"
+   (define l '(foo "bar" ("baz" (quux))))
+   (define h (make-hash
+              `(("foo" . "bar")
+                (baz . 7)
+                (quux . (foo bar))
+                (blag . ,(make-hash '(["baz" . "jaz"]))))))
 
- (is (car l) 'foo "car l is 'foo")
- (is (get l 0) 'foo "(get l 0) is 'foo")
- (is (get l '(0)) 'foo "(get l '(0)) is 'foo")
- (is (get l '(1)) "bar" "(get l '(1)) is \"bar\"")
- (is (get l '(2)) '("baz" (quux)) "(get l '(2)) is '(\"baz\" (quux))")
- (is (get l '(2 0)) "baz" "(get l '(2 0)) is '\"baz\"")
- (throws (lambda () (get l '(188 0)))
-         #px"list-ref: index too large for list"
-         "(get l '(188 0)) throws: index too large for list")
+   (is (car l) 'foo "car l is 'foo")
+   (is (get l 0) 'foo "(get l 0) is 'foo")
+   (is (get l '(0)) 'foo "(get l '(0)) is 'foo")
+   (is (get l '(1)) "bar" "(get l '(1)) is \"bar\"")
+   (is (get l '(2)) '("baz" (quux)) "(get l '(2)) is '(\"baz\" (quux))")
+   (is (get l '(2 0)) "baz" "(get l '(2 0)) is '\"baz\"")
+   (throws (lambda () (get l '(188 0)))
+           #px"list-ref: index too large for list"
+           "(get l '(188 0)) throws: index too large for list")
 
- (is (get l '(188) -11)
-     -11
-     "(get l '(188 0) -11) returns -11; the index was too big so it defaulted")
+   (is (get l '(188) -11)
+       -11
+       "(get l '(188 0) -11) returns -11; the index was too big so it defaulted")
 
- (for ((k '("foo" baz quux blag (blag "baz")))
-       (v `("bar" 7 (foo bar) ,(make-hash '(["baz" . "jaz"])))))
-   (is (get h `(,k)) v (format "(get h ~a) is ~a" k v)))
+   (for ((k '("foo" baz quux blag (blag "baz")))
+         (v `("bar" 7 (foo bar) ,(make-hash '(["baz" . "jaz"])))))
+     (is (get h `(,k)) v (format "(get h ~a) is ~a" k v)))
 
- (is (get h 'quux) '(foo bar) "(get h '(quux 0) is '(foo bar)")
- (is (get h '(quux 0)) 'foo "(get h '(quux 0) is foo")
+   (is (get h 'quux) '(foo bar) "(get h '(quux 0) is '(foo bar)")
+   (is (get h '(quux 0)) 'foo "(get h '(quux 0) is foo")
 
- (throws (lambda () (get h '(jaz)))
-         #px"no value found for key"
-         "throws on non-existent key 'jaz")
- (throws (lambda () (get h '(blag jaz)))
-         #px"no value found for key"
-         "throws on non-existent key '(blag jaz)")
+   (throws (lambda () (get h '(jaz)))
+           #px"no value found for key"
+           "throws on non-existent key 'jaz")
+   (throws (lambda () (get h '(blag jaz)))
+           #px"no value found for key"
+           "throws on non-existent key '(blag jaz)")
 
- (is (get h '(jaz) "not found")
-     "not found"
-     "defaults correctly if key was not found in hash")
+   (is (get h '(jaz) "not found")
+       "not found"
+       "defaults correctly if key was not found in hash")
 
- (is (get '(a b c) '(0)) 'a)
- )
+   (is (get '(a b c) '(0)) 'a)
+   )
   )
 
 (when #t
   (test-suite
    "safe-first and safe-rest"
-   
+
    (is (safe-first '(foo bar)) 'foo "safe-first '(foo bar) is 'foo")
    (is (safe-first '()) '() "safe-first '() is '()")
    (for ((args (list (cons 1 2) 'a 7)))
@@ -65,7 +65,7 @@
              #px"expected:\\s+list\\?"
              (format "(safe-first ~a) throws because not valid list" args)))
    (is (safe-first '() 7) 7 "safe-first will accept a default argument and return it on null list")
-   
+
    (is (safe-rest '(foo bar)) '(bar) "safe-first '(foo bar) is '(bar)")
    (is (safe-rest '()) '() "safe-rest '() is '()")
    (for ((args (list (cons 1 2) 'a 7)))
@@ -79,7 +79,7 @@
 (when #t
   (test-suite
    "autobox"
-   
+
    (is (autobox "foo") '("foo") "(autobox \"foo\" returns '(\"foo\")")
    (is (autobox '("foo")) '("foo") "(autobox '(\"foo\") returns '(\"foo\")")
    (is (autobox '()) '() "(autobox '()) returns '()")
@@ -105,24 +105,24 @@
 (when #t
   (test-suite
    "remove-nulls"
-   
- (is (remove-nulls '()) '() "remove-nulls leaves null list unchanged")
- (is (remove-nulls '(foo bar)) '(foo bar) "remove-nulls leaves list unchanged if it contains no null list")
- (is (remove-nulls '(foo () bar)) '(foo bar) "remove-nulls removes one null")
- (is (remove-nulls '(foo (()) bar)) '(foo (()) bar) "remove-nulls does not remove (())")
- )
+
+   (is (remove-nulls '()) '() "remove-nulls leaves null list unchanged")
+   (is (remove-nulls '(foo bar)) '(foo bar) "remove-nulls leaves list unchanged if it contains no null list")
+   (is (remove-nulls '(foo () bar)) '(foo bar) "remove-nulls removes one null")
+   (is (remove-nulls '(foo (()) bar)) '(foo (()) bar) "remove-nulls does not remove (())")
+   )
   )
 
 (when #t
   (test-suite
    "list/not-null?"
-   
- (for ((v `(#f #t "foo" 7 list? () ,(make-hash '((x . 7))) ,(make-vector 8))))
-   (not-ok (list/not-null? v) (format "list/not-null? ~a is #f" v)))
 
- (for ((v '((foo) (()))))
-   (ok (list/not-null? v) (format "(list/not-null? ~a is #t" v)))
- )
+   (for ((v `(#f #t "foo" 7 list? () ,(make-hash '((x . 7))) ,(make-vector 8))))
+     (not-ok (list/not-null? v) (format "list/not-null? ~a is #f" v)))
+
+   (for ((v '((foo) (()))))
+     (ok (list/not-null? v) (format "(list/not-null? ~a is #t" v)))
+   )
   )
 
 
@@ -363,7 +363,7 @@
      '()
      "sort num works with null")
 
- 
+
  (is (sort-str (list "foo" "baz" "glux" "aaaa"))
      (list "aaaa" "baz" "foo"  "glux" )
      "sort-str works with unsorted list")
@@ -372,7 +372,7 @@
      '()
      "sort-str works with null")
 
- 
+
  (is (sort-sym (list 'foo 'baz 'glux 'aaaa))
      (list 'aaaa 'baz 'foo  'glux)
      "sort-sym works with unsorted list")
@@ -381,7 +381,7 @@
      '()
      "sort-sym works with null")
 
- 
+
  (is (sort-smart (list 'foo 'baz 'glux 'aaaa))
      (list 'aaaa 'baz 'foo  'glux)
      "sort-smart works with unsorted list of symbols")
@@ -419,7 +419,8 @@
          (let-values ([(x y) (multi-partition #:partitions 2
                                               #:filter (lambda (n) 1)
                                               #:source '())])
-           (ok (thunk (andmap null? (list x y)))
+           (is (list x y)
+               (list '() '())
                "Empty list returns all empty lists for dests 2")))
         "First empty list check lived"
         )
@@ -428,7 +429,8 @@
          (let-values ([(x y z) (multi-partition #:partitions 3
                                                 #:filter (lambda (n) 1)
                                                 #:source '())])
-           (ok (thunk (andmap null? (list x y z)))
+           (is (list x y z)
+               (list '() '() '())
                "Empty list returns all empty lists for dests 3"))
          )
         "Second empty list check lived"
@@ -441,10 +443,8 @@
            (let-values ([(x y z) (multi-partition #:partitions 3
                                                   #:filter f
                                                   #:source '(1 7 8 0 15.8 -2))])
-             (ok (thunk
-                  (and (equal? x '(0))
-                       (equal? y '(8 -2))
-                       (equal? z '(1 7 15.8))))
+             (is (list x y z)
+                 '( (0) (8 -2) (1 7 15.8) )
                  "list of numbers was partitioned correctly"))))
         "numbers test lived"
         )
@@ -539,7 +539,7 @@
    (is (step-by-n + '(1 2 3 4 5))
        '((3) (7) (5))
        "Handles leftover elements: (step-by-n + '(1 2 3 4 5)) returns '((3) (7) (5))")
-   
+
    ;; Passing various functions does the expected thing
    (is (step-by-n + '(1 2 3 4))
        '((3) (7))
@@ -553,12 +553,12 @@
        '((1 2) (3 4))
        "(step-by-n list '(1 2 3 4)) returns '((1 2) (3 4))")
 
-   
+
    ;; If you pass the empty list it just returns empty list
    (is (step-by-n + '())
        '()
        "step-by-n will return empty list if given empty list and no specified step num")
-   
+
    (is (step-by-n + '() 3)
        '()
        "step-by-n will return empty list if given empty list and an arbitrary step num")
@@ -574,8 +574,8 @@
            #px"expected:\\s+number"
            "the exception propagates if the processor can't handle the type of the args")
 
-   
-   
+
+
    ;; Dies when you pass a step number that is 0 or negative
    (throws (thunk (step-by-n + '() 0))
            exn:fail:contract?
@@ -584,7 +584,7 @@
            exn:fail:contract?
            "step-by-n dies when you pass a negative step number")
 
-   
+
    ;; Dies if the processor function returns multiple values
    (throws (thunk (step-by-n values '(a b c d)))
            #px"arity mismatch"
