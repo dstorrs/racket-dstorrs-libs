@@ -429,7 +429,7 @@
      lst
      "one partition just returns its argument"
      eq?)
- 
+
  (lives (thunk
          (let-values ([(x y) (multi-partition #:partitions 2
                                               #:filter (lambda (n) 1)
@@ -509,12 +509,12 @@
    )
  (let-values ([(x y) (multi-partition #:partitions 2
                                       #:source '(1 2 3 4 1)
-                                      #:post-process-element add1
+                                      #:post-process-element (lambda (x y) (add1 y))
                                       #:filter (lambda (i)
                                                  (cond [(odd? i) 0]
                                                        [(= 8 i)    1]))
                                       )])
-   (is x '(2 4 2) "all odd numbers were put in x and were incremented")
+   (is x '(2 4 2) "when post-processing elements, all odd numbers were put in x and were incremented")
    (is y '() "y is empty")
    )
  )

@@ -352,14 +352,14 @@
                                   #:filter index-chooser
                                   #:source source
                                   #:post-process-partition [post-process-partition identity]
-                                  #:post-process-element   [post-process-element   identity]
+                                  #:post-process-element   [post-process-element   (lambda (idx elem) elem)]
                                   )
   (->* (#:partitions exact-positive-integer?
         #:filter (-> any/c (or/c #f void? exact-nonnegative-integer?))
         #:source list?)
        (
         #:post-process-partition (-> list? any/c)
-        #:post-process-element   (-> any/c any/c)
+        #:post-process-element   (-> exact-nonnegative-integer? any/c any/c)
         )
        any
        )
@@ -378,7 +378,7 @@
                                         idx)]
                    [else (vector-set! results
                                       idx
-                                      (cons (post-process-element element)
+                                      (cons (post-process-element idx element)
                                             (vector-ref results idx)))])))
          (for ((i (vector-length results)))
            (vector-set! results
