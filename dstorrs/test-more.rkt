@@ -321,6 +321,57 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (is-approx got expected [msg ""] #:threshold [threshold 1] #:with [with identity] #:op [op <=])
+  (->* (any/c any/c) 
+       (string?
+        #:threshold (and/c exact? (or/c zero? positive?))
+        #:with (-> any/c number?)
+        #:op (-> any/c any/c boolean?))
+       any/c)
+  (define with-name       (object-name with))
+  (define got-val         (_unwrap-val got))
+  (define expected-val    (_unwrap-val expected))
+  (define got-result      (with got-val))
+  (define expected-result (with expected-val))
+
+  ;; (say "with-name: " with-name)
+  ;; (say "got-val: "   got-val)
+  ;; (say "expected-val: " expected-val)
+  ;; (say "got-result: " got-result)
+  ;; (say "expected-result: " expected-result)
+
+  (when (not (andmap number? (list got-result expected-result)))
+    (raise-arguments-error 'isnt-approx
+                           "arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"
+                           "got" got
+                           "expected" expected
+                           "with" with-name
+                           "(with <got>)" got-result
+                           "(with <expected>)" expected-result))
+
+  (define diff (- expected-result got-result))
+  ;  (say "diff: " diff)
+  
+  (test-more-check #:got (op (abs diff) threshold)
+                   #:expected #t
+                   #:msg msg
+                   #:report-expected-as (format "(~a ~a) => ~a" with-name expected expected-result)
+                   #:report-got-as (format "(~a ~a) => ~a" with-name got got-result)
+                   #:return diff)
+                   
+  )
+
+;;----------------------------------------------------------------------
+
+(define/contract (isnt-approx got expected [msg ""] #:threshold [threshold 1] #:with [with identity] #:op [op >])
+  (->* (any/c any/c) 
+       (string? #:threshold (and/c exact? (or/c zero? positive?))  #:with (-> any/c exact?))
+       any/c)
+  (is-approx got expected msg #:threshold threshold #:with with #:op op)
+  )
+
+;;----------------------------------------------------------------------
+
 
 (provide (except-out (all-defined-out)
                      _tp _tf

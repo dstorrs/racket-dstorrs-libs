@@ -347,6 +347,36 @@
           "raise-argument-error exception")
  )
 
+(when #t
+  (test-suite
+   "is-approx and isnt-approx"
+   
+   (is-approx 1 1 "1 is approximately 1")
+   (is-approx 1 0 "by default, 1 is approximately 0")
+   (is-approx 1 2 "by default, 1 is approximately 2")
+   (is-approx 1 1.5 "by default, 1 is approximately 1.5")
+
+   (isnt-approx 1 2.5 "by default, 1 is NOT approximately 2.5")
+   (isnt-approx 1 -1 "by default, 1 is NOT approximately -1")
+   
+   (isnt-approx 1 -5 "(isnt-approx 1 -5)")
+   (is-approx 1 -5 #:threshold 10 "1 is approx -5 if #:threshold is 10")
+
+   (throws (thunk (is-approx '(a b c) '(d e f)))
+           #px"arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"           
+           "throws when given non-numeric and no #:with arg")
+           
+   (is-approx '(a b c) '(d e f) #:with length "(is-approx '(a b c) '(d e f) #:with length)")
+   (is-approx '(a b c) '(d e f g) #:with length "(is-approx '(a b c) '(d e f g) #:with length), since default threshold is 1")
+   (isnt-approx '(a b c) '(d e f g) #:with length #:threshold 0 "(isnt-approx '(a b c) '(d e f g) #:with length #:threshold 0)")
+
+   (is (is-approx '(a b c) '(d e f g h) #:threshold 10 #:with length
+                  "(is-approx '(a b c) '(d e f g h) #:threshold 10 #:with length)")
+       2
+       "(is-approx '(a b c) '(d e f g) #:with length #:threshold 10) returns 2")
+   )
+  )
+   
 ;;  @@TODO
 ;; https://docs.racket-lang.org/overeasy/index.html
 ;; - capture data from stdout and stderr, report on that
