@@ -86,8 +86,8 @@
        any)
   (let* ([success (op got expected)]
          [ok-str (if success "ok " "NOT ok ")]
-         [expected-msg (~a (or report-expected-as expected))]
-         [got-msg (~a (or report-got-as got))]
+         [expected-msg (~v (or report-expected-as expected))]
+         [got-msg (~v (or report-got-as got))]
          [msg-str (format "~a~a"
                           (if (non-empty-string? msg)
                               (format " - ~a" msg)

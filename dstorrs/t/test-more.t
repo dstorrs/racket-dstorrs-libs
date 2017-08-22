@@ -88,7 +88,7 @@
 
    (test-gives-correct-output
     (thunk (isnt 8 8 "isnt msg"))
-    (pregexp "^NOT ok \\d+ - isnt msg\n  Got:\\s+8\n  Expected: <anything but 8>\n$")
+    (pregexp "^NOT ok \\d+ - isnt msg\n  Got:\\s+8\n  Expected: \"<anything but 8>\"\n$")
     "failed 'isnt' test that has a msg reports correctly"
     -1
     )
@@ -96,7 +96,7 @@
 
    (test-gives-correct-output
     (thunk (isnt 8 8))
-    (pregexp "NOT ok \\d+\n  Got:\\s+8\n  Expected: <anything but 8>\n$")
+    (pregexp "NOT ok \\d+\n  Got:\\s+8\n  Expected: \"<anything but 8>\"\n$")
     "failed 'isnt' test that has no msg reports correctly"
     -1
     )
@@ -114,17 +114,16 @@
     -1
     )
 
-
    (test-gives-correct-output
     (thunk (unlike "foobar" #px"foo" "unlike msg"))
-    (pregexp "NOT ok \\d+ - unlike msg\n  Got:\\s+foobar\n  Expected: <something NOT matching #px\"foo\">")
+    (pregexp "NOT ok \\d+ - unlike msg\n  Got:\\s+\"foobar\"\n  Expected: \"<something NOT matching #px[^\"]+\"foo[^\"]+\"")    
     "failed 'unlike' test that has a msg reports correctly"
     -1
     )
 
    (test-gives-correct-output
     (thunk (unlike "foobar" #px"foo"))
-    (pregexp "NOT ok \\d+\n  Got:\\s+foobar\n  Expected: <something NOT matching #px\"foo\">")
+    (pregexp "NOT ok \\d+\n\\s+Got:\\s+\"foobar\"\n  Expected: \"<something NOT matching #px[^\"]\"foo[^\"]+\">")
     "failed 'unlike' test that has no msg reports correctly"
     -1
     )
