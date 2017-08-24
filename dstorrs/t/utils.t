@@ -1,6 +1,6 @@
 #!/usr/bin/env racket
 
-#lang at-exp rackjure
+#lang at-exp racket
 
 (require dstorrs/utils
          dstorrs/test-more
