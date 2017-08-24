@@ -47,29 +47,6 @@
 (ok #t "testing harness works")
 
 (test-suite
- "fs-monitor-table-schema"
-
- (define pg (list
-             @~a{CREATE TABLE "watched_files" (id BIGSERIAL,path TEXT NOT NULL UNIQUE ,last_modified TIMESTAMP NOT NULL,file_size_bytes BIGINT NOT NULL,"is_dir" BOOLEAN NOT NULL DEFAULT FALSE,CONSTRAINT "watched_files_pkey" PRIMARY KEY (id))}
-             @~a{CREATE INDEX "watched_files_path_idx" ON "watched_files"(path)}
-             ))
- (define sqlite (list
-                 @~a{CREATE TABLE IF NOT EXISTS watched_files (id BIGINT PRIMARY KEY,path TEXT NOT NULL UNIQUE,last_modified TIMESTAMP NOT NULL,file_size_bytes BIGINT NOT NULL,is_dir BOOLEAN DEFAULT 'FALSE' NOT NULL)}
-                 @~a{CREATE INDEX watched_files_path_idx ON watched_files(path)}
-                 ))
- (for ((name '(pg postgres postgresql)))
-   (is (fsmonitor-setup-sql name)
-       pg
-       (~a "Got the proper schema for " name)))
-
- (is (fsmonitor-setup-sql 'sqlite)
-     sqlite
-     "Got the proper schema for sqlite")
- ); test-suite
-
-;;----------------------------------------------------------------------
-
-(test-suite
  "compare-directory"
 
  (ok #f "not implemented")
