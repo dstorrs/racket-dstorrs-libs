@@ -1,6 +1,6 @@
 #!/usr/bin/env racket
 
-#lang at-exp rackjure
+#lang at-exp racket
 
 (require "../list-utils.rkt"
          "../test-more.rkt"
@@ -203,7 +203,7 @@
                    (vector 1 2 3)
                    #:transform-dict (lambda (d)
                                       (for ((k (hash-keys d)))
-                                        (hash-set! d k (add1 (d k)))
+                                        (hash-set! d k (add1 (hash-ref d k)))
                                         )
                                       d))
      (make-hash '((a . 2) (b . 3) (c . 4)))

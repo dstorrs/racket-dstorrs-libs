@@ -297,7 +297,7 @@
   (->* (list?) (#:key (-> any/c exact-integer?)) list?)
   (if (null? data)
       null
-      (let ((ignored #t)) ; need the let only to establish a definition context
+      (let () ; need the let only to establish a definition context
         (define-values (n final result)
           (for/fold ((prev (car data))
                      (acc  (list (car data)))
