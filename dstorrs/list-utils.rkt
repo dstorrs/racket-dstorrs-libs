@@ -148,7 +148,6 @@
                                )))))
 
 ;;----------------------------------------------------------------------
-;; NOTE: This is obsoleted by #lang rackjure.  Prefer that.
 ;;
 ;;    Take a data structure built of nested (hashes, lists, vectors)
 ;;    and retrieve items from it.  Hashes are accessed by key, vectors
