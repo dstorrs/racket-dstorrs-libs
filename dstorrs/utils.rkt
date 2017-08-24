@@ -219,11 +219,14 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-hash-remove h k)
-  (-> hash? any/c hash?)
-  (if (immutable? h)
-      (hash-remove h k)
-      (begin (hash-remove! h k) h)))
+(define/contract (safe-hash-remove h . keys)
+  (->* (hash?) () #:rest (non-empty-listof any/c) hash?)
+  (define is-imm (immutable? h))
+  (for/fold ((hsh h))
+            ((k keys))
+    (if is-imm
+        (hash-remove hsh k)
+        (begin (hash-remove! hsh k) h))))
 
 ;;----------------------------------------------------------------------
 
@@ -238,9 +241,10 @@
        hash?)
 
   (define args-hash (apply hash args))
+  (define is-imm (immutable? h))
   (for/fold ((hsh h))
             ((k (hash-keys args-hash)))
-    (if (immutable? h)
+    (if is-imm
         (hash-set hsh k (hash-ref args-hash k))
         (begin (hash-set! hsh k (hash-ref args-hash k)) h))))
 

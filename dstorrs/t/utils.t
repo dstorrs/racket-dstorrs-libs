@@ -117,6 +117,10 @@
      (hash 'a 1 'b 2 'c 3)
      "(safe-hash-remove hash-imm 'x) worked")
 
+ (is (safe-hash-remove hash-imm 'a 'x)
+     (hash 'b 2 'c 3)
+     "(safe-hash-remove hash-imm 'a 'x) worked")
+
  (is (safe-hash-remove (hash-mut) 'a)
      (make-hash '((b . 2) (c . 3)))
      "(safe-hash-remove hash-mut 'a) worked")
@@ -124,6 +128,13 @@
  (is (safe-hash-remove (hash-mut) 'x)
      (make-hash '((a . 1) (b . 2) (c . 3)))
      "(safe-hash-remove hash-mut 'x) worked")
+
+ (define h (hash-mut))
+ (let ((res (safe-hash-remove h 'a 'c 'x)))
+   (ok (eq? h res) "safe-hash-remove returns the same hash when given a mutable hash")
+   (is res
+       (make-hash '((b . 2)))
+       "(safe-hash-remove hash-mut 'a 'c 'x) worked"))
  );; test-suite
 
 (test-suite
