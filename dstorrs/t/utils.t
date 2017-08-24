@@ -132,18 +132,33 @@
  (ok (immutable? hash-imm) "using immutable hash for next test")
  (is (safe-hash-set hash-imm 'b 5)
      (hash 'a 1 'b 5 'c 3)
-     "can handle an immutable hash")
+     "can handle an immutable hash when specifying one key and one value")
 
- (define hash-mut (make-hash '((a . 1) (b . 2) (c . 3))))
- (define correct  (make-hash '((a . 1) (b . 5) (c . 3))))
- (ok (not (immutable? hash-mut)) "using mutable hash for next test")
- (ok (not (immutable? correct)) "using mutable hash for answer to next test")
- (is (safe-hash-set hash-mut 'b 5)
-     correct
-     "can handle a mutable hash")
+ (is (safe-hash-set hash-imm 'a 3 'b 9 'd 8)
+     (hash 'a 3 'b 9 'c 3 'd 8)
+     "can handle an immutable hash when specifying multiple arguments")
+
+ (throws (thunk (safe-hash-set hash-imm 'x))
+         #px"safe-hash-set: contract violation"
+         "safe-hash-set throws if given an odd number of arguments")
+ 
+ 
+ 
+ 
+ (let ((hash-mut (make-hash '((a . 1) (b . 2) (c . 3)))))
+   (is (safe-hash-set  hash-mut 'b 5)
+       (make-hash '((a . 1) (b . 5) (c . 3)))
+       "can handle a mutable hash"))
+
+ (let* ((hash-mut  (make-hash '((a . 1) (b . 2) (c . 3))))
+        (h (safe-hash-set hash-mut 'a 3 'b 9 'd 8)))
+   (ok (eq? h hash-mut) "the hash returned from safe-hash-set is the same one sent in if you sent a mutable hash")
+   (is h
+       (hash->mutable (hash 'a 3 'b 9 'c 3 'd 8))
+       "can handle a mutable hash when specifying multiple arguments"))
 
  (dies (thunk (safe-hash-set #f 'a 7))
-       "safe-hash-set requires a hash")
+       "safe-hash-set requires a hash for the first argument")
  )
 
 (test-suite

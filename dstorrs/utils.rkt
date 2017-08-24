@@ -11,7 +11,7 @@
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
-;; *) ensure-directory-exists : directory will exist or this will throw 
+;; *) ensure-directory-exists : directory will exist or this will throw
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) not-equal?      : what it says on the tin
@@ -40,7 +40,7 @@
 (define-syntax (__LINE__ stx)
   (with-syntax ((line (syntax-line stx)))
     (syntax-case stx ()
-        [_ #'line])))
+      [_ #'line])))
 
 ;;----------------------------------------------------------------------
 
@@ -166,7 +166,7 @@
      (cond [(and (equal? p "")
                  (not reject-empty-string))
             (return "")]
-           [else 
+           [else
             (define appender  (if is-dir? path->directory-path identity))
             (define converter (if (string? p) string->path identity))
             (path->string (appender (converter p)))]))))
@@ -227,11 +227,22 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-hash-set h k v)
-  (-> hash? any/c any/c hash?)
-  (if (immutable? h)
-      (hash-set h k v)
-      (begin (hash-set! h k v) h)))
+(define/contract (safe-hash-set h . args)
+  (->* (hash?)
+       ()
+       #:rest (and/c list?
+                     (λ (lst)
+                       (let ([len (length lst)])
+                         (and (even? len)
+                              (not (= 0 len))))))
+       hash?)
+
+  (define args-hash (apply hash args))
+  (for/fold ((hsh h))
+            ((k (hash-keys args-hash)))
+    (if (immutable? h)
+        (hash-set hsh k (hash-ref args-hash k))
+        (begin (hash-set! hsh k (hash-ref args-hash k)) h))))
 
 ;;----------------------------------------------------------------------
 
@@ -301,13 +312,13 @@
   (define-values (d f is-dir) (split-path fp))
   (when (equal? d 'relative)
     (raise-arguments-error  'dir-and-filename
-                           "Cannot accept single-element relative paths"
-                           "path" (path-string->string fp)))
+                            "Cannot accept single-element relative paths"
+                            "path" (path-string->string fp)))
   (when (false? d)
     (raise-arguments-error  'dir-and-filename
                             "Cannot accept root path (/)"
                             "path" (path-string->string fp)))
-  
+
   (define convert (if is-dir path->directory-path identity))
   (values (convert d) (convert f)))
 
@@ -325,7 +336,7 @@
        (for ((p (in-directory)))
          (return #f))
        (return #t)))))
-                 
+
 ;;----------------------------------------------------------------------
 
 (define/contract (ensure-directory-exists dir)
@@ -355,7 +366,7 @@
 
   ((if as-str path->string identity)
    (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
-  
+
 ;;----------------------------------------------------------------------
 
 (provide (all-defined-out))
