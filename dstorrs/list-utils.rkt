@@ -167,6 +167,8 @@
 ;;        #(struct:exn:fail:contract hash-ref: no value found for key
 ;;        #(struct:exn:fail:contract vector-ref: index is out of range
 ;;
+;;    The default value cannot be #f because that means 'do not return
+;;    a default'.
 (define (get s keys [def #f])
   (define (get-once key s)
     (cond
