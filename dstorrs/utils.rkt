@@ -34,7 +34,11 @@
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 ;; *) verify-struct  : test correctness of just parts of a structure
-;; *) with-temp-file : creates a temp file, ensures it will be deleted on exception
+;; *) with-temp-file : creates a temp file, ensures it will be deleted
+;; on exception. THIS IS NOT REENTRANT. ONCE YOU LEAVE THE FUNCTION,
+;; THE FILE IS GONE. DO NOT TRY TO, E.G. SAVE A CONTINUATION FROM
+;; INSIDE THE FUNCTION, OR USE IT WITH FUNCTIONS THAT
+;; DO. (E.G. SEND/SUSPEND FROM THE WEBSERVER)
 
 ;;----------------------------------------------------------------------
 
