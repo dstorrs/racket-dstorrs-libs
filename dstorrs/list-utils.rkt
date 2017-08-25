@@ -90,8 +90,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (step-by-n func data [step-size 2])
-  (->* ((unconstrained-domain-> any/c) sequence?) (exact-positive-integer?) list?)
+(define/contract (step-by-n func data [step-size 2] #:return-results [return-results #t])
+  (->* ((unconstrained-domain-> any/c) sequence?) (exact-positive-integer? #:return-results boolean?) (or/c void? list?))
 
   ;; if data is empty, return null
   ;; if data is shorter than the step size, use whatever remains and then return
@@ -109,9 +109,17 @@
   ;;    -> (step-by-n list h 2)
   ;;    '((1 2) (3 4) (5 6) (7))
   ;;
-  
-  (for/list ((next-group (in-slice step-size data)))
-    (apply func next-group)))
+  ;; If you are iterating for side effects (e.g. inserting into a DB)
+  ;; and traversing an enormous source then you can choose to discard
+  ;; the results by setting #:return-results #f in order to avoid
+  ;; making a massive list in memory.
+
+  (cond [return-results 
+         (for/list ((next-group (in-slice step-size data)))
+           (apply func next-group))]
+        [else 
+         (for ((next-group (in-slice step-size data)))
+           (apply func next-group))]))
 
 ;;----------------------------------------------------------------------
 ;;

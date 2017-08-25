@@ -615,6 +615,14 @@
    (is (step-by-n ~a "foobar")
        '("fo" "ob" "ar")
        @~a{(step-by-n ~a "foobar") returns '("fo" "ob" "ar")})
+
+   
+   ;; If you are iterating for side effects (e.g. inserting into a DB)
+   ;; and traversing an enormous source then you can choose to discard
+   ;; the results in order to avoid making a massive list in memory.
+   (is (step-by-n ~a "foobar" #:return-results #f)
+       (void)
+       "#:return-results #f causes it to discard the results")
    
    ) ; test-suite
   )
