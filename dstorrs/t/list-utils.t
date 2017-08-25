@@ -555,24 +555,15 @@
        '((1 2 3) (4 5 6))
        "(step-by-n list '(1 2 3 4 5 6) 3) returns '((1 2 3) (4 5 6))")
 
-   (is (step-by-n list '(1 2 3 4) #:flat #t)
-       '(1 2 3 4)
-       "(step-by-n list '(1 2 3 4 #:flat #t)) returns '(1 2 3 4)")
-
-
    ;; Handles it gracefully if there are leftover elements
    (is (step-by-n + '(1 2 3 4 5))
-       '((3) (7) (5))
-       "Handles leftover elements: (step-by-n + '(1 2 3 4 5)) returns '((3) (7) (5))")
+       '(3 7 5)
+       "Handles leftover elements: (step-by-n + '(1 2 3 4 5)) returns '(3 7 5)")
 
    ;; Passing various functions does the expected thing
-   (is (step-by-n + '(1 2 3 4))
-       '((3) (7))
-       "(step-by-n + '(1 2 3 4)) returns '((3) (7))")
-
    (is (step-by-n * '(1 2 3 4))
-       '((2) (12))
-       "(step-by-n * '(1 2 3 4)) returns '((2) (12))")
+       '(2 12)
+       "(step-by-n * '(1 2 3 4)) returns '(2 12)")
 
    (is (step-by-n list '(1 2 3 4))
        '((1 2) (3 4))
@@ -614,7 +605,18 @@
    (throws (thunk (step-by-n values '(a b c d)))
            #px"arity mismatch"
            "dies if the processor function returns multiple values")
-   )
+
+
+   ;; Handles data that is not a list
+   (is (step-by-n + (vector 1 2 3 4))
+       '(3 7)
+       "(step-by-n + (vector 1 2 3 4)) returns '(3 7)")
+
+   (is (step-by-n ~a "foobar")
+       '("fo" "ob" "ar")
+       @~a{(step-by-n ~a "foobar") returns '("fo" "ob" "ar")})
+   
+   ) ; test-suite
   )
 
 (done-testing)
