@@ -152,10 +152,10 @@
  (throws (thunk (safe-hash-set hash-imm 'x))
          #px"safe-hash-set: contract violation"
          "safe-hash-set throws if given an odd number of arguments")
- 
- 
- 
- 
+
+
+
+
  (let ((hash-mut (make-hash '((a . 1) (b . 2) (c . 3)))))
    (is (safe-hash-set  hash-mut 'b 5)
        (make-hash '((a . 1) (b . 5) (c . 3)))
@@ -473,10 +473,46 @@
    (is (safe-build-path 'relative "foo")
        (bp "foo")
        "(safe-build-path 'relative \"foo\"")
-   
+
    )
   )
 
+;;----------------------------------------------------------------------
+
+(when #t
+  (test-suite
+   "with-temp-file"
+
+   (define the-path "")
+
+   (is (with-temp-file
+         (lambda (filepath)
+           (set! the-path filepath)
+           (ok (file-exists? filepath)
+               "the temporary file was created")
+           7))
+       7
+       "with-temp-file returns its final value")
+
+   (ok (not (file-exists? the-path)) "the file was deleted after with-temp-file returned")
+
+   (struct fake-exn ())
+   (throws (thunk
+            (with-handlers ((string? (lambda (e)
+                                       (ok (not (file-exists? the-path)) "the file was still deleted after with-temp-file threw an exception")
+                                       (raise (fake-exn))
+                                       ))
+                            (true? (lambda (e)
+                                     (say "inside catch-all handler. e was: " e)
+                                     (ok #f (~a "expected to throw the string 'foo', actually threw: " e)))))
+              (with-temp-file
+                (lambda (filepath)
+                  (set! the-path filepath)
+                  (raise "foo")))))
+           fake-exn?
+           "with-temp-file died as expected and was processed by the with-handlers as expected")
+   )
+  )
 ;;----------------------------------------------------------------------
 
 (done-testing) ; this should be the last line in the file

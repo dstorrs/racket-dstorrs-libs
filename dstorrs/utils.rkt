@@ -34,6 +34,7 @@
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 ;; *) verify-struct  : test correctness of just parts of a structure
+;; *) with-temp-file : creates a temp file, ensures it will be deleted on exception
 
 ;;----------------------------------------------------------------------
 
@@ -370,6 +371,16 @@
 
   ((if as-str path->string identity)
    (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (with-temp-file proc)
+  (-> (-> path? any) any)
+  (define the-path (make-temporary-file))
+  (dynamic-wind
+    (thunk #t)
+    (thunk (proc the-path))
+    (thunk (delete-file the-path))))
 
 ;;----------------------------------------------------------------------
 
