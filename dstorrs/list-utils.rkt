@@ -90,8 +90,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (step-by-n func data [step-size 2] #:return-results? [return-results #t])
-  (->* ((unconstrained-domain-> any/c) sequence?) (exact-positive-integer? #:return-results? boolean?) (or/c void? list?))
+(define/contract (step-by-n func data [step-size 2] #:return-results? [return-results? #t] #:pass-args-as-list? [pass-args-as-list? #f])
+  (->* ((unconstrained-domain-> any/c) sequence?) (exact-positive-integer? #:return-results? boolean? #:pass-args-as-list? boolean?) (or/c void? list?))
 
   ;; if data is empty, return null
   ;; if data is shorter than the step size, use whatever remains and then return
@@ -109,17 +109,23 @@
   ;;    -> (step-by-n list h 2)
   ;;    '((1 2) (3 4) (5 6) (7))
   ;;
-  ;; If you are iterating for side effects (e.g. inserting into a DB)
-  ;; and traversing an enormous source then you can choose to discard
-  ;; the results by setting #:return-results #f in order to avoid
-  ;; making a massive list in memory.
-
-  (cond [return-results 
+  ;; #:return-results?  If you are iterating for side effects
+  ;; (e.g. inserting into a DB) and traversing an enormous source then
+  ;; you can choose to discard the results by setting #:return-results?
+  ;; #f in order to avoid making a massive list in memory.
+  ;;
+  ;; #:pass-args-as-list?  If you would like your function to receive
+  ;; its arguments as a list instead of as separate values, set this
+  ;; to #t.  This is useful if you're going to be iterating in very
+  ;; large steps.
+  (cond [return-results?
          (for/list ((next-group (in-slice step-size data)))
-           (apply func next-group))]
+           (cond [pass-args-as-list? (func next-group)]
+                 [else (apply func next-group)]))]
         [else 
          (for ((next-group (in-slice step-size data)))
-           (apply func next-group))]))
+           (cond [pass-args-as-list? (func next-group)]
+                 [else (apply func next-group)]))]))
 
 ;;----------------------------------------------------------------------
 ;;

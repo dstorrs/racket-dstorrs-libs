@@ -623,6 +623,12 @@
    (is (step-by-n ~a "foobar" #:return-results? #f)
        (void)
        "#:return-results? #f causes it to discard the results")
+
+   ;; If you'd rather have your function receive its arguments as a
+   ;; list, you can do that.
+   (is (step-by-n list '(a b c d) #:pass-args-as-list? #t)
+       '(((a b)) ((c d)))
+       " (step-by-n list '(a b c d) #:receive-args-as-list #t) is '(((a b)) ((c d)))")
    
    ) ; test-suite
   )
