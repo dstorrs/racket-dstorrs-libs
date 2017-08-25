@@ -90,8 +90,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (step-by-n func data [step-size 2] #:return-results [return-results #t])
-  (->* ((unconstrained-domain-> any/c) sequence?) (exact-positive-integer? #:return-results boolean?) (or/c void? list?))
+(define/contract (step-by-n func data [step-size 2] #:return-results? [return-results #t])
+  (->* ((unconstrained-domain-> any/c) sequence?) (exact-positive-integer? #:return-results? boolean?) (or/c void? list?))
 
   ;; if data is empty, return null
   ;; if data is shorter than the step size, use whatever remains and then return
