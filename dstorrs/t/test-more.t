@@ -44,7 +44,11 @@
  "testing 'is'"
 
  (is 8 8 "(is 8 8) works")
- (is 8 8  "(is 8 8) works when given eq?" eq?)
+ (is 8 8  "(is 8 8) works when given eq? as a positional arg" eq?)
+ (is 8 8  "(is 8 8) works when given eq? as a keyword arg" #:op eq?)
+ (is 8 #f  "(is 8 #f) works when given xor as a positional and a 'return false' as a keyword arg"
+     xor
+     #:op (lambda (x y) #f))
  )
 
 (test-suite
@@ -57,6 +61,12 @@
 
  (displayln "\t### Next test deliberately has no message")
  (isnt 3 "abc")
+
+ (isnt 8 7  "(isnt 8 7) works when given (negate eq? as a positional arg"  (negate eq?))
+ (isnt 8 8 #:op (negate xor)  "(isnt 8 8) works when given (negate xor) as a keyword arg")
+ (isnt 8 #f  "(isnt 8 #f) works when given an 'or' func as a positional and a 'return false' as a keyword arg"
+       (lambda (x y)  (or x y))
+       #:op (lambda (x y)  #f))
  )
 
 (define (test-gives-correct-output thnk regex msg [inc 0])
@@ -116,7 +126,7 @@
 
    (test-gives-correct-output
     (thunk (unlike "foobar" #px"foo" "unlike msg"))
-    (pregexp "NOT ok \\d+ - unlike msg\n  Got:\\s+\"foobar\"\n  Expected: \"<something NOT matching #px[^\"]+\"foo[^\"]+\"")    
+    (pregexp "NOT ok \\d+ - unlike msg\n  Got:\\s+\"foobar\"\n  Expected: \"<something NOT matching #px[^\"]+\"foo[^\"]+\"")
     "failed 'unlike' test that has a msg reports correctly"
     -1
     )
@@ -217,21 +227,21 @@
  (define check-is-good (curry check-it (list is-type matches)))
 
  (define greater-than-one? (lambda (x) (> x 1)))
- (check-is-good  7 greater-than-one?) 
- (check-is-good  7 integer?) 
- (check-is-good "foo" string?) 
- (check-is-good 'foo symbol?) 
- (check-is-good (hash) hash?) 
- (check-is-good (vector) vector?) 
+ (check-is-good  7 greater-than-one?)
+ (check-is-good  7 integer?)
+ (check-is-good "foo" string?)
+ (check-is-good 'foo symbol?)
+ (check-is-good (hash) hash?)
+ (check-is-good (vector) vector?)
 
  (define check-is-bad  (curry check-it (list isnt-type not-matches)))
- (check-is-bad  0 greater-than-one?) 
- (check-is-bad  -7 exact-positive-integer?) 
- (check-is-bad "foo" symbol?) 
- (check-is-bad 'foo string?) 
- (check-is-bad (hash) vector?) 
- (check-is-bad (vector) hash?) 
- 
+ (check-is-bad  0 greater-than-one?)
+ (check-is-bad  -7 exact-positive-integer?)
+ (check-is-bad "foo" symbol?)
+ (check-is-bad 'foo string?)
+ (check-is-bad (hash) vector?)
+ (check-is-bad (vector) hash?)
+
  )
 
 (test-suite
@@ -335,13 +345,13 @@
      (_inc-test-num! -1)  ; In fact, don't count it at all
      (ok #t (~a "lives caught a " type))))
 
- 
+
  (do-test (thunk (lives (thunk (raise "foo"))))
           "string")
-  
+
  (do-test (thunk (lives (thunk (raise 8))))
           "number")
-  
+
  (do-test (thunk (lives (thunk (raise-argument-error 'foo "foo" 7))))
           "raise-argument-error exception")
  )
@@ -349,7 +359,7 @@
 (when #t
   (test-suite
    "is-approx and isnt-approx"
-   
+
    (is-approx 1 1 "1 is approximately 1")
    (is-approx 1 0 "by default, 1 is approximately 0")
    (is-approx 1 2 "by default, 1 is approximately 2")
@@ -357,14 +367,14 @@
 
    (isnt-approx 1 2.5 "by default, 1 is NOT approximately 2.5")
    (isnt-approx 1 -1 "by default, 1 is NOT approximately -1")
-   
+
    (isnt-approx 1 -5 "(isnt-approx 1 -5)")
    (is-approx 1 -5 #:threshold 10 "1 is approx -5 if #:threshold is 10")
 
    (throws (thunk (is-approx '(a b c) '(d e f)))
-           #px"arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"           
+           #px"arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"
            "throws when given non-numeric and no #:with arg")
-           
+
    (is-approx '(a b c) '(d e f) #:with length "(is-approx '(a b c) '(d e f) #:with length)")
    (is-approx '(a b c) '(d e f g) #:with length "(is-approx '(a b c) '(d e f g) #:with length), since default threshold is 1")
    (isnt-approx '(a b c) '(d e f g) #:with length #:threshold 0 "(isnt-approx '(a b c) '(d e f g) #:with length #:threshold 0)")
@@ -375,7 +385,7 @@
        "(is-approx '(a b c) '(d e f g) #:with length #:threshold 10) returns 2")
    )
   )
-   
+
 ;;  @@TODO
 ;; https://docs.racket-lang.org/overeasy/index.html
 ;; - capture data from stdout and stderr, report on that

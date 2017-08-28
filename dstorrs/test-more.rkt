@@ -155,7 +155,14 @@
   (not-matches val type-pred msg op))
 
 
-(define (is val expected [msg ""] [op equal?])
+(define (is val expected [msg ""] [op1 #f] #:op [op2 #f])
+  ;; The ability to provide an operator was added after this was
+  ;; already in use in code.  It was originally added as an optional
+  ;; parameter, and the better idea of having it be a keyword came
+  ;; along last.  In order to maintain backwards compatibility, both
+  ;; are supported.  If both are provided then the positional one
+  ;; wins.
+  (define op (or op1 op2 equal?))
   (test-more-check #:got (_unwrap-val val)
                    #:expected expected
                    #:msg msg
@@ -166,12 +173,14 @@
 (define (isnt val
               expected
               [msg ""]
-              [op (lambda (a b) (not (equal? a b)))])
+              [op1 #f]
+              #:op [op2 #f])
+  (define op (or op1 op2 (negate equal?)))
   (test-more-check #:got (_unwrap-val val)
                    #:expected expected
                    #:msg msg
-                   #:report-expected-as (~a "<anything but " expected ">")
-                   #:op (negate equal?)))
+                   #:report-expected-as (~a "<anything but " (~v expected) ">")
+                   #:op op))
 
 ;;----------------------------------------------------------------------
 
