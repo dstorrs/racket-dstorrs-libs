@@ -13,6 +13,7 @@
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
 ;; *) ensure-directory-exists : directory will exist or this will throw
+;; *) hash-key-exists? : alias for hash-has-key? because I always forget the name
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) not-equal?      : what it says on the tin
@@ -123,6 +124,10 @@
 
   (file-size dest)
   )
+
+;;----------------------------------------------------------------------
+
+(define hash-key-exists? hash-has-key?) ; just as alias because I always forget the name
 
 ;;----------------------------------------------------------------------
 
