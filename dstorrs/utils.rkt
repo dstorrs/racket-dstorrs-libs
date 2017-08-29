@@ -7,6 +7,7 @@
 ;; *) __FILE__, __LINE__, __WHERE__: current filepath/line/string of both
 ;; *) __FILE:__, __WHERE:__: same as previous but with ": " appended
 ;; *) ->string   : general purpose "convert stuff to string"
+;; *) !=   : checks whether two numbers are NOT equal
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
@@ -80,6 +81,12 @@
   (cond ((list?   x)   (apply string-append (map ->string x)))
         ((vector?   x) (->string (vector->list x)))
         (else (~a x))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (!= x y)
+  (-> number? number? boolean?)
+  (not (equal? x y)))
 
 ;;----------------------------------------------------------------------
 
