@@ -9,6 +9,7 @@
 ;; *) ->string   : general purpose "convert stuff to string"
 ;; *) !=   : variadic. args are numbers. checks whether to see if at least one is different
 ;; *) 12hr->24hr : for time displays
+;; *) always-return : returns a variadic function which always returns a constant value
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
@@ -100,6 +101,12 @@
   (define t (if (string? tm) (string->number tm) tm))
   (define res (+ t (if pm 12 0)))
   (if as-str (->string res) res))
+
+;;----------------------------------------------------------------------
+
+(define (always-return val)
+  (define (result . args) val)
+  result)
 
 ;;----------------------------------------------------------------------
 

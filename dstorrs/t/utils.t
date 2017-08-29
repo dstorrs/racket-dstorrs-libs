@@ -524,4 +524,16 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "always-return"
+
+   (is-type (always-return 7) procedure? "always-return returns a function")
+   (is ((always-return 7) 'a 'b) 7 "((always-return 7) 7 8 accepts 2 args, returns 7")
+   (is ((always-return 7) 'a 'b 'c 0 1) 7 "(always-return 7) accepts many args, returns 7")
+   )
+  )
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file
