@@ -513,6 +513,15 @@
            "with-temp-file died as expected and was processed by the with-handlers as expected")
    )
   )
+
+(when #t
+  (test-suite
+   "!="
+   (ok (!= 7 8 9) "(!= 7 8 9) works")
+   (is-false (!= 7 7 7) "(!= 7 7 7) works")
+   )
+  )
+
 ;;----------------------------------------------------------------------
 
 (done-testing) ; this should be the last line in the file

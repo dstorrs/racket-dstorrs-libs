@@ -7,7 +7,7 @@
 ;; *) __FILE__, __LINE__, __WHERE__: current filepath/line/string of both
 ;; *) __FILE:__, __WHERE:__: same as previous but with ": " appended
 ;; *) ->string   : general purpose "convert stuff to string"
-;; *) !=   : checks whether two numbers are NOT equal
+;; *) !=   : variadic. args are numbers. checks whether to see if at least one is different
 ;; *) 12hr->24hr : for time displays
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
@@ -84,9 +84,9 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (!= x y)
-  (-> number? number? boolean?)
-  (not (equal? x y)))
+(define/contract (!= . args)
+  (->* () () #:rest (non-empty-listof number?) boolean?)
+  (not (andmap (curry equal? (first args)) args)))
 
 ;;----------------------------------------------------------------------
 
