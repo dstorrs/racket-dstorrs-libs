@@ -13,12 +13,13 @@
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
+;; *) empty-string?   : is something the empty string?
 ;; *) ensure-directory-exists : directory will exist or this will throw
 ;; *) hash-key-exists? : alias for hash-has-key? because I always forget the name
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) not-equal?      : what it says on the tin
-;; *) not-null?       : what it says on the tin
+;; *) not-null?       : is something the null list?
 ;; *) pad-digits : convert, e.g. "9" to "09"
 ;; *) path-string->string and path-string->path
 ;; *) perl-true? and perl-false? : Relaxed boolean checks
@@ -165,7 +166,6 @@
   (not (null? lst)))
 
 ;;----------------------------------------------------------------------
-
 
 ;;    This is intended for things like turning 9 into "09" for use in
 ;;    dates, filenames, etc.
@@ -364,6 +364,12 @@
        (for ((p (in-directory)))
          (return #f))
        (return #t)))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (empty-string? x)
+  (-> any/c boolean?)
+  (and (string? x) (equal? x "")))
 
 ;;----------------------------------------------------------------------
 

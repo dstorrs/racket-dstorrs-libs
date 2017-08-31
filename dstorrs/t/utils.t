@@ -536,4 +536,18 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "empty-string?"
+   
+   (is-false (empty-string? 7) "7 is not the empty string")
+   (is-false (empty-string? 'x) "'x is not the empty string")
+   (is-false (empty-string? '(7 a)) "'(7 a) is not the empty string")
+   (is-false (empty-string? (hash 7 'a)) "(hash 7 'a) is not the empty string")
+   (ok (empty-string? "") "(empty-string? \"\" is true")
+   )
+  )
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file
