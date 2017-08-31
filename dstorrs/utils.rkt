@@ -335,20 +335,22 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (dir-and-filename fp)
-  (-> path-string? (values path? path?))
+(define/contract (dir-and-filename fp #:as-str? [as-str #f])
+  (->* (path-string?) (#:as-str? boolean?) (values path-string? path-string?))
+  
   (define-values (d f is-dir) (split-path fp))
-  (when (equal? d 'relative)
-    (raise-arguments-error  'dir-and-filename
-                            "Cannot accept single-element relative paths"
-                            "path" (path-string->string fp)))
-  (when (false? d)
-    (raise-arguments-error  'dir-and-filename
-                            "Cannot accept root path (/)"
-                            "path" (path-string->string fp)))
-
-  (define convert (if is-dir path->directory-path identity))
-  (values (convert d) (convert f)))
+  (cond [(equal? d 'relative)
+         (raise-arguments-error  'dir-and-filename
+                                 "Cannot accept single-element relative paths"
+                                 "path" (path-string->string fp))]
+        [(false? d)
+         (raise-arguments-error  'dir-and-filename
+                                 "Cannot accept root path (/)"
+                                 "path" (path-string->string fp))]
+        [else 
+         (define convert (compose (if as-str path-string->string identity)
+                                  (if is-dir path->directory-path identity)))
+         (values (convert d) (convert f))]))
 
 ;;----------------------------------------------------------------------
 

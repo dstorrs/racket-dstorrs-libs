@@ -200,38 +200,43 @@
 
  )
 
-(test-suite
- "dir-and-filename"
+(when #t
+  (test-suite
+   "dir-and-filename"
 
- (let-values (((dir fname) (dir-and-filename "/foo/bar")))
-   (is dir (string->path "/foo/") "got correct dir for /foo/bar")
-   (is fname (string->path "bar") "got correct filename for /foo/bar"))
+   (let-values (((dir fname) (dir-and-filename "/foo/bar")))
+     (is dir (string->path "/foo/") "got correct dir for /foo/bar")
+     (is fname (string->path "bar") "got correct filename for /foo/bar"))
 
- (let-values (((dir fname) (dir-and-filename "foo/bar")))
-   (is dir (string->path "foo/") "got correct dir for foo/bar")
-   (is fname (string->path "bar") "got correct filename for foo/bar"))
+   (let-values (((dir fname) (dir-and-filename "foo/bar")))
+     (is dir (string->path "foo/") "got correct dir for foo/bar")
+     (is fname (string->path "bar") "got correct filename for foo/bar"))
 
- (let-values (((dir fname) (dir-and-filename "foo/bar/")))
-   (is dir (string->path "foo/") "got correct dir for foo/bar")
-   (is fname (string->path "bar/") "got correct filename for foo/bar/"))
+   (let-values (((dir fname) (dir-and-filename "foo/bar/")))
+     (is dir (string->path "foo/") "got correct dir for foo/bar")
+     (is fname (string->path "bar/") "got correct filename for foo/bar/"))
 
- (let-values (((dir fname) (dir-and-filename "/foo")))
-   (is dir (string->path "/") "got correct dir for /foo")
-   (is fname (string->path "foo") "got correct filename for /foo"))
+   (let-values (((dir fname) (dir-and-filename "/foo")))
+     (is dir (string->path "/") "got correct dir for /foo")
+     (is fname (string->path "foo") "got correct filename for /foo"))
 
- (throws (thunk (dir-and-filename "foo"))
-         #rx"Cannot accept single-element relative paths"
-         "dir-and-filename throws if given a one-element relative path WITHOUT trailing slash ('foo')")
+   (throws (thunk (dir-and-filename "foo"))
+           #rx"Cannot accept single-element relative paths"
+           "dir-and-filename throws if given a one-element relative path WITHOUT trailing slash ('foo')")
 
- (throws (thunk (dir-and-filename "foo/"))
-         #rx"Cannot accept single-element relative paths"
-         "dir-and-filename throws if given a one-element relative path WITH a trailing slash ('foo/')")
+   (throws (thunk (dir-and-filename "foo/"))
+           #rx"Cannot accept single-element relative paths"
+           "dir-and-filename throws if given a one-element relative path WITH a trailing slash ('foo/')")
 
- (throws (thunk (dir-and-filename "/"))
-         #rx"Cannot accept root path"
-         "dir-and-filename throws if given the root path")
+   (throws (thunk (dir-and-filename "/"))
+           #rx"Cannot accept root path"
+           "dir-and-filename throws if given the root path")
 
- )
+   (let-values ([(dir fname) (dir-and-filename "/foo/bar" #:as-str? #t)])
+     (is dir "/foo/" "dir-and-filename accepts the #:as-str? arg and returns dir as string")
+     (is fname "bar" "dir-and-filename accepts the #:as-str? arg and returns fname as string"))
+   )
+  )
 
 (test-suite
  "path-string->(path | string)"
@@ -539,7 +544,7 @@
 (when #t
   (test-suite
    "empty-string?"
-   
+
    (is-false (empty-string? 7) "7 is not the empty string")
    (is-false (empty-string? 'x) "'x is not the empty string")
    (is-false (empty-string? '(7 a)) "'(7 a) is not the empty string")
