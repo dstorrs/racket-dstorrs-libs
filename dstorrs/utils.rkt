@@ -18,6 +18,7 @@
 ;; *) hash-key-exists? : alias for hash-has-key? because I always forget the name
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
+;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash) 
 ;; *) not-equal?      : what it says on the tin
 ;; *) not-null?       : is something the null list?
 ;; *) pad-digits : convert, e.g. "9" to "09"
@@ -153,6 +154,11 @@
       (make-hash (for/list ((k (hash-keys h)))
                    (cons k (hash-ref h k))))))
 
+;;----------------------------------------------------------------------
+
+(define (mutable-hash . args)
+  (hash->mutable (apply hash args)))
+                  
 ;;----------------------------------------------------------------------
 
 (define/contract (not-equal? x y)
@@ -307,31 +313,6 @@
 
 ;;    Useful for coercing values to boolean for, e.g., inserting into DB
 (define (true? x) (not (false? x)))
-
-;;----------------------------------------------------------------------
-
-(define/contract (verify-struct #:struct    s
-                                #:type      [is-type? identity]
-                                #:funcs     funcs
-                                #:expected  expected)
-  (->* (#:struct any/c #:funcs (listof procedure?) #:expected (or/c any/c (listof any/c)))
-       (#:type (-> any/c boolean?))
-       boolean?)
-
-  (when (and (list? expected)
-             (not (equal? (length funcs) (length expected))))
-    (raise-arguments-error 'verify-struct
-                           "funcs list and expected list must be the same length"
-                           "funcs" (length funcs)
-                           "expected"  (length expected)))
-
-  (and (is-type? s)
-       (cond [(list? expected) (for/and ((f funcs)
-                                         (val expected))
-                                 (equal? (f s) val))]
-             [else (for/and ((f funcs))
-                     (equal? (f s) (f expected)))]))
-  )
 
 ;;----------------------------------------------------------------------
 

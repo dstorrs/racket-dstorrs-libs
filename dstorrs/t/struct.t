@@ -92,4 +92,34 @@
    );test-suite
   );when
 
+
+(when #t
+  (test-suite
+ "verify-struct"
+
+ (struct foo (a b c))
+ (define x (foo 1 2 3))
+ (define y (foo 0 2 3))
+
+ (is-type x foo? "x is a foo")
+ (is-type y foo? "y is a foo")
+
+ (isnt x y "x and y are not equal?")
+ (ok (thunk (verify-struct #:struct x
+                           #:funcs (list foo-b foo-c)
+                           #:expected  (list 2 3)))
+     "validates when given explicit values")
+
+ (ok (thunk (verify-struct #:struct x
+                           #:funcs (list foo-b foo-c)
+                           #:expected  y))
+     "validates when given a comparison struct")
+
+ (not-ok (thunk (verify-struct #:struct x
+                               #:funcs (list foo-a foo-b foo-c)
+                               #:expected  y))
+         "correctly reports that they are not equal if you have it check a field that is not equal")
+
+ ))
+
 (done-testing) ; this should be the last line in the file

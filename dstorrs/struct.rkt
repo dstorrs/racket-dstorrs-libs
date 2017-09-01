@@ -9,7 +9,7 @@
          dstorrs/list-utils
          )
 
-(provide struct/kw hash->struct/kw)
+(provide struct/kw hash->struct/kw verify-struct)
 
 ;;; Example usage:
 ;;
@@ -79,3 +79,29 @@
                  (symbols->keywords sorted-keys)
                  (map (curry hash-ref mapping) sorted-keys)
                  '()))
+
+;;----------------------------------------------------------------------
+
+(define/contract (verify-struct #:struct    s
+                                #:type      [is-type? identity]
+                                #:funcs     funcs
+                                #:expected  expected)
+  (->* (#:struct any/c #:funcs (listof procedure?) #:expected (or/c any/c (listof any/c)))
+       (#:type (-> any/c boolean?))
+       boolean?)
+
+  (when (and (list? expected)
+             (not (equal? (length funcs) (length expected))))
+    (raise-arguments-error 'verify-struct
+                           "funcs list and expected list must be the same length"
+                           "funcs" (length funcs)
+                           "expected"  (length expected)))
+
+  (and (is-type? s)
+       (cond [(list? expected) (for/and ((f funcs)
+                                         (val expected))
+                                 (equal? (f s) val))]
+             [else (for/and ((f funcs))
+                     (equal? (f s) (f expected)))]))
+  )
+
