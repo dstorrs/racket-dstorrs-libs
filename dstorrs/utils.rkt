@@ -153,7 +153,7 @@
   (-> hash? hash?)
   ((if (immutable? h) identity hash->mutable)
    (for/hash ([(k v) h])
-     (values (if (symbol? k) k (string->symbol k))
+     (values (if (symbol? k) k (string->symbol (~a k)))
              v))))
 
 ;;----------------------------------------------------------------------

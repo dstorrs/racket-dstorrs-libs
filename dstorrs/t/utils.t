@@ -195,6 +195,14 @@
        (hash 'foo 7 'bar 8)
        "(hash-keys->symbols works")
 
+   (is (hash-keys->strings (hash "foo" 7 'bar 8 0 'c))
+       (hash "foo" 7 "bar" 8 "0" 'c)
+       "(hash-keys->strings works on things with keys that are not symbol/string")
+   
+   (is (hash-keys->symbols (hash "foo" 7 'bar 8 0 'c))
+       (hash 'foo 7 'bar 8 '|0| 'c)
+       "(hash-keys->symbols works on things with keys that are not symbol/string")
+
    (is-type (hash-keys->symbols (mutable-hash "foo" 7 'bar 8))
             (negate immutable?)
             "hash-keys->symbols preserved the (im)mutability of the hash")
