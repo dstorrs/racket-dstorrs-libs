@@ -186,6 +186,27 @@
 
 (when #t
   (test-suite
+   "hash-keys->strings and hash-keys->symbols"
+   (is (hash-keys->strings (hash "foo" 7 'bar 8))
+       (hash "foo" 7 "bar" 8)
+       "(hash-keys->strings works")
+   
+   (is (hash-keys->symbols (hash "foo" 7 'bar 8))
+       (hash 'foo 7 'bar 8)
+       "(hash-keys->symbols works")
+
+   (is-type (hash-keys->symbols (mutable-hash "foo" 7 'bar 8))
+            (negate immutable?)
+            "hash-keys->symbols preserved the (im)mutability of the hash")
+   
+   (is-type (hash-keys->strings (hash "foo" 7 'bar 8))
+            immutable?
+            "hash-keys->strings preserved the (im)mutability of the hash")
+   )
+  )
+   
+(when #t
+  (test-suite
    "dir-and-filename"
 
    (let-values (((dir fname) (dir-and-filename "/foo/bar")))

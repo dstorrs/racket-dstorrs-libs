@@ -16,9 +16,11 @@
 ;; *) empty-string?   : is something the empty string?
 ;; *) ensure-directory-exists : directory will exist or this will throw
 ;; *) hash-key-exists? : alias for hash-has-key? because I always forget the name
+;; *) hash-keys->strings : take a hash where keys are symbols or strings, make them strings
+;; *) hash-keys->symbols : take a hash where keys are symbols or strings, make them symbols
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
-;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash) 
+;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash)
 ;; *) not-equal?      : what it says on the tin
 ;; *) not-null?       : is something the null list?
 ;; *) pad-digits : convert, e.g. "9" to "09"
@@ -138,6 +140,22 @@
 
 (define hash-key-exists? hash-has-key?) ; just as alias because I always forget the name
 
+
+;;----------------------------------------------------------------------
+
+(define/contract (hash-keys->strings h)
+  (-> hash? hash?)
+  ((if (immutable? h) identity hash->mutable)
+   (for/hash ([(k v) h])
+     (values (->string k) v))))
+
+(define/contract (hash-keys->symbols h)
+  (-> hash? hash?)
+  ((if (immutable? h) identity hash->mutable)
+   (for/hash ([(k v) h])
+     (values (if (symbol? k) k (string->symbol k))
+             v))))
+
 ;;----------------------------------------------------------------------
 
 (define (hash->immutable h)
@@ -158,7 +176,7 @@
 
 (define (mutable-hash . args)
   (hash->mutable (apply hash args)))
-                  
+
 ;;----------------------------------------------------------------------
 
 (define/contract (not-equal? x y)
@@ -318,7 +336,7 @@
 
 (define/contract (dir-and-filename fp #:as-str? [as-str #f])
   (->* (path-string?) (#:as-str? boolean?) (values path-string? path-string?))
-  
+
   (define-values (d f is-dir) (split-path fp))
   (cond [(equal? d 'relative)
          (raise-arguments-error  'dir-and-filename
@@ -328,7 +346,7 @@
          (raise-arguments-error  'dir-and-filename
                                  "Cannot accept root path (/)"
                                  "path" (path-string->string fp))]
-        [else 
+        [else
          (define convert (compose (if as-str path-string->string identity)
                                   (if is-dir path->directory-path identity)))
          (values (convert d) (convert f))]))
