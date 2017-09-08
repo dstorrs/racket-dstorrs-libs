@@ -114,6 +114,7 @@
   result)
 
 (define always-true (always-return #t))
+(define match-anything (always-return #t))
 
 ;;----------------------------------------------------------------------
 
