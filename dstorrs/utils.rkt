@@ -10,6 +10,7 @@
 ;; *) !=   : variadic. args are numbers. checks whether to see if at least one is different
 ;; *) 12hr->24hr : for time displays
 ;; *) always-return : returns a variadic function which always returns a constant value
+;; *) always-true : variadic function that always returns #t. Useful for with-handlers
 ;; *) append-file
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
@@ -111,6 +112,8 @@
 (define (always-return val)
   (define (result . args) val)
   result)
+
+(define always-true (always-return #t))
 
 ;;----------------------------------------------------------------------
 
