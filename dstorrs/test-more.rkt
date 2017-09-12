@@ -55,8 +55,9 @@
                                [(false? expect-tests)
                                 (say "WARNING: Neither (expect-n-tests N) nor (done-testing) was called.  May not have run all tests.")]
                                [else
-                                (say (format "ERROR:  Expected ~a tests, only saw ~a"
+                                (say (format "ERROR:  Expected ~a tests, ~a saw ~a"
                                              expect-tests
+                                             (if (> test-num expect-tests) "actually" "only")
                                              test-num))
                                 #t]))
                        (plumber-flush-handle-remove! flush-handle)
