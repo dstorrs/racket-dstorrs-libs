@@ -202,5 +202,13 @@
 
 (provide (all-defined-out)
          (except-out (all-from-out db) disconnect)
+         (prefix-out db: disconnect)
          (all-from-out dstorrs/sql)
+         (struct-out exn:fail:db)
+         (struct-out exn:fail:db:create)
+         (struct-out exn:fail:db:not-exists)
+         (struct-out exn:fail:db:exists)
+         (struct-out exn:fail:db:num-rows)
+         (struct-out exn:fail:db:num-rows:zero)
+         (struct-out exn:fail:db:num-rows:many)
          )
