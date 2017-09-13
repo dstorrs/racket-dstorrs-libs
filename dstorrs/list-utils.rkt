@@ -6,6 +6,7 @@
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
 ;; *) disjunction : find the elements of one dict that are not in the other
 ;; *) in-range-inc : inclusive ranges
+;; *) filter-out : opposite of filter -- removes things that match the predicate
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
 ;; *) hash->keywork-apply : take a function and a hash.  Assume the
@@ -261,6 +262,17 @@
     (transform-dict (dict-maker (map transform-data keys data)))
     )
   )
+
+;;----------------------------------------------------------------------
+
+;;    Convenience function; just like regular filter but it returns
+;;    the things that DON'T match your predicate instead of the things
+;;    that do.  For example:
+;;
+;;    (filter-out symbol? '(a b 8 9)) ; returns '(8 9)
+(define/contract (filter-out pred lst)
+  (-> (-> any/c any/c) list? list?)
+  (filter (negate pred) lst))
 
 ;;----------------------------------------------------------------------
 

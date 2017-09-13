@@ -633,4 +633,34 @@
    ) ; test-suite
   )
 
+(when #t
+  (test-suite
+   "filter-out"
+
+   (define lst '(a b 1 d 3 "a" 8.2))
+   
+   (is (filter-out number? lst)
+       '(a b d "a")
+       "(filter-out number? lst) works")
+   
+   (is (filter-out symbol? lst)
+       '(1 3 "a" 8.2)
+       "(filter-out symbol? lst) works")
+
+   (lives (thunk 
+           (is (filter-out symbol? '())
+               '()
+               "(filter-out symbol? '()) works")
+           )
+          "(filter-out symbol? '()) didn't die")
+
+   
+   (throws (thunk (filter-out symbol? #f))
+           exn:fail:contract?
+           "(filter-out symbol? #f) throws")
+
+   ) ; test-suite
+  ) ; when
+
+   
 (done-testing)
