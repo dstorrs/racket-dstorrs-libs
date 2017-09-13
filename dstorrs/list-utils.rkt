@@ -265,17 +265,6 @@
 
 ;;----------------------------------------------------------------------
 
-;;    Convenience function; just like regular filter but it returns
-;;    the things that DON'T match your predicate instead of the things
-;;    that do.  For example:
-;;
-;;    (filter-out symbol? '(a b 8 9)) ; returns '(8 9)
-(define/contract (filter-out pred lst)
-  (-> (-> any/c any/c) list? list?)
-  (filter (negate pred) lst))
-
-;;----------------------------------------------------------------------
-
 ;;    Generate a list of lists where each sublist is a sequence of
 ;;    consecutive chunk-nums.  For example, if given this list:
 ;;
