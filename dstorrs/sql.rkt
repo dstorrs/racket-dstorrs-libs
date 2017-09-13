@@ -19,39 +19,48 @@
 
 ;;--------------------------------------------------------------------------------
 
-(define/contract (placeholders-for-multiple-rows data)
-  (-> list? string?)
+(define/contract (placeholders-for-multiple-rows data [start-from 1])
+  (->* ((or/c (non-empty-listof (not/c list?))
+              (non-empty-listof (non-empty-listof (not/c list?)))))
+       (exact-positive-integer?)
+       string?)
 
   (when (null? data)
     (raise-argument-error 'placeholders-for-multiple-rows
                           "data can't be null"
                           data))
 
-  ;(say "data is: " data)
+  (define first-element (first data))
+  (cond [(not (list? first-element)) 'do-nothing]
+        [else
+         (define expected-length (length first-element))
+         (unless (andmap (compose (curry equal? expected-length)
+                                  length)
+                         data)
+           (raise-argument-error 'placeholders-for-multiple-rows
+                                 "list of equal-length lists"
+                                 data))])
+           
 
   ;; Turn this:   (("collab1" "desc1") ("collab2" "desc2"))
   ;; Into this:   "($1,$2), ($3,$4)"
   ;;
   ;;    Be permissive if we were given a list instead of a list of
   ;;    lists.
-  (let ((vals (if (list? (car data)) data (list data))))
+  (let ((vals (if (list? first-element)
+                  data
+                  (list data))))
     ;;    (say "vals: " vals)
     (define-values (row-placeholders ignored)
       (for/fold ([lst '()]
-                 [placeholder-num 1])
+                 [placeholder-num start-from])
                 ((v vals))
-        ;; (say "lst: " lst)
-        ;; (say "v: "  v)
-        ;; (say "pl v: "  (placeholders-for v))
-        ;; (say "pl num: " placeholder-num)
         (cons (string-append "(" (placeholders-for v placeholder-num) ")")  lst)
 
         (values
          (cons (string-append "(" (placeholders-for v placeholder-num) ")")  lst)
          (+ placeholder-num (length v)))
         ))
-    ;    (say "row pl: " row-placeholders)
-    ;    (say "returning: " (string-join (reverse row-placeholders) ","))
 
     (string-join (reverse row-placeholders) ",")
     )
@@ -60,9 +69,14 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (sql-IN-clause lst [start-from 1])
-  (->* (list?) (natural-number/c) string?)
+  (->* ((or/c (non-empty-listof (not/c list?))
+              (non-empty-listof (non-empty-listof (not/c list?)))))
+       (natural-number/c)
+       string?)
   (string-append "IN ("
-                 (placeholders-for lst start-from)
+                 ((if (list? (first lst)) placeholders-for-multiple-rows placeholders-for)
+                  lst
+                  start-from)
                  ")"))
 
 ;;--------------------------------------------------------------------------------

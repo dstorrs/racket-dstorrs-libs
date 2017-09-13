@@ -74,17 +74,44 @@
      "clause-convert-timestamp->epoch: got correct string back for string param with #:complete")
  )
 
-(test-suite
- "sql-IN-clause"
+(when #t
+  (test-suite
+   "sql-IN-clause"
 
- (is (sql-IN-clause '(foo bar))
-     "IN ($1,$2)"
-     "correct: (sql-IN-clause '(foo bar))")
+   (is (sql-IN-clause '(foo bar))
+       "IN ($1,$2)"
+       "correct: (sql-IN-clause '(foo bar))")
 
- (is (sql-IN-clause '(foo bar) 3)
-     "IN ($3,$4)"
-     "correct: (sql-IN-clause '(foo bar) 3)")
- )
+   (is (sql-IN-clause '(foo bar) 3)
+       "IN ($3,$4)"
+       "correct: (sql-IN-clause '(foo bar) 3)")
+
+   (is (sql-IN-clause '((foo bar)(baz jaz)))
+       "IN (($1,$2),($3,$4))"
+       "correct:  (sql-IN-clause '((foo bar)(baz jaz)))")
+
+   (is (sql-IN-clause '((foo bar)(baz jaz)) 1)
+       "IN (($1,$2),($3,$4))"
+       "correct:  (sql-IN-clause '((foo bar)(baz jaz)))")
+
+   (is (sql-IN-clause '((foo bar)(baz jaz)) 3)
+       "IN (($3,$4),($5,$6))"
+       "correct:  (sql-IN-clause '((foo bar)(baz jaz)) 3)")
+
+   (throws (thunk (sql-IN-clause '((foo bar)(baz jaz)) 0))
+           exn:fail:contract?
+           "start-from must be >= 1")
+
+   (throws (thunk (sql-IN-clause '((foo bar)(baz)) 1))
+           #px"list of equal-length lists"
+           "when setting up for multiple rows, all records must be the same length")
+
+   (throws (thunk (sql-IN-clause '(()) 1))
+           exn:fail:contract?
+           "can't have empty list in the data list")
+
+   );test-suite
+  );when
 
 (test-suite
  "var->column"
@@ -182,9 +209,17 @@
        "($1,$2,$3)"
        "correctly built one-row placeholders from list")
 
-   (is (placeholders-for-multiple-rows '((a b c)))
-       "($1,$2,$3)"
-       "correctly built one-row placeholders from LoL")
+   (is (placeholders-for-multiple-rows '((a b c) (d e f)) 3)
+       "($3,$4,$5),($6,$7,$8)"
+       "correctly built multiple-rows placeholders with start-from 3")
+
+   (is (placeholders-for-multiple-rows '(a b c) 3)
+       "($3,$4,$5)"
+       "correctly built one-row placeholders from list with start-from 3")
+
+   (is (placeholders-for-multiple-rows '((a b c)) 3)
+       "($3,$4,$5)"
+       "correctly built one-row placeholders from LoL with start-from 3")
    )
   )
 
