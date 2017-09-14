@@ -6,7 +6,6 @@
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
 ;; *) disjunction : find the elements of one dict that are not in the other
 ;; *) in-range-inc : inclusive ranges
-;; *) filter-out : opposite of filter -- removes things that match the predicate
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
 ;; *) hash->keywork-apply : take a function and a hash.  Assume the
@@ -18,7 +17,7 @@
 ;; *) member-rec : finds matching elements in sublist as well as main list
 ;; *) multi-partition : like the standard partition, but accepts multiple destination lists
 ;; *) remove-nulls : filter '()s out of a list
-;; *) safe-first, safe-rest : first and rest, but they return '() when given '()
+;; *) safe-first, safe-rest : first and rest, but they return specified value when given '()
 ;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
 ;; *) sort-smart : call sort-num, sort-str, or sort-sym depending on first element of list
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
