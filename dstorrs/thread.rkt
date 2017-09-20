@@ -2,9 +2,23 @@
 
 (require dstorrs/utils)
 
-(define (threaded thnk [name "<unnamed>"])
-  (->* ((-> any)) (any/c) any)
+(provide execute-thunk
+         threaded
+         )
+
+;;----------------------------------------------------------------------
+
+(define/contract (execute-thunk thnk  #:async? [async? #f])
+  (->* ((-> any)) ( #:async? boolean?) any)
+  (if async?
+      (threaded thnk)
+      (thnk)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (threaded thnk)
+  (-> (-> any) any)
 
   (define thread-label (~a (rand-val "thread-") ": "))
-  (say "about to spin off thread '" thread-label " to do " name)
-  (thread thnk))
+  (parameterize ((prefix-for-say thread-label))
+    (thread thnk)))
