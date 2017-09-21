@@ -14,6 +14,8 @@
          )
 
 
+(define prefix-for-test-report (make-parameter ""))
+
 (define _tp 0)
 (define _tf 0)
 (define saw-done-testing #f)
@@ -102,11 +104,9 @@
                               ))])
     (define pass/fail-counter (if success tests-passed tests-failed))
     (pass/fail-counter 1)
-    (displayln (format "~a~a~a"
-                       ok-str
-                       (next-test-num)
-                       msg-str
-                       ))
+    (parameterize ((prefix-for-say (~a (prefix-for-test-report) (prefix-for-say))))
+      (say ok-str (next-test-num) msg-str))
+  
     (if return
         return ; if we were told what to return, return that
         got))  ; otherwise, return the result
