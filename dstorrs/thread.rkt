@@ -19,6 +19,6 @@
 (define/contract (threaded thnk)
   (-> (-> any) any)
 
-  (define thread-label (~a (rand-val "thread-") ": "))
+  (define thread-label (~a (rand-val "thread") ": "))
   (parameterize ((prefix-for-say thread-label))
     (thread thnk)))
