@@ -329,6 +329,15 @@
 
 ;;----------------------------------------------------------------------
 
+;    Example:
+;
+;  (multi-partition #:partitions 3 #:source '(1 2 3 4 5 6 7) #:filter (curryr modulo 3))
+;     Returns: (values '(3 6) '(1 4 7) '(2 5)) ; 3mod3 goes in partition 0, 4mod3 in partition 1, etc
+;
+;  (multi-partition #:partitions 3 #:source '(1 2 3 4 5 6 7) #:filter (curryr modulo 3)
+;                   #:post-process-element (lambda (idx elem) (add1 elem))
+;                   #:post-process-partition (lambda (lst) (map (curry * 2) lst)))
+;     Returns: (values '(8 14) '(4 10 16) '(6 12)) ; each element +1 as list built, then later each item in list doubled
 (define/contract (multi-partition #:partitions num-dests
                                   #:filter index-chooser
                                   #:source source
