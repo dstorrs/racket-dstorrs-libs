@@ -1,16 +1,73 @@
 #lang at-exp racket
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out)
+                     _contract-for::exn:fail:insufficient-space)
+         )
+
+(define/contract (_contract-for::exn:fail:insufficient-space msg ccm req avail source type)
+  (-> any/c any/c any/c any/c any/c any/c ;; Don't check on input...
+      (values ;; ...check on output. Makes for cleaner error messages.
+       string? continuation-mark-set?
+       exact-positive-integer?  integer? symbol?
+      ))
+  (values msg ccm req avail source))
+
+;; exn:fail:insufficient-space : exception for when there isn't enough
+;; disk space available
+;;
+;;    You can build this struct directly, but you're better off using
+;;    exn:fail:insufficient-space/kw. (see below)
+;;
+;;  Superclass fields:
+;;    message  =>  string?
+;;    ccm      =>  continuation-marks-set? (typically from (current-continuation-marks))
+;;
+;;  Class fields:
+;;    requested => exact-positive-integer?
+;;    available => exact-positive-integer?
+;;    request-source => symbol?  (label for who made the request)
+(struct exn:fail:insufficient-space
+  exn:fail
+  (requested available request-source)
+  #:transparent
+  #:guard _contract-for::exn:fail:insufficient-space)
+
+;;    Easier way to define the above.  Defaults the ccm field
+(define/contract (exn:fail:insufficient-space/kw #:requested requested
+                                                 #:available available
+                                                 #:request-source request-source
+                                                 #:msg [msg #f])
+  (->* (#:requested exact-positive-integer?
+        #:available integer? ; could be negative if we over-reserved
+        #:request-source symbol?)
+       (#:msg string?)
+       exn:fail:insufficient-space?)
+
+  (exn:fail:insufficient-space
+   (if msg
+       msg
+       (format "Insufficient space to satisfy request from ~a.\n\trequested space: ~a\n\tavailable space: ~a"
+               request-source
+               requested
+               available))
+   (current-continuation-marks)
+   requested
+   available
+   request-source))
+
+;;----------------------------------------------------------------------
 
 (define/contract (create-exn ctor msg . args)
   (->* (procedure? string?) () #:rest (listof any/c) exn?)
   (apply ctor (append (list msg (current-continuation-marks)) args)))
 
-
+;;----------------------------------------------------------------------
 
 (define/contract (create/raise-exn ctor msg . args)
   (->* (procedure? string?) () #:rest (listof any/c) any)
   (raise (apply create-exn (append (list ctor msg) args))))
+
+;;----------------------------------------------------------------------
 
 (define/contract (verify-arg arg-name arg-val pred source [pred-name #f])
   (->* (string? any/c (-> any/c boolean?) symbol?)

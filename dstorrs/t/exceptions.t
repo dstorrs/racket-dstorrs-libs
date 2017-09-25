@@ -10,6 +10,24 @@
 
 (ok #t "test harness is working")
 
+(test-suite
+ "exn:fail:insufficient-space"
+
+ (lives (thunk (exn:fail:insufficient-space/kw
+                #:requested 7
+                #:available 8 
+                #:request-source 'foo))
+        "happy path of exn:fail:insufficient-space/kw lives")
+ (define exn
+   (lives (thunk (exn:fail:insufficient-space/kw
+                  #:msg "overruled!"
+                  #:requested 7
+                  #:available 8 
+                  #:request-source 'foo))
+          "happy path of exn:fail:insufficient-space/kw lives"))
+ (like (exn-message exn) #px"overruled!" "successfully overruled message") 
+ )
+
 (when #t
   (test-suite
    "verify-arg"
