@@ -4,6 +4,7 @@
          dstorrs/utils
          dstorrs/list-utils
          dstorrs/sql
+         dstorrs/try
          dstorrs/exceptions
          )
 
@@ -199,8 +200,26 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (call-with-transaction/disconnect db thnk)
+  (-> connection? (-> any) any)
 
-(provide (all-defined-out)
+  (try [(call-with-transaction db thnk)]
+       [catch (match-anything (lambda (e) (raise (refine-db-exn e))))]
+       [finally
+        ;(say "before disconnecting.  DB is connected?: " (connected? db))
+        (disconnect db)
+        ;(say "after disconnecting.  DB is connected?: " (connected? db))
+        ]))
+
+;;----------------------------------------------------------------------
+
+
+(provide refine-db-exn
+         query-rows-as-dicts
+         query-row-as-dict
+         query-maybe-row-as-dict
+         query-flat
+         call-with-transaction/disconnect
          (except-out (all-from-out db) disconnect)
          (prefix-out db: disconnect)
          (all-from-out dstorrs/sql)
