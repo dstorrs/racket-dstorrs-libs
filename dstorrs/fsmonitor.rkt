@@ -25,7 +25,7 @@
   (when preprocessor
     (for ((item dirs-to-watch))
       (preprocessor item)))
-  
+
   (define (evt-maker dir)
     (handle-evt (filesystem-change-evt dir)
                 (lambda (e)
@@ -36,7 +36,16 @@
       (apply sync (map evt-maker dirs-to-watch))
       (loop)))
 
-  (void (thread work))
+  (define current-prefix (regexp-replace #px":\\s*$" (prefix-for-say) ""))
+  (define thread-label (~a (rand-val "thread")
+                           (if (empty-string? current-prefix)
+                               ""
+                               (~a " / " current-prefix))
+                           ": "))
+  (say "about to start fsmonitor thread with label: " thread-label)
+  (parameterize ((prefix-for-say thread-label))
+    (void (thread work))
+    )
   )
 
 (provide (all-defined-out))
