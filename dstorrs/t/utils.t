@@ -568,4 +568,20 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "hash-rename-key"
+
+   (define h (hash 'a 1 'b 2 'c 3))
+   (is (hash-rename-key h 'a 'x)
+       (hash 'x 1 'b 2 'c 3)
+       "successfully renamed key 'a to 'x")
+
+   (throws (thunk (hash-rename-key h 'zot 'zag))
+           #px"no such key"
+           "trying to rename a non-existent key throws")
+   ))
+  
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file

@@ -21,6 +21,7 @@
 ;; *) hash-keys->symbols : take a hash where keys are symbols or strings, make them symbols
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
+;; *) hash-rename-key : change, e.g., key 'name to be 'first-name
 ;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash)
 ;; *) not-equal?      : what it says on the tin
 ;; *) not-null?       : is something the null list?
@@ -417,5 +418,21 @@
     (thunk (delete-file the-path))))
 
 ;;----------------------------------------------------------------------
+
+(define/contract (hash-rename-key h old-key new-key)
+  (-> hash? any/c any/c hash?)
+
+  (when (not (hash-has-key? h old-key))
+    (raise-arguments-error "no such key"
+                           "old-key" old-key
+                           "new-key" new-key
+                           "hash" h))
+
+  (safe-hash-remove
+   (safe-hash-set h new-key (hash-ref h old-key))
+   old-key))
+
+;;----------------------------------------------------------------------
+
 
 (provide (all-defined-out))
