@@ -584,4 +584,25 @@
   
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "unwrap-val"
+
+   (for ((i (list 7 "foo" 'x (vector 7) '(x y z))))
+     (is (unwrap-val i)
+         i
+         (~a "unwrapping a general value (" i ") returns that value")))
+
+   (is (unwrap-val (thunk 8))
+       8
+       "(unwrap-val (thunk 8)) returns 8")
+
+   (is (unwrap-val (lazy 9))
+       9
+       "(unwrap-val (lazy 9)) returns 9")
+   ))
+       
+       
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file

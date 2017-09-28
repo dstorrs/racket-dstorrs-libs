@@ -28,7 +28,6 @@
 (define (tests-failed [inc 0])
   (set! _tf (+ _tf inc))
   _tf)
-(define (_unwrap-val val) (if (procedure? val) (val) val))
 
 ;;----------------------------------------------------------------------
 ;;----------------------------------------------------------------------
@@ -115,18 +114,18 @@
 ;;----------------------------------------------------------------------
 
 (define (ok val [msg ""])
-  (test-more-check #:got (_unwrap-val val)
+  (test-more-check #:got (unwrap-val val)
                    #:msg msg
                    #:show-expected/got? #f
                    #:op (lambda (a b) (not (false? a)))
                    ))
 
 (define (not-ok val [msg ""])
-  (ok (false? (_unwrap-val val))
+  (ok (false? (unwrap-val val))
       msg))
 
 (define (is-false val [msg ""]) ; reads a little better than not-ok
-  (ok (false? (_unwrap-val val))
+  (ok (false? (unwrap-val val))
       msg))
 
 ;;----------------------------------------------------------------------
@@ -164,7 +163,7 @@
   ;; are supported.  If both are provided then the positional one
   ;; wins.
   (define op (or op1 op2 equal?))
-  (test-more-check #:got (_unwrap-val val)
+  (test-more-check #:got (unwrap-val val)
                    #:expected expected
                    #:msg msg
                    #:op op
@@ -177,7 +176,7 @@
               [op1 #f]
               #:op [op2 #f])
   (define op (or op1 op2 (negate equal?)))
-  (test-more-check #:got (_unwrap-val val)
+  (test-more-check #:got (unwrap-val val)
                    #:expected expected
                    #:msg msg
                    #:report-expected-as (~a "<anything but " (~v expected) ">")
@@ -187,7 +186,7 @@
 
 (define/contract (like val regex [msg ""])
   (->* (any/c regexp?) (string?) any)
-  (define res (regexp-match regex (_unwrap-val val)))
+  (define res (regexp-match regex (unwrap-val val)))
   (test-more-check #:got (true? res) ; force to boolean
                    #:return res
                    #:msg msg
@@ -199,7 +198,7 @@
   (->* (any/c regexp?)
        (string?)
        any/c)
-  (test-more-check #:got (_unwrap-val val)
+  (test-more-check #:got (unwrap-val val)
                    #:expected #t
                    #:msg msg
                    #:report-expected-as (~a "<something NOT matching " regex ">")
@@ -339,8 +338,8 @@
         #:op (-> any/c any/c boolean?))
        any/c)
   (define with-name       (object-name with))
-  (define got-val         (_unwrap-val got))
-  (define expected-val    (_unwrap-val expected))
+  (define got-val         (unwrap-val got))
+  (define expected-val    (unwrap-val expected))
   (define got-result      (with got-val))
   (define expected-result (with expected-val))
 
@@ -385,5 +384,4 @@
 
 (provide (except-out (all-defined-out)
                      _tp _tf
-                     _unwrap-val
                      ))

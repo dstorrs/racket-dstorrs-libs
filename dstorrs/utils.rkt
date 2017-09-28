@@ -42,7 +42,7 @@
 ;; *) symbol->keyword
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
-;; *) verify-struct  : test correctness of just parts of a structure
+;; *) unwrap-val : call a thunk, force a promise, or return a val
 ;; *) with-temp-file : creates a temp file, ensures it will be deleted
 ;; on exception. THIS IS NOT REENTRANT. ONCE YOU LEAVE THE FUNCTION,
 ;; THE FILE IS GONE. DO NOT TRY TO, E.G. SAVE A CONTINUATION FROM
@@ -406,6 +406,14 @@
 
   ((if as-str path->string identity)
    (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (unwrap-val val)
+  (-> any/c any/c)
+  (cond [(procedure? val) (val)]
+        [(promise? val)   (force val)]
+        [else             val]))
 
 ;;----------------------------------------------------------------------
 
