@@ -191,6 +191,13 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (hash-slice the-hash keys)
+  (-> hash? list? list?)
+  (for/list ((k keys))
+    (hash-ref the-hash k)))
+     
+;;----------------------------------------------------------------------
+
 (define/contract (not-equal? x y)
   (-> any/c any/c boolean?)
   (not (equal? x y)))

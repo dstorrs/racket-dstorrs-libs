@@ -628,4 +628,24 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "hash-slice"
+   (define h (hash 'a 1 'b 2 'c 3 'd 4))
+   
+   (is (hash-slice h '(a b c d))
+       '(1 2 3 4)
+       "success: (hash-slice h '(a b c d))")
+
+   (is (hash-slice h '(a b))
+       '(1 2)
+       "success: (hash-slice h '(a b))")
+
+   (is (hash-slice h '(d c a b))
+       '(4 3 1 2)
+       "success: (hash-slice h  '(d c a b))")   
+   ))
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file
