@@ -303,6 +303,12 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (sorted-hash-keys hsh [func symbol<?])
+  (->* (hash?) ((unconstrained-domain-> boolean?)) list?)
+  (sort (hash-keys hsh) func))
+
+;;----------------------------------------------------------------------
+
 (define prefix-for-say (make-parameter ""))
 (define-syntax (say stx)
   (syntax-case stx ()

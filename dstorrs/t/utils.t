@@ -605,4 +605,27 @@
        
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "sorted-hash-keys"
+
+   (is (sorted-hash-keys (hash 'foo 1 'bar 2 'baz 3))
+       '(bar baz foo)
+       "success: (sorted-hash-keys (hash 'foo 1 'bar 2 'baz 3))")
+
+   (is (sorted-hash-keys (hash "foo" 1 "bar" 2 "baz" 3) string<?)
+       '("bar" "baz" "foo")
+       "success: (sorted-hash-keys (hash \"foo\" 1 \"bar\" 2 \"baz\" 3) string<?)")
+
+   (is (sorted-hash-keys (hash 3 "foo" 2 "bar" 1 "baz") <)
+       '(1 2 3)
+       "success: (sorted-hash-keys (hash 3 \"foo\" 2 \"bar\" 1 \"baz\") <)")
+
+   (is (sorted-hash-keys (hash 3 "foo" 2 "bar" 1 "baz") >)
+       '(3 2 1)
+       "success: (sorted-hash-keys (hash 3 \"foo\" 2 \"bar\" 1 \"baz\") >)")
+   ))
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file
