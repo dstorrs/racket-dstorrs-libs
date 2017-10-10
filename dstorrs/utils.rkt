@@ -171,7 +171,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define (hash->mutable h)
+(define/contract (hash->mutable h)
+  (-> hash? (and/c hash? (not/c immutable?)))
   (if (not (immutable? h))
       h
       (make-hash (for/list ((k (hash-keys h)))
@@ -181,6 +182,12 @@
 
 (define (mutable-hash . args)
   (hash->mutable (apply hash args)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (mutable-hash? data)
+  (-> hash? boolean?)
+  (not (immutable? data)))
 
 ;;----------------------------------------------------------------------
 
