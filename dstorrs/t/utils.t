@@ -121,6 +121,14 @@
      (hash 'b 2 'c 3)
      "(safe-hash-remove hash-imm 'a 'x) worked")
 
+ (is (safe-hash-remove hash-imm '(a x))
+     (hash 'b 2 'c 3)
+     "(safe-hash-remove hash-imm '(a x)) worked (list of keys)")
+
+ (is (safe-hash-remove (hash '(a x) 7 'b 3) '(a x) #:key-is-list #t)
+     (hash 'b 3)
+     "(safe-hash-remove (hash '(a x) 7 b 3) '(a x) #:key-is-list #t) worked")
+
  (is (safe-hash-remove (hash-mut) 'a)
      (make-hash '((b . 2) (c . 3)))
      "(safe-hash-remove hash-mut 'a) worked")

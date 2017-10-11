@@ -195,7 +195,7 @@
   (-> hash? list? list?)
   (for/list ((k keys))
     (hash-ref the-hash k)))
-     
+
 ;;----------------------------------------------------------------------
 
 (define/contract (not-equal? x y)
@@ -286,22 +286,29 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-hash-remove h . keys)
-  (->* (hash?) () #:rest (non-empty-listof any/c) hash?)
+(define/contract (safe-hash-remove h #:key-is-list [key-is-list? #f] . keys)
+  (->* (hash?) (#:key-is-list boolean?) #:rest (non-empty-listof any/c) hash?)
   (define is-imm (immutable? h))
+  (define keys-list
+    (cond [key-is-list? keys] ; very unlikely, but included for completeness
+          [(null? keys) keys]
+          [(> (length keys) 1) keys]
+          [(list? (car keys)) (car keys)]
+          [else keys]))
+
   (for/fold ((hsh h))
-            ((k keys))
+            ((k keys-list))
     (if is-imm
         (hash-remove hsh k)
         (begin (hash-remove! hsh k) h))))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-hash-set h . args)
+(define/contract (safe-hash-set h  . args)
   (->* (hash?)
        ()
        #:rest (and/c list?
-                     (λ (lst)
+                     (lambda (lst)
                        (let ([len (length lst)])
                          (and (even? len)
                               (not (= 0 len))))))
