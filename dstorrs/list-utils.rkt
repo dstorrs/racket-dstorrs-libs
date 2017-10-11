@@ -23,6 +23,8 @@
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
 ;; *) symbols->keywords  : takes a list of symbols, returns a sorted list of keywords
 ;; *) unique : return a list of the unique non-null elements in a list, in the order seen
+;; *) unwrap-list : when given a list of one list, return the inner
+;;     list.  Useful when dealing with rest params
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (by default a mutable hash)
 
@@ -320,6 +322,15 @@
   (->* (list?) ((-> any/c any/c boolean?) #:key (-> any/c any/c)) list?)
   (remove-nulls
    (remove-duplicates lst same? #:key key-maker)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (unwrap-list lst)
+  (-> list? list?)
+  (cond [(null? lst) lst]
+        [(> (length lst) 1) lst]
+        [(list? (car lst)) (car lst)]
+        [else lst]))
 
 ;;----------------------------------------------------------------------
 

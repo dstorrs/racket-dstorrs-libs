@@ -633,4 +633,20 @@
    ) ; test-suite
   )
 
+(when #t
+  (test-suite
+   "unwrap-list"
+   (is (unwrap-list '(a b c))
+       '(a b c)
+       "unwrap-list works for list of atoms")
+
+   (is (unwrap-list '((a b c) (d e f)))
+       '((a b c) (d e f))
+       "unwrap-list works for list of more than one list")
+
+   (is (unwrap-list  '((a b c)))
+       '(a b c)
+       "unwrap-list works for list of one list")
+   ))
+
 (done-testing)
