@@ -6,9 +6,14 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (watch-dir-or-tree dir handler [handler-arg #f] #:recursive [recursive #t] #:pre [preprocessor #f])
+(define/contract (watch-dir-or-tree dir handler [handler-arg #f]
+                                    #:poll-delay [poll-delay #f]
+                                    #:recursive [recursive #t]
+                                    #:pre [preprocessor #f])
   (->* (path-string? (-> path-string? any/c any))
-       (any/c #:recursive boolean? #:pre (-> path-string? any))
+       (any/c #:poll-delay exact-nonnegative-integer?
+              #:recursive boolean?
+              #:pre (-> path-string? any))
        any)
 
   ;;    Locate all the directories to watch. If recursive is #f then
@@ -34,6 +39,8 @@
   (define (work)
     (let loop ()
       (apply sync (map evt-maker dirs-to-watch))
+      (when poll-delay
+        (sleep poll-delay))
       (loop)))
 
   (define current-prefix (regexp-replace #px":\\s*$" (prefix-for-say) ""))
