@@ -477,5 +477,16 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (hash-remap h remap-hash)
+  (-> hash? hash? hash?)
+
+  (for/fold ([h h])
+            ([(key val) remap-hash])
+    (cond [(false? val)     (safe-hash-remove h key)]
+          [(equal? #t val)  h]
+          [else             (hash-rename-key h key val)])))
+
+;;----------------------------------------------------------------------
+
 
 (provide (all-defined-out))

@@ -186,7 +186,7 @@
  (let ((h (mutable-hash 'a 1)))
    (ok (and (hash? h) (not (immutable? h)))
        "(mutable-hash 'a 1)) works"))
- 
+
  (let ((h (mutable-hash 'a 1 'b 2)))
    (ok (and (hash? h) (not (immutable? h)))
        "(mutable-hash 'a 1 'b 2)) works"))
@@ -198,7 +198,7 @@
    (is (hash-keys->strings (hash "foo" 7 'bar 8))
        (hash "foo" 7 "bar" 8)
        "(hash-keys->strings works")
-   
+
    (is (hash-keys->symbols (hash "foo" 7 'bar 8))
        (hash 'foo 7 'bar 8)
        "(hash-keys->symbols works")
@@ -206,7 +206,7 @@
    (is (hash-keys->strings (hash "foo" 7 'bar 8 0 'c))
        (hash "foo" 7 "bar" 8 "0" 'c)
        "(hash-keys->strings works on things with keys that are not symbol/string")
-   
+
    (is (hash-keys->symbols (hash "foo" 7 'bar 8 0 'c))
        (hash 'foo 7 'bar 8 '|0| 'c)
        "(hash-keys->symbols works on things with keys that are not symbol/string")
@@ -214,13 +214,13 @@
    (is-type (hash-keys->symbols (mutable-hash "foo" 7 'bar 8))
             (negate immutable?)
             "hash-keys->symbols preserved the (im)mutability of the hash")
-   
+
    (is-type (hash-keys->strings (hash "foo" 7 'bar 8))
             immutable?
             "hash-keys->strings preserved the (im)mutability of the hash")
    )
   )
-   
+
 (when #t
   (test-suite
    "dir-and-filename"
@@ -592,7 +592,84 @@
            #px"destination key exists"
            "throws when you try to rename to a key that already exists")
    ))
-  
+
+;;----------------------------------------------------------------------
+
+(when #t
+  (test-suite
+   "hash-remap"
+
+   (is (hash-remap (hash) (hash))
+       (hash)
+       "empty hash is unchanged")
+
+   (define h (hash 'a 1 'b 2 'c 3 'd 4))
+   (is (hash-remap h (hash 'a 'e))
+       (hash 'e 1 'b 2 'c 3 'd 4)
+       "remapping only one key of immutable hash works")
+
+   (is (hash-remap h (hash 'a 'e 'b 'f))
+       (hash 'e 1 'f 2 'c 3 'd 4)
+       "remapping multiple keys of immutable hash works")
+
+   (is (hash-remap h (hash 'a #f))
+       (hash 'b 2 'c 3 'd 4)
+       "removing one key of immutable hash works")
+
+   (is (hash-remap h (hash 'a #f 'b #f))
+       (hash 'c 3 'd 4)
+       "removing multiple keys of immutable hash works")
+
+   (is (hash-remap h (hash 'a #f 'b 'e))
+       (hash 'e 2 'c 3 'd 4)
+       "removing one key and remapping one key of immutable hash works")
+
+   (is (hash-remap h (hash 'a 'e 'b 'f 'c #f 'd #f))
+       (hash 'e 1 'f 2)
+       "removing multiple keys while remapping multiple keys of immutable hash works")
+
+
+   (define (make-test-hash)
+     (mutable-hash
+      'a 1 'b 2 'c 3 'd 4))
+
+   (is (hash-remap (make-test-hash) (hash 'a 'e))
+       (mutable-hash 'e 1 'b 2 'c 3 'd 4)
+       "remapping only one key of mutable hash works")
+
+   (is (hash-remap (make-test-hash) (hash 'a 'e 'b 'f))
+       (mutable-hash 'e 1 'f 2 'c 3 'd 4)
+       "remapping multiple keys of mutable hash works")
+
+   (is (hash-remap (make-test-hash) (hash 'a #f))
+       (mutable-hash 'b 2 'c 3 'd 4)
+       "removing one key of mutable hash works")
+
+   (is (hash-remap (make-test-hash) (hash 'a #f 'b #f))
+       (mutable-hash 'c 3 'd 4)
+       "removing multiple keys of mutable hash works")
+
+   (is (hash-remap (make-test-hash) (hash 'a #f 'b 'e))
+       (mutable-hash 'e 2 'c 3 'd 4)
+       "removing one key and remapping one key of mutable hash works")
+
+   (is (hash-remap (make-test-hash) (hash 'a 'e 'b 'f 'c #f 'd #f))
+       (mutable-hash 'e 1 'f 2)
+       "removing multiple keys while remapping multiple keys of mutable hash works")
+
+   (throws (thunk (hash-remap (make-test-hash) (hash 'a 'b)))
+           #px"destination key exists"
+           "can't rename a hash key to an existing hash key")
+
+   (throws (thunk (hash-remap (make-test-hash) (hash 'x 'y)))
+           #px"no such key"
+           "can't rename a hash key to that isn't there")
+   
+   (lives (thunk (hash-remap (make-test-hash) (hash 'x '#f)))
+           "removing a hash key that isn't there is fine")
+
+   ))
+
 ;;----------------------------------------------------------------------
 
 (when #t
@@ -612,8 +689,8 @@
        9
        "(unwrap-val (lazy 9)) returns 9")
    ))
-       
-       
+
+
 ;;----------------------------------------------------------------------
 
 (when #t
@@ -643,7 +720,7 @@
   (test-suite
    "hash-slice"
    (define h (hash 'a 1 'b 2 'c 3 'd 4))
-   
+
    (is (hash-slice h '(a b c d))
        '(1 2 3 4)
        "success: (hash-slice h '(a b c d))")
@@ -654,7 +731,7 @@
 
    (is (hash-slice h '(d c a b))
        '(4 3 1 2)
-       "success: (hash-slice h  '(d c a b))")   
+       "success: (hash-slice h  '(d c a b))")
    ))
 
 ;;----------------------------------------------------------------------
