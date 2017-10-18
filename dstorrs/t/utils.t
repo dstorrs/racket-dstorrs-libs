@@ -207,6 +207,10 @@
        (hash "foo" 7 "bar" 8 "0" 'c)
        "(hash-keys->strings works on things with keys that are not symbol/string")
 
+   (is (hash-keys->strings #:dash->underscore? #t (hash "foo-bar" 1 'bar-z 8))
+       (hash "foo_bar" 1 "bar_z" 8)
+       "hash-keys->strings #:dash->underscore? #t converts, e.g., 'foo-bar to \"foo_bar\"")
+   
    (is (hash-keys->symbols (hash "foo" 7 'bar 8 0 'c))
        (hash 'foo 7 'bar 8 '|0| 'c)
        "(hash-keys->symbols works on things with keys that are not symbol/string")

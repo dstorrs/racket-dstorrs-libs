@@ -150,11 +150,14 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-keys->strings h)
-  (-> hash? hash?)
+(define/contract (hash-keys->strings h #:dash->underscore? [dash->underscore? #f])
+  (->* (hash?) (#:dash->underscore? boolean?) hash?)
+  
   ((if (immutable? h) identity hash->mutable)
    (for/hash ([(k v) h])
-     (values (->string k) v))))
+     (let ([key (->string k)])
+       (values (if dash->underscore? (regexp-replace* #px"-" key "_") key)
+               v)))))
 
 (define/contract (hash-keys->symbols h)
   (-> hash? hash?)
