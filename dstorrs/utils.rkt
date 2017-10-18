@@ -1,5 +1,7 @@
 #lang at-exp racket
 
+(require racket/hash) ; for hash-union
+
 ;; Parameters
 ;; *) prefix-for-say : A string that will be prepended to all 'say' calls. Default: ""
 ;;
@@ -425,13 +427,20 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-build-path #:as-str [as-str #f] . args)
+(define/contract (safe-build-path #:as-str? [as-str? #f] #:as-str [as-str #f] . args)
   (->* ()
-       (#:as-str boolean?)
+       (#:as-str boolean? #:as-str? boolean?)
        #:rest (listof (or/c #f 'relative "" path-string?))
        path-string?)
 
-  ((if as-str path->string identity)
+  ;;    NB: Originally there was the '#:as-str' argument, before I was
+  ;;    familiar with Racket's naming conventions.  Once I was, I
+  ;;    started messing up the argument name all the time, so I added
+  ;;    the '#:as-str?' in order to maintain backwards compatibility
+  ;;    and still fit with the conventions.  Setting either one to #t
+  ;;    means "yes, make this a string"
+
+  ((if (or as-str as-str?) path->string identity)
    (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
 
 ;;----------------------------------------------------------------------
@@ -477,14 +486,17 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-remap h remap-hash)
-  (-> hash? hash? hash?)
+(define/contract (hash-remap h remap-hash #:add [additional-data (hash)])
+  (->* (hash? hash?) (#:add hash?) hash?)
 
-  (for/fold ([h h])
-            ([(key val) remap-hash])
-    (cond [(false? val)     (safe-hash-remove h key)]
-          [(equal? #t val)  h]
-          [else             (hash-rename-key h key val)])))
+  ((if (immutable? h) identity hash->mutable)
+   (hash-union additional-data
+               (for/fold ([h h])
+                         ([(key val) remap-hash])
+                 (cond [(false? val)     (safe-hash-remove h key)]
+                       [(equal? #t val)  h]
+                       [else             (hash-rename-key h key val)])))))
+
 
 ;;----------------------------------------------------------------------
 

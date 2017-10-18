@@ -668,6 +668,10 @@
    (lives (thunk (hash-remap (make-test-hash) (hash 'x '#f)))
            "removing a hash key that isn't there is fine")
 
+   (is (hash-remap (make-test-hash) (hash 'a 'e 'b 'f 'c #f 'd #f)
+                   #:add (hash 'x 7 'y 8))       
+       (mutable-hash 'e 1 'f 2 'x 7 'y 8)
+       "can remove multiple keys, rename multiple keys, and add multiple keys all at once")
    ))
 
 ;;----------------------------------------------------------------------
