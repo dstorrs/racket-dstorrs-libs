@@ -289,7 +289,7 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (safe-hash-remove h #:key-is-list [key-is-list? #f] . keys)
-  (->* (hash?) (#:key-is-list boolean?) #:rest (non-empty-listof any/c) hash?)
+  (->* (hash?) (#:key-is-list boolean?) #:rest (listof any/c) hash?)
   (define is-imm (immutable? h))
   (define keys-list
     (cond [key-is-list? keys] ; very unlikely, but included for completeness
