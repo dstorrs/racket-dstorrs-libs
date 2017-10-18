@@ -486,16 +486,56 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-remap h remap-hash #:add [additional-data (hash)])
-  (->* (hash? hash?) (#:add hash?) hash?)
+(define/contract (hash-remap h
+                             #:rename    remap-hash
+                             #:overwrite [overwrite #f]
+                             #:add       [add #f]
+                             )
+  (->* (hash? #:rename hash?) (#:add hash? #:overwrite hash?) hash?)
 
-  ((if (immutable? h) identity hash->mutable)
-   (hash-union additional-data
-               (for/fold ([h h])
-                         ([(key val) remap-hash])
-                 (cond [(false? val)     (safe-hash-remove h key)]
-                       [(equal? #t val)  h]
-                       [else             (hash-rename-key h key val)])))))
+  (define h-is-immutable? (immutable? h))
+
+  ;;    Make sure that we return the same kind of hash we were given
+  ;;    (mutable / immutable).  We'll be giving the arguments with the
+  ;;    base hash second, because it reads better.  This doesn't
+  ;;    matter if using hash-union, but if using hash-union! we'll
+  ;;    swap the order for convenience.
+  (define union-func (if h-is-immutable?
+                         hash-union
+                         (lambda (h1 base-hash #:combine/key combiner)
+                           (hash-union! #:combine/key combiner base-hash h1)
+                           base-hash)))
+
+  (define (default-hash) (if h-is-immutable? (hash) (make-hash)))
+  (define overwrite-hash (or overwrite (default-hash)))
+  (define add-hash       (or add       (default-hash)))
+
+  ;;    First, overwrite any values from the original hash that we
+  ;;    were told to overwrite.
+  (define base-hash
+    (union-func #:combine/key (lambda (key orig-val overwrite-val)
+                                overwrite-val)
+                overwrite-hash
+                h))
+
+  ;;    Next, add any additional keys that we were told to add.  NOTE:
+  ;;    This will throw an exception if you try to add a key that is
+  ;;    already there.
+  (define hash-with-adds
+    (union-func add-hash base-hash
+                #:combine/key (lambda _ (raise-arguments-error
+                                         'hash-remap
+                                         "add-hash cannot include keys that are in base-hash"
+                                         "add-hash" add-hash
+                                         "overwrite-hash" overwrite-hash
+                                         "base-hash" base-hash))))
+
+  ;;    Finally, rename keys
+  (for/fold ([h hash-with-adds])
+            ([(key val) remap-hash])
+    (cond [(false? val)     (safe-hash-remove h key)]
+          [(equal? #t val)  h]
+          [else             (hash-rename-key h key val)])))
 
 
 ;;----------------------------------------------------------------------

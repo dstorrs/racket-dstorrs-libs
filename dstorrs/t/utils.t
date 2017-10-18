@@ -599,32 +599,32 @@
   (test-suite
    "hash-remap"
 
-   (is (hash-remap (hash) (hash))
+   (is (hash-remap (hash) #:rename (hash))
        (hash)
        "empty hash is unchanged")
 
    (define h (hash 'a 1 'b 2 'c 3 'd 4))
-   (is (hash-remap h (hash 'a 'e))
+   (is (hash-remap h #:rename (hash 'a 'e))
        (hash 'e 1 'b 2 'c 3 'd 4)
        "remapping only one key of immutable hash works")
 
-   (is (hash-remap h (hash 'a 'e 'b 'f))
+   (is (hash-remap h #:rename (hash 'a 'e 'b 'f))
        (hash 'e 1 'f 2 'c 3 'd 4)
        "remapping multiple keys of immutable hash works")
 
-   (is (hash-remap h (hash 'a #f))
+   (is (hash-remap h #:rename (hash 'a #f))
        (hash 'b 2 'c 3 'd 4)
        "removing one key of immutable hash works")
 
-   (is (hash-remap h (hash 'a #f 'b #f))
+   (is (hash-remap h #:rename (hash 'a #f 'b #f))
        (hash 'c 3 'd 4)
        "removing multiple keys of immutable hash works")
 
-   (is (hash-remap h (hash 'a #f 'b 'e))
+   (is (hash-remap h #:rename (hash 'a #f 'b 'e))
        (hash 'e 2 'c 3 'd 4)
        "removing one key and remapping one key of immutable hash works")
 
-   (is (hash-remap h (hash 'a 'e 'b 'f 'c #f 'd #f))
+   (is (hash-remap h #:rename (hash 'a 'e 'b 'f 'c #f 'd #f))
        (hash 'e 1 'f 2)
        "removing multiple keys while remapping multiple keys of immutable hash works")
 
@@ -633,45 +633,53 @@
      (mutable-hash
       'a 1 'b 2 'c 3 'd 4))
 
-   (is (hash-remap (make-test-hash) (hash 'a 'e))
+   (is (hash-remap (make-test-hash) #:rename (hash 'a 'e))
        (mutable-hash 'e 1 'b 2 'c 3 'd 4)
        "remapping only one key of mutable hash works")
 
-   (is (hash-remap (make-test-hash) (hash 'a 'e 'b 'f))
+   (is (hash-remap (make-test-hash) #:rename (hash 'a 'e 'b 'f))
        (mutable-hash 'e 1 'f 2 'c 3 'd 4)
        "remapping multiple keys of mutable hash works")
 
-   (is (hash-remap (make-test-hash) (hash 'a #f))
+   (is (hash-remap (make-test-hash) #:rename (hash 'a #f))
        (mutable-hash 'b 2 'c 3 'd 4)
        "removing one key of mutable hash works")
 
-   (is (hash-remap (make-test-hash) (hash 'a #f 'b #f))
+   (is (hash-remap (make-test-hash) #:rename (hash 'a #f 'b #f))
        (mutable-hash 'c 3 'd 4)
        "removing multiple keys of mutable hash works")
 
-   (is (hash-remap (make-test-hash) (hash 'a #f 'b 'e))
+   (is (hash-remap (make-test-hash) #:rename (hash 'a #f 'b 'e))
        (mutable-hash 'e 2 'c 3 'd 4)
        "removing one key and remapping one key of mutable hash works")
 
-   (is (hash-remap (make-test-hash) (hash 'a 'e 'b 'f 'c #f 'd #f))
+   (is (hash-remap (make-test-hash) #:rename (hash 'a 'e 'b 'f 'c #f 'd #f))
        (mutable-hash 'e 1 'f 2)
        "removing multiple keys while remapping multiple keys of mutable hash works")
 
-   (throws (thunk (hash-remap (make-test-hash) (hash 'a 'b)))
+   (throws (thunk (hash-remap (make-test-hash) #:rename (hash 'a 'b)))
            #px"destination key exists"
            "can't rename a hash key to an existing hash key")
 
-   (throws (thunk (hash-remap (make-test-hash) (hash 'x 'y)))
+   (throws (thunk (hash-remap (make-test-hash) #:rename (hash 'x 'y)))
            #px"no such key"
            "can't rename a hash key to that isn't there")
    
-   (lives (thunk (hash-remap (make-test-hash) (hash 'x '#f)))
+   (lives (thunk (hash-remap (make-test-hash) #:rename (hash 'x '#f)))
            "removing a hash key that isn't there is fine")
 
-   (is (hash-remap (make-test-hash) (hash 'a 'e 'b 'f 'c #f 'd #f)
+   (is (hash-remap (make-test-hash)
+                   #:rename (hash 'a 'e 'b 'f 'c #f 'd #f)
                    #:add (hash 'x 7 'y 8))       
        (mutable-hash 'e 1 'f 2 'x 7 'y 8)
        "can remove multiple keys, rename multiple keys, and add multiple keys all at once")
+
+  (is (hash-remap (mutable-hash 'a 1 'b 2 'c 3 'd 4 'z 10)
+                   #:rename (hash 'a 'e 'b 'f 'c #f 'd #f)
+                   #:add (hash 'x 7 'y 8)
+                   #:overwrite (hash 'a 17 'z 88))
+      (mutable-hash 'e 17 'f 2 'z 88 'x 7 'y 8)
+       "can (remove | rename | add | overwrite) multiple keys all at once")
    ))
 
 ;;----------------------------------------------------------------------
