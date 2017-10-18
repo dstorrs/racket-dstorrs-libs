@@ -588,6 +588,9 @@
    (throws (thunk (hash-rename-key h 'zot 'zag))
            #px"no such key"
            "trying to rename a non-existent key throws")
+   (throws (thunk (hash-rename-key h 'a 'b))
+           #px"destination key exists"
+           "throws when you try to rename to a key that already exists")
    ))
   
 ;;----------------------------------------------------------------------

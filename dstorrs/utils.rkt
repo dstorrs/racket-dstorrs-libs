@@ -458,7 +458,15 @@
   (-> hash? any/c any/c hash?)
 
   (when (not (hash-has-key? h old-key))
-    (raise-arguments-error "no such key"
+    (raise-arguments-error 'hash-rename-key
+                           "no such key"
+                           "old-key" old-key
+                           "new-key" new-key
+                           "hash" h))
+
+  (when (hash-has-key? h new-key)
+    (raise-arguments-error 'hash-rename-key
+                           "destination key exists"
                            "old-key" old-key
                            "new-key" new-key
                            "hash" h))
