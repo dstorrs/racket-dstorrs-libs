@@ -649,4 +649,12 @@
        "unwrap-list works for list of one list")
    ))
 
+(when #t
+  (test-suite
+   "list->values"
+
+   (define-values (x y z) (list->values '(x y z)))
+   (is (list x y z) '(x y z) "list->values works")
+   )); test-suite, when 
+
 (done-testing)

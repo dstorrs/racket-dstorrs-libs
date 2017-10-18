@@ -11,6 +11,7 @@
 ;; *) hash->keywork-apply : take a function and a hash.  Assume the
 ;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) L : alias for 'list'
+;; *) list->values  ; because it's dumb that this doesn't exist
 ;; *) list-remf* filter all desired elements out of a list, by default #<void>
 ;; *) list/not-null? : is it a pair and not '()? NB: checks for pair,
 ;;     not list, so it treats '(x . y) as a list
@@ -65,6 +66,14 @@
   (dict-disjunction diff first-only second-only dict1 dict2))
 
 (define (remove-nulls l) (filter (negate null?) l))
+
+;;----------------------------------------------------------------------
+
+(define/contract (list->values l)
+  (-> list? any)
+  (vector->values (list->vector l)))
+
+;;----------------------------------------------------------------------
 
 ;;    Create list with conditional elements
 ;; (list 'a 'b (when x 'c) 'd)        => either '(a b c d) or '(a b #<void> d)
