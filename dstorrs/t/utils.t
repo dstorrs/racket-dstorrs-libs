@@ -210,7 +210,7 @@
    (is (hash-keys->strings #:dash->underscore? #t (hash "foo-bar" 1 'bar-z 8))
        (hash "foo_bar" 1 "bar_z" 8)
        "hash-keys->strings #:dash->underscore? #t converts, e.g., 'foo-bar to \"foo_bar\"")
-   
+
    (is (hash-keys->symbols (hash "foo" 7 'bar 8 0 'c))
        (hash 'foo 7 'bar 8 '|0| 'c)
        "(hash-keys->symbols works on things with keys that are not symbol/string")
@@ -694,6 +694,14 @@
                    #:overwrite (hash 'a 17 'z 88))
        (mutable-hash 'e 17 'f 2 'z 88 'x 7 'y 8)
        "can (remove | rename | add | overwrite) multiple keys all at once")
+
+
+   (is (hash-remap (hash 'a 1 'b 2)
+                   #:overwrite (hash 'a (lambda (hsh key orig-val)
+                                          (~a (add1 orig-val)))))
+       (hash 'a "2" 'b 2)
+       "can provide funcs as values with which to overwrite things")
+
    ))
 
 ;;----------------------------------------------------------------------

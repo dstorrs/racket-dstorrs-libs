@@ -152,7 +152,7 @@
 
 (define/contract (hash-keys->strings h #:dash->underscore? [dash->underscore? #f])
   (->* (hash?) (#:dash->underscore? boolean?) hash?)
-  
+
   ((if (immutable? h) identity hash->mutable)
    (for/hash ([(k v) h])
      (let ([key (->string k)])
@@ -505,52 +505,90 @@
   (->* (hash?) (#:rename hash? #:add hash? #:overwrite hash? #:remove list?) hash?)
 
   (let/ec return
+    ; Just return unless we are going to rename, remove, overwrite, or
+    ; add someting.
     (when (not (ormap true? (list remap remove-keys overwrite add)))
       (return h))
 
+    ; Okay, we're going to make some sort of change
     (define list-to-remove (or remove-keys '()))
+
     (define h-is-immutable? (immutable? h))
 
-    ;;    Make sure that we return the same kind of hash we were given
-    ;;    (mutable / immutable).  We'll be giving the arguments with the
-    ;;    base hash second, because it reads better.  This doesn't
-    ;;    matter if using hash-union, but if using hash-union! we'll
-    ;;    swap the order for convenience.
-    (define union-func (if h-is-immutable?
-                           hash-union
-                           (lambda (h1 base-hash #:combine/key combiner)
-                             (hash-union! #:combine/key combiner base-hash h1)
-                             base-hash)))
+    (define union-func (if h-is-immutable? hash-union hash-union!))
 
     (define (default-hash) (if h-is-immutable? (hash) (make-hash)))
     (define overwrite-hash (or overwrite (default-hash)))
     (define add-hash       (or add       (default-hash)))
     (define remap-hash     (or remap     (default-hash)))
-    
-    ;;    First, remove any values we were told to remove, then
-    ;;    overwrite any values from the original hash that we were told
-    ;;    to overwrite.
+
+    ;; (say "original hash: " h
+    ;;      "\n\t immutable?     " (immutable? h)
+    ;;      "\n\t overwrite:     " overwrite-hash
+    ;;      "\n\t add:           " add-hash
+    ;;      "\n\t remap-hash:    " remap-hash)
+
+    ;;    First, remove any values we were told to remove,
     (define base-hash
-      (union-func #:combine/key (lambda (key orig-val overwrite-val)
-                                  overwrite-val)
-                  overwrite-hash
-                  (apply (curry safe-hash-remove h) list-to-remove)))
+      (apply (curry safe-hash-remove h) list-to-remove))
 
-    ;;    Next, add any additional keys that we were told to add.  NOTE:
-    ;;    This will throw an exception if you try to add a key that is
-    ;;    already there.
+    ;;(say "hash after remove: " base-hash)
+
+    ;;    Now, overwrite any values from the original hash that we
+    ;;    were told to overwrite.  If the new value is a procedure
+    ;;    then it will be invoked and its result will be the new
+    ;;    value.  The procedure must have the signature:
+    ;;
+    ;;        (-> hash? any/c any/c any/c)  ; hash, key, orig-val, return one value
+    ;;
+    ;;    The arguments will be: the hash we're updating, the key
+    ;;    we're updating, and the original value.  It must return a
+    ;;    single value.
+    ;;
+    ;;    If you actually want to pass in a procedure (e.g. if you're
+    ;;    building a jumptable) then you'll have to wrap it like so:
+    ;;
+    ;;        (lambda (hsh key val orig-val)  ; the 'generate a value' procedure
+    ;;            (lambda ...))               ; the procedure it generates
+    ;;
+    ;;  NB: hash-union! modifies its target in place and then returns
+    ;;  #<void>, because of course it does.  As a result, we need to
+    ;;  check whether we're dealing with an immutable hash in order to
+    ;;  know what to return.
+    (define overwritten-hash
+      (let ([hsh (union-func base-hash
+                             overwrite-hash
+                             #:combine/key (lambda (key orig-val overwrite-val)
+                                             ;(say "entering combiner with args: " (string-join (map ~v (list key orig-val overwrite-val)) "; "))
+                                             (cond [(procedure? overwrite-val)
+                                                    ;(say "proc: " overwrite-val)
+                                                    (overwrite-val base-hash key orig-val)]
+                                                   [else overwrite-val])))])
+        ;(say "finished overwrite")
+        (if (void?  hsh) base-hash hsh))) ; void if we're dealing with mutable hash
+
+    ;(say "hash with overwrites: " overwritten-hash)
+
+    ;;    Next, add any additional keys that we were told to add.
+    ;;
+    ;;    NOTE: This will throw an exception if you try to add a key
+    ;;    that is already there.
     (define hash-with-adds
-      (union-func add-hash base-hash
-                  #:combine/key (lambda _ (raise-arguments-error
-                                           'hash-remap
-                                           "add-hash cannot include keys that are in base-hash"
-                                           "add-hash" add-hash
-                                           "overwrite-hash" overwrite-hash
-                                           "base-hash" base-hash))))
+      (let ([hsh (union-func overwritten-hash
+                             add-hash
+                             #:combine/key (lambda _ (raise-arguments-error
+                                                      'hash-remap
+                                                      "add-hash cannot include keys that are in base-hash"
+                                                      "add-hash" add-hash
+                                                      "hash to add (remove and overwrite already done)" overwritten-hash)))])
+        (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash 
 
+    ;(say "hash-with-adds is: " hash-with-adds)
+    ;(say "about to rename")
     ;;    Finally, rename keys
     (for/fold ([h hash-with-adds])
               ([(key val) remap-hash])
+      ;(say "renaming in hash with key/val: " h "," key "," val)
       (hash-rename-key h key val))))
 
 
