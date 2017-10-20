@@ -198,8 +198,10 @@
 
 (define/contract (hash-slice the-hash keys)
   (-> hash? list? list?)
-  (for/list ((k keys))
-    (hash-ref the-hash k)))
+  (define default (gensym)) ; guaranteed unique value
+  (filter-not (curry equal? default)
+              (for/list ((k keys))
+                (hash-ref the-hash k default))))
 
 ;;----------------------------------------------------------------------
 

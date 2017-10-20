@@ -755,6 +755,12 @@
    "hash-slice"
    (define h (hash 'a 1 'b 2 'c 3 'd 4))
 
+   (lives (thunk
+           (is (hash-slice (hash) '(a b c))
+               '()
+               "success: (hash-slice (hash) '(a b c)) returns empty list")
+           )
+          "slicing an empty hash didn't die.")
    (is (hash-slice h '(a b c d))
        '(1 2 3 4)
        "success: (hash-slice h '(a b c d))")
