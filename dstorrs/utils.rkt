@@ -432,7 +432,8 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-build-path #:as-str? [as-str? #f] #:as-str [as-str #f] . args)
+(define/contract (safe-build-path #:as-str? [as-str? #f] ; these two are aliases
+                                  #:as-str [as-str #f] . args)
   (->* ()
        (#:as-str boolean? #:as-str? boolean?)
        #:rest (listof (or/c #f 'relative "" path-string?))
@@ -451,7 +452,7 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (unwrap-val val)
-  (-> any/c any/c)
+  (-> any/c any)
   (cond [(procedure? val) (val)]
         [(promise? val)   (force val)]
         [else             val]))
