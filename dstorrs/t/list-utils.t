@@ -659,16 +659,16 @@
 
 (when #t
   (test-suite
-   "compose/r"
+   "compose-fifo"
 
-   (define func-l2r (compose-l2r add1 (curry ~a "foo") string-length))
+   (define func-l2r (compose-fifo add1 (curry ~a "foo") string-length))
    (define func     (compose  string-length
                               (curry ~a "foo")
                               add1))
 
    (is (func-l2r 7)
        (func 7)
-       "func-l2r worked")
+       "func-fifo worked")
    ))
 
 (done-testing)

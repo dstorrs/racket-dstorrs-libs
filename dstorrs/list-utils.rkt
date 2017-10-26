@@ -46,10 +46,14 @@
 
 (define (autobox x) (if (list? x) x (list x)))
 
-(define/contract (compose-l2r . args)
+;;----------------------------------------------------------------------
+
+(define/contract (compose-fifo . args)
   (->* () () #:rest (listof procedure?) any)
   (define funcs (if (null? args) values args))
   (apply compose (reverse funcs)))
+
+;;----------------------------------------------------------------------
 
 (struct dict-disjunction (different only-in-first only-in-second dict-first dict-second) #:transparent)
 (define/contract (disjunction dict1 dict2)
