@@ -657,4 +657,18 @@
    (is (list x y z) '(x y z) "list->values works")
    )); test-suite, when 
 
+(when #t
+  (test-suite
+   "compose/r"
+
+   (define func-l2r (compose-l2r add1 (curry ~a "foo") string-length))
+   (define func     (compose  string-length
+                              (curry ~a "foo")
+                              add1))
+
+   (is (func-l2r 7)
+       (func 7)
+       "func-l2r worked")
+   ))
+
 (done-testing)

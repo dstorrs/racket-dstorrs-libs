@@ -4,6 +4,7 @@
 ;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
+;; *) compose-l2r : like 'compose' but applies args from left to right, not right to left
 ;; *) disjunction : find the elements of one dict that are not in the other
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
@@ -44,6 +45,11 @@
 (define (atom? x) (not (pair? x)))
 
 (define (autobox x) (if (list? x) x (list x)))
+
+(define/contract (compose-l2r . args)
+  (->* () () #:rest (listof procedure?) any)
+  (define funcs (if (null? args) values args))
+  (apply compose (reverse funcs)))
 
 (struct dict-disjunction (different only-in-first only-in-second dict-first dict-second) #:transparent)
 (define/contract (disjunction dict1 dict2)
