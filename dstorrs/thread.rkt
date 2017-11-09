@@ -21,4 +21,4 @@
 
   (define thread-label (~a (rand-val "thread") ": "))
   (parameterize ((prefix-for-say thread-label))
-    (thread thnk)))
+    (thread (begin0 (thnk) (sleep 0))))) ; the sleep 0 suggests other threads should run
