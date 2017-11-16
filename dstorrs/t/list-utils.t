@@ -50,7 +50,17 @@
        "not found"
        "defaults correctly if key was not found in hash")
 
-   (is (get '(a b c) '(0)) 'a)
+   (struct fruit (taste data))
+   (define apple (fruit 'sweet (hash 7 'seeds)))
+
+   (is (get (hash 'x (list 'a 'b apple 'c)) (list 'x 2 fruit-taste))
+       'sweet
+       "can get data from structs")
+
+   (is (get (hash 'x (list 'a 'b apple 'c))
+            (list 'x 2 fruit-data 7))            
+       'seeds
+       "can get data from structs and from hashes with numeric keys")
    )
   )
 
@@ -126,7 +136,8 @@
   )
 
 
-(test-suite
+(when #t
+  (test-suite
  "find-contiguous-runs"
  (define nums '(1 2 3 5 7 200 201 202 203))
 
@@ -146,8 +157,10 @@
                  (conv (third vec-list))))
      "correctly found runs in a list of hashes")
  )
+  )
 
-(test-suite
+(when #t
+  (test-suite
  "list->dict and vector->dict"
 
  (define data '((a . 1) (b . 2) (c . 3)))
@@ -209,8 +222,10 @@
      (make-hash '((a . 2) (b . 3) (c . 4)))
      "vector->dict accepts transformer")
  )
+  )
 
-(test-suite
+(when #t
+  (test-suite
  "flatten/convert"
  (is (flatten/convert vector->list (list (vector 1)(vector 2)(vector 3)))
      '(1 2 3)
@@ -227,7 +242,9 @@
      "counted  list")
 
  )
+  )
 
+(when #t
 (test-suite
  "unique"
  (is (unique '()) '() "null ")
@@ -248,7 +265,9 @@
      '((2 a) (3 a))
      "When using #:key car,  '((2 a) (2 b) (3 a))) returns '((2 a) (3 a))")
  )
+)
 
+(when #t
 (test-suite
  "disjunction"
 
@@ -351,8 +370,10 @@
                                  d2)))
 
  );; test-suite
+)
 
-(test-suite
+(when #t
+  (test-suite
  "sort-*"
 
  (is (sort-num (list 9 3 15 4 0))
@@ -403,16 +424,19 @@
                    (object-name f)
                    bad-lst)))
  )
+  )
 
-(test-suite
+(when #t
+  (test-suite
  "symbols->keywords"
  (is (symbols->keywords '(foo bar baz))
      '(#:bar #:baz #:foo)
      "correctly converted '(foo bar baz)")
  )
+)
 
-
-(test-suite
+(when #t
+  (test-suite
  "multi-partition"
 
  (define lst  '(a b c))
@@ -518,29 +542,32 @@
    (is y '() "y is empty")
    )
  )
+  )
 
-(test-suite
- "hash->keyword-apply"
- (define (foo #:x x #:y y #:z z) (list x y z))
- (define (bar [a 1] #:x x #:y y #:z [z 0]) (list a x y z))
 
- (is (hash->keyword-apply foo (hash 'x 7 'y 8 'z 9))
-     '(7 8 9)
-     "hash->keyword-apply works with a correct hash and no positionals")
+(when #t
+  (test-suite
+   "hash->keyword-apply"
+   (define (foo #:x x #:y y #:z z) (list x y z))
+   (define (bar [a 1] #:x x #:y y #:z [z 0]) (list a x y z))
 
- (is (hash->keyword-apply bar (hash 'x 7 'y 8 'z 9) '(11))
-     '(11 7 8 9)
-     "hash->keyword-apply works with a correct hash and positionals")
+   (is (hash->keyword-apply foo (hash 'x 7 'y 8 'z 9))
+       '(7 8 9)
+       "hash->keyword-apply works with a correct hash and no positionals")
 
- (is (hash->keyword-apply bar (hash 'x 7 'y 8))
-     '(1 7 8 0)
-     "hash->keyword-apply handles optional params")
+   (is (hash->keyword-apply bar (hash 'x 7 'y 8 'z 9) '(11))
+       '(11 7 8 9)
+       "hash->keyword-apply works with a correct hash and positionals")
 
- (throws (thunk (hash->keyword-apply bar (hash 'a 1 'x 7 'y 8 'z 9)))
-         #px"procedure does not expect an argument with given keyword\\s+procedure: bar\\s+given keyword: #:a"
-         "throws when the hash has a key that isn't a param")
- )
+   (is (hash->keyword-apply bar (hash 'x 7 'y 8))
+       '(1 7 8 0)
+       "hash->keyword-apply handles optional params")
 
+   (throws (thunk (hash->keyword-apply bar (hash 'a 1 'x 7 'y 8 'z 9)))
+           #px"procedure does not expect an argument with given keyword\\s+procedure: bar\\s+given keyword: #:a"
+           "throws when the hash has a key that isn't a param")
+   )
+  )
 (when #t
   (test-suite
    "step-by-n"
@@ -616,7 +643,7 @@
        '("fo" "ob" "ar")
        @~a{(step-by-n ~a "foobar") returns '("fo" "ob" "ar")})
 
-   
+
    ;; If you are iterating for side effects (e.g. inserting into a DB)
    ;; and traversing an enormous source then you can choose to discard
    ;; the results in order to avoid making a massive list in memory.
@@ -629,7 +656,7 @@
    (is (step-by-n list '(a b c d) #:pass-args-as-list? #t)
        '(((a b)) ((c d)))
        " (step-by-n list '(a b c d) #:receive-args-as-list #t) is '(((a b)) ((c d)))")
-   
+
    ) ; test-suite
   )
 
@@ -655,7 +682,7 @@
 
    (define-values (x y z) (list->values '(x y z)))
    (is (list x y z) '(x y z) "list->values works")
-   )); test-suite, when 
+   )); test-suite, when
 
 (when #t
   (test-suite

@@ -176,6 +176,7 @@
       [(hash? s)   (hash-ref   s key)]
       [(list? s)   (list-ref   s key)]
       [(vector? s) (vector-ref s key)]
+      [(procedure? key)  (key s)]
       [else s]))
   (with-handlers
     ((exn:fail:contract?
