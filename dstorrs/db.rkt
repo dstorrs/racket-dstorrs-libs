@@ -150,8 +150,7 @@
                                     vals
                                     )
   (->* ((non-empty-listof any/c) connection? string?)
-       (list?
-        #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+       (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
         #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
         #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
         )
