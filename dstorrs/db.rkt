@@ -9,10 +9,21 @@
          )
 
 
+; Base of DB exn hierarchy
 (struct exn:fail:db exn:fail () #:transparent)
+
+; DB couldn't be created
 (struct exn:fail:db:create exn:fail:db () #:transparent)
-(struct exn:fail:db:not-exists exn:fail:db () #:transparent)
-(struct exn:fail:db:exists exn:fail:db () #:transparent)
+
+; issues related to a single row; doesn't exist (when it should), does
+; exist (when it shouldn't)
+(struct exn:fail:db:row exn:fail:db () #:transparent)
+(struct exn:fail:db:row:not-exists exn:fail:db:row () #:transparent)
+(struct exn:fail:db:row:exists exn:fail:db:row () #:transparent)
+
+; issues related to multiple rows. NB: exn:fail:db:num-rows:zero and
+; exn:fail:db:row:not-exists cover the same ground. Which one to use
+; is a matter of preference and clarity in the specific situation
 (struct exn:fail:db:num-rows exn:fail:db (expected got) #:transparent)
 (struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
 (struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
@@ -57,34 +68,40 @@
 ;; ;Run a query with params
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
-;;                      "select hash, chunk_num from chunks where id = $1")
+;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7)
+;;
+;; ;Same as the previous, except the arg is passed as a list
+;; (query-rows-as-dicts '(chunk-hash chunk-num)
+;;                      db-handle
+;;                      "select hash, chunk_num from chunks where id = $1"
+;;                      '(7))
 ;;
 ;; ;Run a query but return the results as a list of 2-item lists
 ;; ;instead of a list of hashes.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
-;;                      "select hash, chunk_num from chunks where id = $1")
+;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
-;;                      #:dict-maker flatten ;; e.g. '(foo . 7) => '(foo 7)
+;;                      #:dict-maker flatten) ;; e.g. '(foo . 7) => '(foo 7)
 ;;
 ;; ;Run a query with params, add one to each chunk-num before
 ;; ;returning the results.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
-;;                      "select hash, chunk_num from chunks where id = $1")
+;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
-;;                      #:transform-data (lambda (k v) (cons k (add1 v)))
+;;                      #:transform-data (lambda (k v) (cons k (add1 v))))
 ;;
 ;; ;Run a query with params, convert the keys from symbols to
 ;; ;strings before returning the results.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
-;;                      "select hash, chunk_num from chunks where id = $1")
+;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
 ;;                      #:transform-dict (lambda (d)
 ;;                                         (for/hash ((k (hash-keys d)))
-;;                                           (values (symbol->string k) (hash-ref d k)))
+;;                                           (values (symbol->string k) (hash-ref d k)))))
 (define/contract (query-rows-as-dicts keys db sql
                                       #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
@@ -225,8 +242,8 @@
          (all-from-out dstorrs/sql)
          (struct-out exn:fail:db)
          (struct-out exn:fail:db:create)
-         (struct-out exn:fail:db:not-exists)
-         (struct-out exn:fail:db:exists)
+         (struct-out exn:fail:db:row:not-exists)
+         (struct-out exn:fail:db:row:exists)
          (struct-out exn:fail:db:num-rows)
          (struct-out exn:fail:db:num-rows:zero)
          (struct-out exn:fail:db:num-rows:many)
