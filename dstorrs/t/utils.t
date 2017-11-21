@@ -4,7 +4,10 @@
 
 (require dstorrs/utils
          dstorrs/test-more
+         racket/runtime-path
          )
+
+(define-runtime-path thisdir ".")
 
 (ok #t "testing harness works")
 
@@ -772,6 +775,26 @@
    (is (hash-slice h '(d c a b))
        '(4 3 1 2)
        "success: (hash-slice h  '(d c a b))")
+   ))
+
+;;----------------------------------------------------------------------
+
+(when #t
+  (test-suite
+   "delete-file-if-exists"
+
+   (define test (make-temporary-file))
+   (ok (file-exists? test) "before deletion, file exists")
+
+   (ok (delete-file-if-exists test)
+       "(delete-file-if-exists test) worked and returned #t to say file existed")
+
+   (is-false (file-exists? test) "after deletion, file is deleted")
+
+   (lives (thunk
+           (is-false (delete-file-if-exists test)
+                     "(delete-file-if-exists test) on a deleted file returned #f to say file existed"))
+          "(delete-file-if-exists test) on a deleted file lived")
    ))
 
 ;;----------------------------------------------------------------------

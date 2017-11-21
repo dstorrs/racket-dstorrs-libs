@@ -14,6 +14,7 @@
 ;; *) always-return : returns a variadic function which always returns a constant value
 ;; *) always-true : variadic function that always returns #t. Useful for with-handlers
 ;; *) append-file
+;; *) delete-file-if-exists : if it's there, get rid of it. if it's not, shut up
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
 ;; *) empty-string?   : is something the empty string?
@@ -370,6 +371,20 @@
 
 ;;    Useful for coercing values to boolean for, e.g., inserting into DB
 (define (true? x) (not (false? x)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (delete-file-if-exists the-path)
+  (-> path-string? boolean?)
+  (with-handlers ((exn:fail:filesystem? (lambda (e)
+                                          (define msg (exn-message e))
+                                          (cond [(regexp-match #px"No such file" msg)
+                                                 #f]
+                                                [else (raise e)])))
+
+                  (match-anything raise))
+    (delete-file the-path)
+    #t))
 
 ;;----------------------------------------------------------------------
 
