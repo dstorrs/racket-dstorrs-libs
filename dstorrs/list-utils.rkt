@@ -150,10 +150,10 @@
 
 ;;----------------------------------------------------------------------
 ;;
-;;    Take a data structure built of nested (hashes, lists, vectors)
-;;    and retrieve items from it.  Hashes are accessed by key, vectors
-;;    and lists by index. If the struct is neither a hash nor a list,
-;;    it just returns the struct.  Examples:
+;;    Take a data structure built of nested (hashes, lists, vectors,
+;;    structs) and retrieve items from it.  Hashes are accessed by
+;;    key, vectors and lists by index. If the struct is not a
+;;    recognized thing then (get) just returns the struct.  Examples:
 ;;
 ;;  (define h (hash "foo" '(a b c) "bar" 8 "quux" (vector "d" "e" "f")))
 ;;  (get h     '("foo" 1))   -> 'b
