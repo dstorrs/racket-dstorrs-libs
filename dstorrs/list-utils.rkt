@@ -370,15 +370,15 @@
 ;                   #:post-process-partition (lambda (lst) (map (curry * 2) lst)))
 ;     Returns: (values '(8 14) '(4 10 16) '(6 12)) ; each element +1 as list built, then later each item in list doubled
 (define/contract (multi-partition #:partitions num-dests
-                                  #:filter index-chooser
                                   #:source source
+                                  #:filter                 [chooser #f]
                                   #:post-process-partition [post-process-partition identity]
                                   #:post-process-element   [post-process-element   (lambda (idx elem) elem)]
                                   )
   (->* (#:partitions exact-positive-integer?
-        #:filter (-> any/c (or/c #f void? exact-nonnegative-integer?))
         #:source list?)
        (
+        #:filter (-> any/c (or/c #f void? exact-nonnegative-integer?))
         #:post-process-partition (-> list? any/c)
         #:post-process-element   (-> exact-nonnegative-integer? any/c any/c)
         )
@@ -386,11 +386,21 @@
        )
   (cond [(= 1 num-dests) source]
         [else
+         ;;    The user can (and usually will) specify a function to
+         ;;    split a list up.  If they don't specify one then by
+         ;;    default we'll deal elements into each bin one after the
+         ;;    next.
+         (define index-chooser
+           (or chooser
+               (let-values ([(more? next) (sequence-generate (in-naturals))])
+                 (lambda (x) (modulo (next) num-dests)))))
+
          (define max-idx (sub1 num-dests))
          (define results (make-vector num-dests '()))
 
-         (for ((element (reverse source)))
+         (for ((element source))
            (let ((idx (index-chooser element)))
+             (displayln (~a "\tidx: " idx ", elem: " element))
              (cond [(or (false? idx)
                         (void? idx)) 'do-nothing]
                    [(> idx max-idx)
@@ -405,8 +415,7 @@
            (vector-set! results
                         i
                         (post-process-partition
-                         (vector-ref results i))))
-
+                         (reverse (vector-ref results i)))))
          (vector->values results)]))
 
 ;;----------------------------------------------------------------------
