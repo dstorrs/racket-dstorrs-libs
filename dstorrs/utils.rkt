@@ -516,7 +516,7 @@
 ;;
 (define/contract (hash-remap h
                              #:rename    [remap #f]
-                             #:remove    [remove-keys #f]
+                             #:remove    [remove-keys '()]
                              #:overwrite [overwrite #f]
                              #:add       [add #f]
                              )
@@ -525,12 +525,10 @@
   (let/ec return
     ; Just return unless we are going to rename, remove, overwrite, or
     ; add someting.
-    (when (not (ormap true? (list remap remove-keys overwrite add)))
+    (when (not (ormap perl-true? (list remap remove-keys overwrite add)))
       (return h))
 
     ; Okay, we're going to make some sort of change
-    (define list-to-remove (or remove-keys '()))
-
     (define h-is-immutable? (immutable? h))
 
     (define union-func (if h-is-immutable? hash-union hash-union!))
@@ -548,7 +546,7 @@
 
     ;;    First, remove any values we were told to remove,
     (define base-hash
-      (apply (curry safe-hash-remove h) list-to-remove))
+      (apply (curry safe-hash-remove h) remove-keys))
 
     ;;(say "hash after remove: " base-hash)
 
