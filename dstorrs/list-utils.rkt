@@ -400,7 +400,6 @@
 
          (for ((element source))
            (let ((idx (index-chooser element)))
-             (displayln (~a "\tidx: " idx ", elem: " element))
              (cond [(or (false? idx)
                         (void? idx)) 'do-nothing]
                    [(> idx max-idx)
