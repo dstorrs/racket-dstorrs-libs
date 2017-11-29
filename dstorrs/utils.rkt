@@ -39,6 +39,7 @@
 ;; *) safe-build-path : build-path, but ignores "", #f, or 'relative
 ;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
+;; *) safe-substring : like substring but won't puke if you ask for more than is available
 ;; *) say : macro that uses 'displayln' to output all
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
 ;; *) silence : eliminates all data sent to current-output-port (print, display, etc)
@@ -332,6 +333,23 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (safe-substring str start-idx [end #f])
+  (->* (string? exact-nonnegative-integer?)
+       (exact-nonnegative-integer?)
+       string?)
+  (define len  (string-length str))
+  (define end-idx (cond [(false? end)   len]
+                        [(> end len)    len]
+                        [else           end]))
+  (when (< end-idx start-idx)
+    (raise-arguments-error 'safe-substring "end must be >= start"
+                           "start" start-idx
+                           "end" end-idx))
+  (substring str start-idx end-idx))
+
+
+;;----------------------------------------------------------------------
+
 (define/contract (sorted-hash-keys hsh [func symbol<?])
   (->* (hash?) ((unconstrained-domain-> boolean?)) list?)
   (sort (hash-keys hsh) func))
@@ -597,7 +615,7 @@
                                                       "add-hash cannot include keys that are in base-hash"
                                                       "add-hash" add-hash
                                                       "hash to add (remove and overwrite already done)" overwritten-hash)))])
-        (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash 
+        (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash
 
     ;(say "hash-with-adds is: " hash-with-adds)
     ;(say "about to rename")

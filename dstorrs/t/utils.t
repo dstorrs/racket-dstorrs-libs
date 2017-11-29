@@ -799,4 +799,27 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "safe-substring"
+
+   (is (safe-substring "" 0 1)
+       ""
+       "(safe-substring \"\" 0 1) works")
+   
+   (is (safe-substring "foobar" 0 1)
+       "f"
+       "(safe-substring \"foobar\" 0 1) works")
+
+   (is (safe-substring "foobar" 0 100)
+       "foobar"
+       "(safe-substring \"foobar\" 0 100) works")
+
+   (throws (thunk (safe-substring "foobar" 100 0))
+           #px"end must be >= start"
+           "start must be <= end")
+   ))
+
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file
