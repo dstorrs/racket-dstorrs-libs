@@ -143,7 +143,7 @@
          (for/list ((next-group (in-slice step-size data)))
            (cond [pass-args-as-list? (func next-group)]
                  [else (apply func next-group)]))]
-        [else 
+        [else
          (for ((next-group (in-slice step-size data)))
            (cond [pass-args-as-list? (func next-group)]
                  [else (apply func next-group)]))]))
@@ -152,14 +152,20 @@
 ;;
 ;;    Take a data structure built of nested (hashes, lists, vectors,
 ;;    structs) and retrieve items from it.  Hashes are accessed by
-;;    key, vectors and lists by index. If the struct is not a
-;;    recognized thing then (get) just returns the struct.  Examples:
+;;    key, vectors and lists by index, and structs by function. If
+;;    the data is not a recognized thing then get returns the data.
+;;    Examples:
 ;;
 ;;  (define h (hash "foo" '(a b c) "bar" 8 "quux" (vector "d" "e" "f")))
 ;;  (get h     '("foo" 1))   -> 'b
 ;;  (get h     '("bar"))     -> 8
 ;;  (get h     '("quux" 1))  -> "e"
-;;  (get "bob" '("apple"))   -> "bob"
+;;  (get "bob" '("apple"))   -> "bob", since "bob" isn't a recognized type
+;;
+;;    As a special case, if there is only one key then you can pass it
+;;    directly instead of in a list:
+;;
+;;  (get h     "bar")        -> 8
 ;;
 ;;    The optional def argument allows you to specify a default.  The
 ;;    default is returned iff one of the following exceptions is
@@ -168,26 +174,40 @@
 ;;        #(struct:exn:fail:contract hash-ref: no value found for key
 ;;        #(struct:exn:fail:contract vector-ref: index is out of range
 ;;
-;;    The default value cannot be #f because that means 'do not return
-;;    a default'.
-(define (get s keys [def #f])
+;;  (get h  '("quux" 77) 'not-found)  ; returns 'not-found
+;;
+;;    Note that you can pass functions as 'keys' even when the thing
+;;    you'll be accessing is not a struct.  For example:
+;;
+;;  (get h  (list "bar" add1)) ; returns 9
+;;
+(define/contract (get s keys [def 'no-default-value-specified])
+  (->* (any/c any/c)
+       (any/c)
+       any/c)
+
   (define (get-once key s)
     (cond
-      [(hash? s)   (hash-ref   s key)]
-      [(list? s)   (list-ref   s key)]
-      [(vector? s) (vector-ref s key)]
+      [(hash? s)         (hash-ref   s key)]
+      [(list? s)         (list-ref   s key)]
+      [(vector? s)       (vector-ref s key)]
       [(procedure? key)  (key s)]
-      [else s]))
-  (with-handlers
-    ((exn:fail:contract?
-      (lambda (e)
-        (cond
-          ((not (regexp-match #px"(no value found for key|index (too large|out of range))"
-                              (exn-message e)))
-           (raise e))
-          ((false? def) (raise e))
-          (else def)))))
-    (foldl get-once s (autobox keys))))
+      [else              s]))
+
+  (define list-of-keys (autobox keys))
+
+  (cond [(null? list-of-keys) s]
+        [else
+         (with-handlers
+           ([exn:fail:contract?
+             (lambda (e)
+               (cond
+                 [(equal? def 'no-default-value-specified) (raise e)]
+                 [(not (regexp-match #px"(no value found for key|index (too large|out of range))"
+                                     (exn-message e)))
+                  (raise e)]
+                 [else def]))])
+           (foldl get-once s (autobox keys)))]))
 
 ;;----------------------------------------------------------------------
 ;;    Search through a list recursively for all instances of an item,

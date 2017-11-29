@@ -33,8 +33,9 @@
        "(get l '(188 0) -11) returns -11; the index was too big so it defaulted")
 
    (for ((k '("foo" baz quux blag (blag "baz")))
-         (v `("bar" 7 (foo bar) ,(make-hash '(["baz" . "jaz"])))))
-     (is (get h `(,k)) v (format "(get h ~a) is ~a" k v)))
+         (v  (list "bar" 7 '(foo bar) (make-hash '(["baz" . "jaz"])))))
+     (is (get h k) v (format "(get h ~a) is ~a" k v))
+     (is (get h (list k)) v (format "(get h (~a)) is ~a" k v)))
 
    (is (get h 'quux) '(foo bar) "(get h '(quux 0) is '(foo bar)")
    (is (get h '(quux 0)) 'foo "(get h '(quux 0) is foo")
