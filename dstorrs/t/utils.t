@@ -815,6 +815,22 @@
        "foobar"
        "(safe-substring \"foobar\" 0 100) works")
 
+   (is (safe-substring "foobar" 0 1 #:add-dots? #t)
+       "f..."
+       "can append dots at the end if you ask for them")
+   
+   (is (safe-substring "foobar" 1 100 #:add-dots? #t)
+       "...oobar"
+       "can append dots at the start if you ask for them")
+      
+   (is (safe-substring "foobar" 1 3 #:add-dots? #t)
+       "...oo..."
+       "can append dots on both sides if you ask for them")
+   
+   (is (safe-substring "foobar" 0 100 #:add-dots? #t)
+       "foobar"
+       "won't append dots if the whole string is returned, even if you ask")
+   
    (throws (thunk (safe-substring "foobar" 100 0))
            #px"end must be >= start"
            "start must be <= end")

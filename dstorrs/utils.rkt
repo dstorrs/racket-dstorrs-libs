@@ -333,9 +333,9 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (safe-substring str start-idx [end #f])
+(define/contract (safe-substring str start-idx [end #f] #:add-dots? [add-dots? #f])
   (->* (string? exact-nonnegative-integer?)
-       (exact-nonnegative-integer?)
+       (exact-nonnegative-integer? #:add-dots? boolean?)
        string?)
   (define len  (string-length str))
   (define end-idx (cond [(false? end)   len]
@@ -345,8 +345,13 @@
     (raise-arguments-error 'safe-substring "end must be >= start"
                            "start" start-idx
                            "end" end-idx))
-  (substring str start-idx end-idx))
-
+  (define substr (substring str start-idx end-idx))
+  (define prefix (if (zero? start-idx) "" "..."))
+  (define suffix (if (<  end-idx len) "..." ""))
+  
+  (if add-dots?
+      (~a prefix substr suffix)
+      substr))
 
 ;;----------------------------------------------------------------------
 
