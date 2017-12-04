@@ -37,6 +37,7 @@
 ;; *) running-file-dir: get the dir to the running file
 ;; *) running-file-path: get the complete path to the running file
 ;; *) safe-build-path : build-path, but ignores "", #f, or 'relative
+;; *) safe-file-exists? : checks if file exists but doesn't throw on bad input 
 ;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) safe-substring : like substring but won't puke if you ask for more than is available
@@ -292,6 +293,14 @@
            (string-append (->string prefix) "-")
            "")
        (->string (random 1000000)))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (safe-file-exists? fpath)
+  (-> any/c boolean?)
+
+  (with-handlers ([exn:fail:contract? (lambda (e) #f)])
+    (file-exists? fpath)))
 
 ;;----------------------------------------------------------------------
 

@@ -106,6 +106,26 @@
 
  );;test-suite
 
+(when #t
+  (test-suite
+   "safe-file-exists?"
+
+   (lives (thunk
+           (with-temp-file
+             (lambda (fpath)
+               (or
+                (ok (and (file-exists? fpath) (safe-file-exists? fpath))
+                    "temp file exists")
+                (raise "could not find temp file"))
+
+               (safe-file-exists? #f)
+               (safe-file-exists? ""))))
+          "safe-file-exists? doesn't throw on bad input")
+
+   (is-false (safe-file-exists? "") "safe-file-exists? returns #f on empty string")
+   (is-false (safe-file-exists? #f) "safe-file-exists? returns #f on #f")
+   ))
+
 (test-suite
  "safe-hash-remove"
 
@@ -806,7 +826,7 @@
    (is (safe-substring "" 0 1)
        ""
        "(safe-substring \"\" 0 1) works")
-   
+
    (is (safe-substring "foobar" 0 1)
        "f"
        "(safe-substring \"foobar\" 0 1) works")
@@ -818,19 +838,19 @@
    (is (safe-substring "foobar" 0 1 #:add-dots? #t)
        "f..."
        "can append dots at the end if you ask for them")
-   
+
    (is (safe-substring "foobar" 1 100 #:add-dots? #t)
        "...oobar"
        "can append dots at the start if you ask for them")
-      
+
    (is (safe-substring "foobar" 1 3 #:add-dots? #t)
        "...oo..."
        "can append dots on both sides if you ask for them")
-   
+
    (is (safe-substring "foobar" 0 100 #:add-dots? #t)
        "foobar"
        "won't append dots if the whole string is returned, even if you ask")
-   
+
    (throws (thunk (safe-substring "foobar" 100 0))
            #px"end must be >= start"
            "start must be <= end")
