@@ -37,7 +37,7 @@
 ;; *) running-file-dir: get the dir to the running file
 ;; *) running-file-path: get the complete path to the running file
 ;; *) safe-build-path : build-path, but ignores "", #f, or 'relative
-;; *) safe-file-exists? : checks if file exists but doesn't throw on bad input 
+;; *) safe-file-exists? : checks if file exists but doesn't throw on bad input
 ;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) safe-substring : like substring but won't puke if you ask for more than is available
@@ -238,21 +238,21 @@
   ;; path->string would do.  You can disable this behavior
   ;; by setting #:reject-empty-string to #t
 
-  (call/cc
-   (lambda (return)
-     (cond [(and (equal? p "")
-                 (not reject-empty-string))
-            (return "")]
-           [else
-            (define appender  (if is-dir? path->directory-path identity))
-            (define converter (if (string? p) string->path identity))
-            (path->string (appender (converter p)))]))))
+  (cond [(and (equal? p "") (not reject-empty-string))
+         ""]
+        [else
+         (define appender  (if is-dir? path->directory-path identity))
+         (define converter (if (string? p) string->path identity))
+         (path->string (appender (converter p)))]))
 
 ;;----------------------------------------------------------------------
 
 (define/contract (path-string->path   p #:dir? [is-dir? #f])
   (->* (path-string?) (#:dir? boolean?) path?)
-  (string->path (path-string->string p #:dir? is-dir?)))
+
+  (define appender  (if is-dir? path->directory-path identity))
+  (define converter (if (string? p) string->path identity))
+  (appender (converter p)))
 
 ;;----------------------------------------------------------------------
 
@@ -357,7 +357,7 @@
   (define substr (substring str start-idx end-idx))
   (define prefix (if (zero? start-idx) "" "..."))
   (define suffix (if (<  end-idx len) "..." ""))
-  
+
   (if add-dots?
       (~a prefix substr suffix)
       substr))
