@@ -407,7 +407,7 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (delete-file-if-exists the-path)
-  (-> path-string? boolean?)
+  (-> path-string? (or/c 1 #f))
   (with-handlers ((exn:fail:filesystem? (lambda (e)
                                           (define msg (exn-message e))
                                           (cond [(regexp-match #px"No such file" msg)
@@ -416,7 +416,7 @@
 
                   (match-anything raise))
     (delete-file the-path)
-    #t))
+    1)) ; returns 1 instead of #f to make it easy to count files deleted
 
 ;;----------------------------------------------------------------------
 

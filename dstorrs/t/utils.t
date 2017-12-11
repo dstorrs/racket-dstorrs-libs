@@ -806,8 +806,9 @@
    (define test (make-temporary-file))
    (ok (file-exists? test) "before deletion, file exists")
 
-   (ok (delete-file-if-exists test)
-       "(delete-file-if-exists test) worked and returned #t to say file existed")
+   (is (delete-file-if-exists test)
+       1
+       "(delete-file-if-exists test) worked and returned 1 to say file existed")
 
    (is-false (file-exists? test) "after deletion, file is deleted")
 
