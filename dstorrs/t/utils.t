@@ -169,6 +169,32 @@
  );; test-suite
 
 (test-suite
+ "hash->mutable and hash->immutable"
+
+ (define mut (make-hash '((a . 1))))
+ (ok (not (immutable? mut)) "mut is mutable")
+ (ok (immutable? (hash->immutable mut)) "hash->immutable mut is immutable")
+
+ (define immut (hash 'a 1))
+ (ok (immutable? immut) "immut is immutable")
+ (ok (not (immutable? (hash->mutable immut))) "hash->mutable immut is mutable")
+)
+
+(test-suite
+ "hash-meld"
+
+ (define x (hash 'a 1 'b 2))
+ (define y (hash 'b 3 'c 4))
+ (define z (hash 'c 5 'd 6))
+ (define a (make-hash '((d . 7) (e . 8))))
+ (is (hash-meld x y) (hash 'a 1 'b 3 'c 4) "hash-meld works with two immutable hashes")
+ (is (hash-meld x y z a) (hash 'a 1 'b 3 'c 5 'd 7 'e 8) "hash-meld works with three immutable and + one mutable hashes (result is immutable since first hash was immutable)")
+ (is (hash-meld a x y z)
+     (hash->mutable (hash 'a 1 'b 3 'c 5 'd 6 'e 8))
+     "hash-meld works with three immutable and + one mutable hashes (result is immutable since first hash was immutable)")
+)
+
+(test-suite
  "safe-hash-set"
  (define hash-imm (hash 'a 1 'b 2 'c 3))
  (ok (immutable? hash-imm) "using immutable hash for next test")

@@ -23,11 +23,13 @@
 ;; *) hash-keys->strings : take a hash where keys are symbols or strings, make them strings
 ;; *) hash-keys->symbols : take a hash where keys are symbols or strings, make them symbols
 ;; *) hash->immutable : convert an (im)mutable hash to an immutable one
+;; *) hash->meld   : combine to or more hashes with later entries overwriting earlier ones
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) hash-rename-key : change, e.g., key 'name to be 'first-name
 ;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash)
 ;; *) not-equal?      : what it says on the tin
 ;; *) not-null?       : is something the null list?
+;; *) one?            : (equal? arg 1)
 ;; *) pad-digits : convert, e.g. "9" to "09"
 ;; *) path-string->string and path-string->path
 ;; *) perl-true? and perl-false? : Relaxed boolean checks
@@ -199,6 +201,19 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (hash-meld . hshs)
+  (->* () () #:rest (non-empty-listof hash?) hash?)
+  (cond [(= (length hshs) 1) (first hshs)]
+        [else
+         (define first-hsh (first hshs))
+         (define is-immut? (immutable? first-hsh))
+         ((if is-immut? identity hash->mutable)
+          (apply hash-union
+                 (map hash->immutable hshs)
+                 #:combine (lambda (x y) y)))]))
+
+;;----------------------------------------------------------------------
+
 (define/contract (hash-slice the-hash keys)
   (-> hash? list? list?)
   (define default (gensym)) ; guaranteed unique value
@@ -217,6 +232,12 @@
 (define/contract (not-null? lst)
   (-> list? boolean?)
   (not (null? lst)))
+
+;;----------------------------------------------------------------------
+
+(define/contract (one? arg)
+  (-> number? (or/c #f number?))
+  (if (equal? 1 arg) arg #f))
 
 ;;----------------------------------------------------------------------
 
