@@ -20,6 +20,7 @@
 ;; *) multi-partition : like the standard partition, but accepts multiple destination lists
 ;; *) remove-nulls : filter '()s out of a list
 ;; *) safe-first, safe-rest : first and rest, but they return specified value when given '()
+;; *) slice :  return elements of a list from index x to index y, or as much as remains
 ;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
 ;; *) sort-smart : call sort-num, sort-str, or sort-sym depending on first element of list
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
@@ -93,6 +94,22 @@
   (remf* pred l))
 
 (define (list/not-null? l) (and (not (atom? l)) (not (null? l))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (slice lst start [requested-length #f])
+  (->* (list? exact-nonnegative-integer?)
+       (exact-nonnegative-integer?)
+       list?)
+
+  (cond [(null? lst) '()]
+        [else
+         (define lst-length (length lst))
+         (define max-run-length (- lst-length start))
+         
+         (cond [(not requested-length)  (drop lst start)] ; no end specified
+               [(> requested-length max-run-length) (drop lst start)] ; invalid end
+               [else  (take (drop lst start) requested-length)])]))
 
 ;;----------------------------------------------------------------------
 

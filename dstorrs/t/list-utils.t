@@ -375,6 +375,27 @@
 
 (when #t
   (test-suite
+   "slice"
+
+   (is (slice '() 5 10)
+       '()
+       "(slice '() 5 10) => '()")
+
+   (is (slice '(a b c) 0 10)
+       '(a b c)
+       "(slice '(a b c) 0 10) => '(a b c)")
+
+   (is (slice '(a b c) 0 1)
+       '(a)
+       "(slice '(a b) 0 1) => '(a b)")
+
+   (is (slice '(a b c) 1 2)
+       '(b c)
+       "(slice '(b c) 1 2) => '(b c)")
+   ))
+
+(when #t
+  (test-suite
    "sort-*"
 
    (is (sort-num (list 9 3 15 4 0))
