@@ -885,4 +885,30 @@
 
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "symbol-string?, symbol-string->string, symbol-string->symbol"
+   (ok (symbol-string? "foo") "(symbol-string? \"foo\") works")
+   (ok (symbol-string? 'foo) "(symbol-string? 'foo) works")
+   (is-false (symbol-string? 7) "(symbol-string? 7) works")
+
+   (is (symbol-string->string 'foo)
+       "foo"
+       "(symbol-string->string 'foo) works")
+   
+   (is (symbol-string->string "foo")
+       "foo"
+       "(symbol-string->string \"foo\") works")
+   
+   (is (symbol-string->symbol "foo")
+       'foo
+       "(symbol-string->symbol \"foo\") works")
+   
+   (is (symbol-string->symbol 'foo)
+       'foo
+       "(symbol-string->symbol 'foo) works")
+   )) 
+   
+;;----------------------------------------------------------------------
+
 (done-testing) ; this should be the last line in the file

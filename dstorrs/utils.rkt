@@ -47,6 +47,7 @@
 ;;     args. e.g.: (say "num cows: " 7 ", and geese: " 8)
 ;; *) silence : eliminates all data sent to current-output-port (print, display, etc)
 ;; *) symbol->keyword
+;; *) symbol-string?  : is it either a symbol or a string?
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 ;; *) unwrap-val : call a thunk, force a promise, or return a val
@@ -412,12 +413,14 @@
 
 ;;----------------------------------------------------------------------
 
+(define (symbol-string? x) ((or/c symbol? string?) x))
+
 (define/contract (symbol-string->string x)
-  (-> (or/c symbol? string?) string?)
+  (-> symbol-string? string?)
   (if (string? x) x (symbol->string x)))
 
 (define/contract (symbol-string->symbol x)
-  (-> (or/c symbol? string?) symbol?)
+  (-> symbol-string? symbol?)
   (if (string? x) (string->symbol x) x))
 
 ;;----------------------------------------------------------------------
