@@ -734,4 +734,49 @@
        "func-fifo worked")
    ))
 
+(when #t
+  (test-suite
+   "remove-duplicates/rec"
+
+   (is (remove-duplicates/rec '())
+       '()
+       "handles null list")
+
+   (is (remove-duplicates/rec '(1))
+       '(1)
+       "handles one-element list")
+
+   (is (remove-duplicates/rec '(1 2))
+       '(1 2)
+       "handles multi-element list w/o dupes")
+
+   (is (remove-duplicates/rec '(1 1))
+       '(1)
+       "handles multi-element list w/ dupes")
+
+   (is (remove-duplicates/rec '(1 (1)))
+       '(1 ())
+       "cleared dupe from a sublist. empty sublist preserved")
+
+   (is (remove-duplicates/rec '(1 2 (1 4)))
+       '(1 2 (4))
+       "cleared dupe from a sublist. resulting sublist non-empty")
+
+   (define thnk (thunk 'a))
+   (define h1 (hash))
+   (define h2 (hash))
+   (define args  (list 1 2 3 1 'a thnk h1 h2))
+
+   (is (remove-duplicates/rec args)
+       (list 1 2 3 'a thnk h1)
+       "args => (list 1 2 3 'a thnk h1)")
+
+   (is (remove-duplicates/rec args #:key (lambda (e)
+                                           (if (procedure? e) (e) e)))
+       (list 1 2 3 'a h1)
+       "extract-key can redefine what the value is beforehand, e.g. by evaling a thunk")
+
+   ))
+
+
 (done-testing)

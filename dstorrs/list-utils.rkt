@@ -97,6 +97,50 @@
 
 ;;----------------------------------------------------------------------
 
+(define/contract (remove-duplicates/rec lst
+                                        #:key [extract-key identity])
+  (->* (list?)
+       (#:key  (-> any/c any/c))
+       list?)
+
+  ;; (vector 'a 'b 'c)
+  ;; (vector "a" 7 8)
+
+  ;; key:  (vector-ref x 0)
+  ;; same: (equal? (~a x) (~a y))
+
+  (define (_helper lst
+                   [same? equal?]
+                   #:key [extract-key identity]
+                   #:seen [seen (hash)])
+
+    (for/fold ([result '()]
+               [already-seen seen])
+              ([item lst])
+      (cond [(list? item)
+             (define-values (res new-seen)
+               (_helper item
+                        same?
+                        #:key extract-key
+                        #:seen already-seen))
+             (values (cons res result) new-seen)]
+            ;
+            [(hash-ref already-seen (extract-key item) #f)
+             (values result already-seen)]
+            ;
+            [else
+             (values (cons item result)
+                     (hash-set already-seen (extract-key item) #t))])))
+
+  (define-values (res ignore) (_helper lst
+                                       ;same? ; @@TODO  PUT THIS IN LATER
+                                       #:key extract-key))
+
+  (reverse res))
+
+
+;;----------------------------------------------------------------------
+
 (define/contract (slice lst start [requested-length #f])
   (->* (list? exact-nonnegative-integer?)
        (exact-nonnegative-integer?)
@@ -106,7 +150,7 @@
         [else
          (define lst-length (length lst))
          (define max-run-length (- lst-length start))
-         
+
          (cond [(not requested-length)  (drop lst start)] ; no end specified
                [(> requested-length max-run-length) (drop lst start)] ; invalid end
                [else  (take (drop lst start) requested-length)])]))
