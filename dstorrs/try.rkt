@@ -55,6 +55,8 @@
 ;; body guard
 ;; outer post
 
+(define (match-anything . args) #t)
+
 (define-syntax (try stx)
   (syntax-case stx ()
     [(try [body0 body1 ...])
