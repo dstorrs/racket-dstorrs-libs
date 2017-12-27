@@ -93,6 +93,14 @@
 
 (when #t
   (test-suite
+   "xexp?"
+   (ok (xexp? (html->xexp "<ul><li>foo</ul>")) "xexp? identifies something produced from html")
+   (ok (xexp? (html->xexp "")) "xexp? identifies something empty element")
+   ))
+
+   
+(when #t
+  (test-suite
    "attr-hash: make attribute hashes from elements and attribute lists"
    (ok (sxml:element? hi-paragraph)  "hi-paragraph is an xexp")
    (ok (hash? (attr-hash hi-paragraph)) "gets attribs hash from elem")

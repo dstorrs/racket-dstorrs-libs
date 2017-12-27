@@ -11,6 +11,10 @@
 		 sxml
 		 )
 
+(define (xexp? x)
+  (-> list? boolean?)
+  (equal? (first x) '*TOP*))
+  
 (define attr-list? (ntype?? '@))
 
 ;;--------------------------------------------------
