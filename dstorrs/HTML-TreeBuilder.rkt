@@ -22,10 +22,10 @@
 		def)))
 
 ;;--------------------------------------------------
-;;    (html-treebuilder-new src) -> xexpr
+;;    (html-element-from src) -> xexpr
 ;;        source : string (URL, HTML, or filepath)
 ;;
-(define (html-treebuilder-new src)
+(define (html-element-from src)
   (let ([is-url  #px"^https?://"]
 		[is-html #px"^<(!DOCTYPE|[A-Za-z]+)"])
 	(cond [(regexp-match is-url  src) (web/call src)]

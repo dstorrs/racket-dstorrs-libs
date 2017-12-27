@@ -2,52 +2,54 @@
 
 #lang racket
 
-(require rackunit
-		 racket/runtime-path
-		 (planet neil/html-parsing:3:0)
-		 sxml
-		 "../list-utils.rkt"
-		 "../HTML-TreeBuilder.rkt")
+(require dstorrs/test-more
+         racket/runtime-path
+         (planet neil/html-parsing:3:0)
+         sxml
+         "../list-utils.rkt"
+         "../HTML-TreeBuilder.rkt")
+
+(define thisdir ".")
 
 (define (hash-key-is? h k v)
   (and (hash-has-key? h k)
-	   (equal? (hash-ref h k) v)))
+       (equal? (hash-ref h k) v)))
 
 ;;--------------------------------------------------
 
 (define html-string-newlines
   (string-append
-"Hey, everyone! I'm new here, participating in such quest for the first time. I'm still learning about the system, trying to figure out how it works.<br>"
-"<br>"
-"For now I'll just cast my vote I guess:<br>"
-"<br>"
-"[1] Ninjutsu Specialist, you're throwing fire from behind the meatshields. Your elemental affinity is:<br>"
-"[2] Earth"
-))
+   "Hey, everyone! I'm new here, participating in such quest for the first time. I'm still learning about the system, trying to figure out how it works.<br>"
+   "<br>"
+   "For now I'll just cast my vote I guess:<br>"
+   "<br>"
+   "[1] Ninjutsu Specialist, you're throwing fire from behind the meatshields. Your elemental affinity is:<br>"
+   "[2] Earth"
+   ))
 
 (define an-html-string
   (string-append
-	 "<html><head><title>My title</title></head><body>"
-	 "<div class=\"chapter1\">"
-	 "<p class=\"hi hello aloha \n\" style=\"border: 1px solid red;\">Hello world</p>"
-	 "</div>"
-	 
-	 "<div class=\"chapter2 \">"  ;; includes 'hi' but isn't of that class
-	 "<p style=\"border: 1px solid red; \">Bye, world</p>"
-	 "</div>"
-	 
-	 "<a href=\"http://cnn.com\">CNN</a>"
-	 "<p class=\"info highway\"><b>Testing <a href=\"http://google.com\">Google</a></b>!</p>"
+   "<html><head><title>My title</title></head><body>"
+   "<div class=\"chapter1\">"
+   "<p class=\"hi hello aloha \n\" style=\"border: 1px solid red;\">Hello world</p>"
+   "</div>"
 
-	 "<div class=\"footer\">This is the footer</div>"
-	 "</body></html>"))
+   "<div class=\"chapter2 \">"  ;; includes 'hi' but isn't of that class
+   "<p style=\"border: 1px solid red; \">Bye, world</p>"
+   "</div>"
+
+   "<a href=\"http://cnn.com\">CNN</a>"
+   "<p class=\"info highway\"><b>Testing <a href=\"http://google.com\">Google</a></b>!</p>"
+
+   "<div class=\"footer\">This is the footer</div>"
+   "</body></html>"))
 
 (define an-html
   (html->xexp
    (open-input-string an-html-string)))
 
 (define html-with-newlines
-  (html->xexp 
+  (html->xexp
    (open-input-string html-string-newlines)))
 ;;
 ;; '(*TOP* "Hey, everyone! I'm new here, participating in such quest
@@ -84,152 +86,163 @@
 
 ;;======================================================================
 
-(check-equal? 1 1) ;; verify harness working
+(void (ok 1 "verify harness working"))
 
-(test-case
- "TEST CASE: make attribute hashes from elements and attribute lists"
- (check-equal? #t (sxml:element? hi-paragraph) "hi-paragraph is an xexp")
- (check-equal? #t
-			   (hash? (attr-hash hi-paragraph))
-			   "gets attribs hash from elem")
- (check-equal? (attr-hash "foo") '#hash())
- (check-equal? (attr-hash an-html) '#hash())
- (check-equal? (attr-hash hi-paragraph)
-			   '#hash((class . "hi hello aloha") (style . "border: 1px solid red;")))
-)
+(when #t
+  (test-suite
+   "attr-hash: make attribute hashes from elements and attribute lists"
+   (ok (sxml:element? hi-paragraph)  "hi-paragraph is an xexp")
+   (ok (hash? (attr-hash hi-paragraph)) "gets attribs hash from elem")
 
-(test-case
- "TEST CASE: has-attr?"
-
- (check-equal? (has-attr? hi-paragraph 'zort)
-			  #f)
- (check-equal? (has-attr? hi-paragraph 'class)
-			   "hi hello aloha")
- (check-equal? (has-attr? hi-paragraph 'class "hello")
-			   "hi hello aloha")
-)
-
-
-(test-case
- "TEST CASE: text-of"
- (check-equal? (text-of hi-paragraph)
-			   "Hello world")
- (check-equal? (text-of google-paragraph)
-			  "Testing Google !")
- (check-equal? (text-of an-html)
-			   "My title Hello world Bye, world CNN Testing Google ! This is the footer")
-
-
-  (check-equal? (text-of (look-down an-html
-								   #:tag 'title
-								   (lambda (x) (list x))))
-			   "My title")
-  (check-equal? (text-of html-with-newlines)
-				"Hey, everyone! I'm new here, participating in such quest for the first time. I'm still learning about the system, trying to figure out how it works. \n \n For now I'll just cast my vote I guess: \n \n [1] Ninjutsu Specialist, you're throwing fire from behind the meatshields. Your elemental affinity is: \n [2] Earth")
-
+   (is (attr-hash "foo") (hash)   "returns empty hash when no attrs found (string source)")
+   (is (attr-hash an-html) (hash) "returns empty hash when no attrs found (xexp source)")
+   (is (attr-hash hi-paragraph)
+       (hash 'class "hi hello aloha" 'style "border: 1px solid red;")
+       "got a hash full of attributes from the 'hi-paragraph' data")
+   )
   )
 
+(when #t
+  (test-suite
+   "has-attr?"
+
+   (is-false (has-attr? hi-paragraph 'zort)
+             "hi-paragraph correctly does not have attribute 'zort")
+   (is (has-attr? hi-paragraph 'class)
+       "hi hello aloha"
+       "hi-paragraph does have expected class")
+   (is (has-attr? hi-paragraph 'class "hello")
+       "hi hello aloha"
+       "hi-paragraph has expected class and value of that class matches 'hello'")
+   )
+  )
+
+(when #t
+  (test-suite
+   "TEST CASE: text-of"
+   (is (text-of hi-paragraph)
+       "Hello world"
+       "(text-of hi-paragraph)")
+
+   (is (text-of google-paragraph)
+       "Testing Google !"
+       "(text-of google-paragraph)")
+
+   (is (text-of an-html)
+       "My title Hello world Bye, world CNN Testing Google ! This is the footer"
+       "(text-of an-html)")
 
 
-(test-case
- "TEST-CASE: look-down"
+   (is (text-of (look-down an-html #:tag 'title))
+       "My title"
+       "(text-of (look-down an-html #:tag 'title))")
 
- ;;    Retrieve the text of all <p> tags
- (check-equal?
-  (look-down an-html
-			 #:tag 'p
-			 (lambda (el) (text-of el)))
-  '("Hello world" "Bye, world" "Testing Google !")) 
+   (is (text-of html-with-newlines)
+       "Hey, everyone! I'm new here, participating in such quest for the first time. I'm still learning about the system, trying to figure out how it works. \n \n For now I'll just cast my vote I guess: \n \n [1] Ninjutsu Specialist, you're throwing fire from behind the meatshields. Your elemental affinity is: \n [2] Earth"
+       "(text-of html-with-newlines)")
 
- 
- ;;    Retrieve all attrs of the 'p' tag with class "hi"
- (check-equal?
-  (look-down an-html
-			 #:match (lambda (x)  ;; Check that this is the particular <p> we want
-					   (let ((h (attr-hash x)))
-						 (and ((ntype?? 'p) x)
-							  (hash-key-is? h 'class "hi hello aloha"))))
- 			 (lambda (x) (list (attr-hash x))))
-  (list #hash((style . "border: 1px solid red;") (class . "hi hello aloha"))))
-
- ;;    Retrieve all URLs
- (check-equal?
-  (look-down an-html
-			 #:tag 'a
-			 (lambda (el)
-			   (list (has-attr? el 'href))))
-  '("http://cnn.com" "http://google.com"))
-
- ;;    Retrieve the 'title' text
- (check-equal?
-  (look-down an-html    
-			 #:tag 'title
- 			 (lambda (el) (list (text-of el))))
-  '("My title"))
+   ))
 
 
- ;;     Retrieve the text of the <p class="not-me"> tag. (Which doesn't
- ;;     exist.)  Should return '()
- (check-equal?
-  (look-down hi-paragraph
-			 #:tag 'p
-			 #:attr '(class . "not-me")
-			 (lambda (el) (list (text-of el))))
-  '())
+(when #t
+  (test-suite
+   "TEST-CASE: look-down"
 
- ;;    Retrieve the text of a 'p' tags that have a class.  Use the
- ;;    #:attr keyword to specify that it must be a <p> with the
- ;;    'class' attr.
- (check-equal?
-  (look-down hi-paragraph
-			 #:tag 'p
-			 #:attr 'class
-			 (lambda (el) (text-of el)))
-  '("Hello world"))
+   ;;    Retrieve the text of all <p> tags
+   (is (look-down an-html #:tag 'p text-of)
+       '("Hello world" "Bye, world" "Testing Google !")
+       "(look-down an-html #:tag 'p text-of)")
 
- ;;    Retrieve the text of the <p class="hi"> tag.  Use the #:attr
- ;;    keyword to specify that it must be a <p> with the 'class'
- ;;    attr that has a value of 'hi'.
- (check-equal?
-  (look-down an-html
-			 #:tag 'p
-			 #:attr '(class . "hi")
-			 (lambda (el) (text-of el)))
-  '("Hello world"))
 
- ;;    Retrieve the text of all divs that are of class 'chapter*'.
- ;;    Use the #:attr keyword with a regex to specify that it must be
- ;;    a <div> with the 'class' attr that has a value matching
- ;;    /chapter.*/
- ;;
- (check-equal?
-  (look-down an-html
-			 #:tag 'div
-			 #:attr '(class . #px"^chapter.*")
-			 (lambda (el) (text-of el)))
-  '("Hello world" "Bye, world"))
+   ;;    Retrieve all attrs of the 'p' tag with class "hi"
+   (is (look-down an-html
+                  #:match (lambda (x)  ;; Check that this is the particular <p> we want
+                            (and ((ntype?? 'p) x)
+                                 (hash-key-is? (attr-hash x) 'class "hi hello aloha")))
+                  (compose list attr-hash))
+       (list #hash((style . "border: 1px solid red;") (class . "hi hello aloha")))
+       "Retrieved all attrs of the 'p' tag with class \"hi\"")
 
- ;;    Retrieve all divs.  Let the action default to 'list' instead of
- ;;    passing it explicitly.
- ;;
- (check-equal?
-  (map text-of (look-down an-html
-						  #:tag 'div
-						  #:attr '(class . #px"^chapter.*")))
-  '("Hello world" "Bye, world"))
- )
+   ;;    Retrieve all URLs
+   (is (look-down an-html #:tag 'a (lambda (el) (list (has-attr? el 'href))))
+       '("http://cnn.com" "http://google.com")
+       "(look-down an-html #:tag 'a (lambda (el) (list (has-attr? el 'href))))")
 
-(test-case
- "html-treebuilder-new"
+   ;;    Retrieve the 'title' text
+   (is (look-down an-html #:tag 'title (compose list text-of))
+       '("My title")
+       "(look-down an-html #:tag 'title (compose list text-of))")
 
- (check-equal?
-  (html-treebuilder-new an-html-string)
-  (html->xexp an-html-string))
 
-;;  (check-equal?
-;;   (html-treebuilder-new "./some_HTML-TreeBuilder_test_data.html")
-;;   (html->xexp (open-input-file "./some_HTML-TreeBuilder_test_data.html")))
+   ;;     Retrieve the text of the <p class="not-me"> tag. (Which doesn't
+   ;;     exist.)  Should return '()
+   (is (look-down hi-paragraph
+                  #:tag 'p
+                  #:attr '(class . "not-me")
+                  (compose list text-of))
+       '()
+       "correctly returned '() when asked to find a <p> that wasn't there")
 
- )
+   ;;    Retrieve the text of a 'p' tag that has a class.  Use the
+   ;;    #:attr keyword to specify that it must be a <p> with the
+   ;;    'class' attr.
+   (is (look-down hi-paragraph
+                  #:tag 'p
+                  #:attr 'class
+                  text-of)
+       '("Hello world")
+       "#:tag and #:attr keywords work together smoothly when attr is just a symbol")
 
-(displayln "Done")
+   ;;    Retrieve the text of the <p class="hi"> tag.  Use the #:attr
+   ;;    keyword to specify that it must be a <p> with the 'class'
+   ;;    attr that has a value of 'hi'.
+   (is (look-down an-html
+                  #:tag 'p
+                  #:attr '(class . "hi")
+                  text-of)
+       '("Hello world")
+       "when #:attr keyword is a dotted pair with string cdr then the value must exactly match the what's in the document being scanned")
+
+   ;;    Retrieve the text of all divs that are of class 'chapter*'.
+   ;;    Use the #:attr keyword with a regex to specify that it must be
+   ;;    a <div> with the 'class' attr that has a value matching
+   ;;    /chapter.*/
+   ;;
+   (is (look-down an-html
+                  #:tag 'div
+                  #:attr '(class . #px"^chapter.*")
+                  text-of)
+       '("Hello world" "Bye, world")
+       "#:attr '(class . #px\"^chapter.*\") means 'where the class attribute's value matches this regex")
+
+   ;;    Retrieve all divs.  Let the action default to 'list' instead of
+   ;;    passing it explicitly.
+   ;;
+   (is (map text-of (look-down an-html
+                               #:tag 'div
+                               #:attr '(class . #px"^chapter.*")))
+       '("Hello world" "Bye, world")
+       "results of look-down are autoboxed.  Can successfully retrieve more than one element")
+   )
+  )
+
+(when #t
+  (test-suite
+   "html-element-from"
+
+   (is (html-element-from an-html-string)
+       (html->xexp an-html-string)
+       "html-element-from works for strings that are valid HTML")
+
+    (is (html-element-from "./some_HTML-TreeBuilder_test_data.html")
+        (html->xexp (open-input-file "./some_HTML-TreeBuilder_test_data.html"))
+       "html-element-from works for strings that are relative filepaths")
+
+    (is (html-element-from (build-path thisdir "some_HTML-TreeBuilder_test_data.html"))
+        (html->xexp (open-input-file "./some_HTML-TreeBuilder_test_data.html"))
+       "html-element-from works for paths")
+
+   )
+  )
+
+(done-testing)
