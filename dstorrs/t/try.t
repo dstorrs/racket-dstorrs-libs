@@ -66,15 +66,5 @@
    )
   )
 
-(when #t
-  (test-suite
-   "match-anything"
-
-   (for ([item `(1 a "foo" ,(hash 'a 1) ,(list 1 'a 2))])
-     (is (try [(raise item) 9]
-              [catch (match-anything identity)])
-         item
-         (~a "match-anything accepts: '" item "'")))
-   ))
 
 (done-testing)
