@@ -7,9 +7,12 @@
          (planet neil/html-parsing:3:0)
          sxml
          "../list-utils.rkt"
-         "../HTML-TreeBuilder.rkt")
+         "../HTML-Element.rkt")
 
-(define thisdir ".")
+(define-runtime-path thisdir ".")
+(define test-file (build-path thisdir "some_HTML-Element_test_data.html"))
+
+(println test-file)
 
 (define (hash-key-is? h k v)
   (and (hash-has-key? h k)
@@ -234,12 +237,12 @@
        (html->xexp an-html-string)
        "html-element-from works for strings that are valid HTML")
 
-    (is (html-element-from "./some_HTML-TreeBuilder_test_data.html")
-        (html->xexp (open-input-file "./some_HTML-TreeBuilder_test_data.html"))
+    (is (html-element-from (path->string test-file))
+        (html->xexp (open-input-file test-file))
        "html-element-from works for strings that are relative filepaths")
 
-    (is (html-element-from (build-path thisdir "some_HTML-TreeBuilder_test_data.html"))
-        (html->xexp (open-input-file "./some_HTML-TreeBuilder_test_data.html"))
+    (is (html-element-from test-file)
+        (html->xexp (open-input-file test-file))
        "html-element-from works for paths")
 
    )
