@@ -379,19 +379,19 @@
 
    (is (slice '() 5 10)
        '()
-       "(slice '() 5 10) => '()")
+       "slice will return null if given a start index that's off the end") 
 
    (is (slice '(a b c) 0 10)
        '(a b c)
-       "(slice '(a b c) 0 10) => '(a b c)")
+       "slice treats an idx off the end of the list as 'end of the list'")
 
    (is (slice '(a b c) 0 1)
-       '(a)
-       "(slice '(a b) 0 1) => '(a b)")
+       '(a b)
+       "the params (0 1) are the first and last idx to return")
 
    (is (slice '(a b c) 1 2)
        '(b c)
-       "(slice '(b c) 1 2) => '(b c)")
+       "the params (1 2) are the first and last idx to return")
    ))
 
 (when #t

@@ -103,12 +103,6 @@
        (#:key  (-> any/c any/c))
        list?)
 
-  ;; (vector 'a 'b 'c)
-  ;; (vector "a" 7 8)
-
-  ;; key:  (vector-ref x 0)
-  ;; same: (equal? (~a x) (~a y))
-
   (define (_helper lst
                    [same? equal?]
                    #:key [extract-key identity]
@@ -117,6 +111,7 @@
     (for/fold ([result '()]
                [already-seen seen])
               ([item lst])
+      
       (cond [(list? item)
              (define-values (res new-seen)
                (_helper item
@@ -141,19 +136,23 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (slice lst start [requested-length #f])
+(define/contract (slice lst start [end #f])
   (->* (list? exact-nonnegative-integer?)
        (exact-nonnegative-integer?)
        list?)
 
+  ; (slice lst 2 5) => indices 2,3,4,5
+
   (cond [(null? lst) '()]
         [else
          (define lst-length (length lst))
-         (define max-run-length (- lst-length start))
-
-         (cond [(not requested-length)  (drop lst start)] ; no end specified
-               [(> requested-length max-run-length) (drop lst start)] ; invalid end
-               [else  (take (drop lst start) requested-length)])]))
+         (define last-idx   (sub1 lst-length))
+         
+         (cond [(not end)          (drop lst start)] ; no end specified
+               [(> start last-idx) '()]              ; invalid start
+               [(> end   last-idx) (drop lst start)] ; invalid end
+               [else  (take (drop lst start)
+                            (add1 (- end start)))])]))
 
 ;;----------------------------------------------------------------------
 
