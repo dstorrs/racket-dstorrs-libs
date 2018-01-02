@@ -840,8 +840,14 @@
 
    (lives (thunk
            (is-false (delete-file-if-exists test)
-                     "(delete-file-if-exists test) on a deleted file returned #f to say file existed"))
+                     "(delete-file-if-exists test) on a deleted file returned #f to say file not deleted"))
           "(delete-file-if-exists test) on a deleted file lived")
+   
+   (lives (thunk
+           (is (delete-file-if-exists test 0)
+               0
+               "(delete-file-if-exists test 0) on a deleted file returned 0 to say file not deleted"))
+          "(delete-file-if-exists test 0) on a deleted file lived")
    ))
 
 ;;----------------------------------------------------------------------

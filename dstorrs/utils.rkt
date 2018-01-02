@@ -430,12 +430,12 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (delete-file-if-exists the-path)
-  (-> path-string? (or/c 1 #f))
+(define/contract (delete-file-if-exists the-path [fail-return #f])
+  (->* (path-string?) (any/c) any/c)
   (with-handlers ((exn:fail:filesystem? (lambda (e)
                                           (define msg (exn-message e))
                                           (cond [(regexp-match #px"No such file" msg)
-                                                 #f]
+                                                 fail-return]
                                                 [else (raise e)])))
 
                   (match-anything raise))
