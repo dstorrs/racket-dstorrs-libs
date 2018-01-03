@@ -49,6 +49,7 @@
 ;; *) symbol->keyword
 ;; *) symbol-string?  : is it either a symbol or a string?
 ;; *) symbol-string->string and symbol-string->symbol
+;; *) thunk?  ; is it a procedure of no arguments?
 ;; *) true? : opposite of false? (useful for coercing to boolean)
 ;; *) unwrap-val : call a thunk, force a promise, or return a val
 ;; *) with-temp-file : creates a temp file, ensures it will be deleted
@@ -422,6 +423,12 @@
 (define/contract (symbol-string->symbol x)
   (-> symbol-string? symbol?)
   (if (string? x) (string->symbol x) x))
+
+;;----------------------------------------------------------------------
+
+(define/contract (thunk? item)
+  (-> any/c boolean?)
+  (and (procedure? item) (= 0 (procedure-arity item))))
 
 ;;----------------------------------------------------------------------
 

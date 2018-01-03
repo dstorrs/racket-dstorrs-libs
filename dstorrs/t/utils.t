@@ -605,6 +605,17 @@
 
 (when #t
   (test-suite
+   "thunk?"
+
+   (ok (thunk? (thunk 7)) "thunk? correctly identified a thunk")
+   (is-false (thunk? (lambda (x) 7)) "thunk? correctly identified a proc of one arg is not a thunk")
+   (is-false (thunk? 7) "thunk? correctly identified that 7 is not a thunk")
+   ))
+
+;;----------------------------------------------------------------------
+
+(when #t
+  (test-suite
    "always-return"
 
    (is-type (always-return 7) procedure? "always-return returns a function")
