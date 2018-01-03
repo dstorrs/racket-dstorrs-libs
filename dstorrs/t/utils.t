@@ -928,4 +928,34 @@
    
 ;;----------------------------------------------------------------------
 
+(when #t
+  (test-suite
+   "ensure-field-set"
+
+   (is (ensure-field-set (hash 'foo 11)
+                         (curryr hash-ref 'foo)
+                         (lambda (h val) (hash-set h 'foo val))
+                         (thunk 9))
+       (hash 'foo 11)
+       "ensure-field-set returns its value undisturbed when the field is set")
+
+   (is (ensure-field-set (hash)
+                         (curryr hash-ref 'foo #f)
+                         (lambda (h val) (hash-set h 'foo val))
+                         (thunk 9))
+       (hash 'foo 9)
+       "when field not set, ensure-field-set takes its value from the thunk and sets it")
+
+   (is (ensure-field-set (hash 'foo 7)
+                         (curryr hash-ref 'foo #f)
+                         (lambda (h val) (hash-set h 'foo val))
+                         (thunk 9)
+                         7)
+       (hash 'foo 9)
+       "can supply a value to determine what counts as 'unset'")
+   ))
+
+;;----------------------------------------------------------------------
+
+
 (done-testing) ; this should be the last line in the file

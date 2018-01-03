@@ -18,6 +18,7 @@
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
 ;; *) empty-string?   : is something the empty string?
+;; *) ensure-field-set : verify that a field in a struct/hash/list/etc is set
 ;; *) ensure-directory-exists : directory will exist or this will throw
 ;; *) hash-key-exists? : alias for hash-has-key? because I always forget the name
 ;; *) hash-keys->strings : take a hash where keys are symbols or strings, make them strings
@@ -670,8 +671,20 @@
       ;(say "renaming in hash with key/val: " h "," key "," val)
       (hash-rename-key h key val))))
 
-
 ;;----------------------------------------------------------------------
+
+(define/contract (ensure-field-set thing getter setter make-val [val-for-unset #f])
+  (->* (any/c
+        (-> any/c any/c)         ; getter
+        (-> any/c any/c any/c)   ; setter
+        thunk?)
+       ;
+       (any/c) ; the value that means this field was not set, typically #f
+       ;
+       any/c)
+
+  (cond [(not-equal? val-for-unset (getter thing)) thing] ; field was set
+        [else (setter thing (make-val))]))
 
 
 (provide (all-defined-out))
