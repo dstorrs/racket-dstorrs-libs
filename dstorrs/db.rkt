@@ -28,6 +28,25 @@
 (struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
 (struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
 
+; refine-db-exn
+;
+; This takes an arbitrary exception and, if it's related to a failed
+; database call, attempts to turn it into a more specific exception
+; from the list above.  (e.g., when you do a query-row (as opposed to
+; query-maybe-row) and there is no such row in the DB then an exn:fail
+; is returned containing a message about how there was no such row.
+; This function will take that exn:fail and return an
+; exn:fail:db:row:not-exists That way, whatever function caused the
+; error can have error checking that says (when
+; (exn:fail:db:row:not-exists?) ...) instead of having to do a
+; complicated and hard-to-read regexp match.
+;
+; Note that the exception is **RETURNED**, not raised.  The calling
+; code can then raise it, do further refinement on it, etc.  A normal
+; way of calling this code would be:
+;
+;    (raise (refine-db-exn original-exn))
+;
 (define/contract (refine-db-exn e)
   (-> exn? exn?)
 
@@ -93,15 +112,15 @@
 ;;                      7
 ;;                      #:transform-data (lambda (k v) (cons k (add1 v))))
 ;;
-;; ;Run a query with params, convert the keys from symbols to
-;; ;strings before returning the results.
+;; Run a query with params, convert the keys from symbols to strings
+;; before returning the results.  (hash-keys->strings is defined in
+;; dstorrs/utils)
+;;
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
-;;                      #:transform-dict (lambda (d)
-;;                                         (for/hash ((k (hash-keys d)))
-;;                                           (values (symbol->string k) (hash-ref d k)))))
+;;                      #:transform-dict hash-keys->strings)
 (define/contract (query-rows-as-dicts keys db sql
                                       #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
@@ -168,6 +187,10 @@
 
 ;;----------------------------------------------------------------------
 
+; query-maybe-row-as-dict keys
+;
+; Same as query-rows-as-dicts, but expects that there will be zero or one rows.
+; one row so it returns a dict instead of a list of dicts
 (define/contract (query-maybe-row-as-dict keys
                                           db
                                           sql
