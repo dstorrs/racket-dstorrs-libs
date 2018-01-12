@@ -9,6 +9,19 @@
          )
 
 
+;----------------------------------------------------------------------
+;  A collection of convenience functions for working with the DB.
+;  Also re-exports everything from the racket 'db' module except for
+;  the 'disconnect' function.  That one is exported as 'db:disconnect'
+;  so as not to clash with the disconnect method from the HTTP
+;  libraries.
+;----------------------------------------------------------------------
+
+
+
+;----------------------------------------------------------------------
+;  First, let's define some DB-specific exceptions
+;
 ; Base of DB exn hierarchy
 (struct exn:fail:db exn:fail () #:transparent)
 
@@ -71,56 +84,87 @@
 
 ;;----------------------------------------------------------------------
 
-;;    Run a query against the database, return the result as a
-;;    list of dicts. (By default hashes, but you can override
-;;    if desired.)  You can also provide transformer functions
-;;    to rewrite the data before the hashes are built or
-;;    rewrite the results before they are returned.
+;; Function:  query-rows-as-dicts
+;;
+;;    Run a query against the database, return the result as a list of
+;;    dicts. (By default hashes, but you can override to use some
+;;    other form of dict if desired.)  You can also provide
+;;    transformer functions to rewrite the data before the hashes are
+;;    built or rewrite the results after they are built but before
+;;    they are returned.
 ;;
 ;;
-;; ;Run a query that needs no params. Result is a list of
-;; ;mutable hashes matching (hash/c symbol? any/c)
+;;    Run a query that needs no params. Result is a list of
+;;    mutable hashes matching (hash/c symbol? any/c)  Note that
+;;    the keys don't have to be the same as the field names
+;;
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks")
 ;;
-;; ;Run a query with params
+;;
+;;    Run a query with params
+;;
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7)
 ;;
-;; ;Same as the previous, except the arg is passed as a list
+;;
+;;    Same as the previous, except the arg is passed as a list.
+;;    (i.e., it doesn't matter if you pass the args individually or
+;;    in a list, so you can do whichever is more convenient)
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      '(7))
 ;;
-;; ;Run a query but return the results as a list of 2-item lists
-;; ;instead of a list of hashes.
+;;
+;;    Run a query but return the results as a list of 2-item lists
+;;    instead of a list of hashes.
+;;
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
 ;;                      #:dict-maker flatten) ;; e.g. '(foo . 7) => '(foo 7)
 ;;
-;; ;Run a query with params, add one to each chunk-num before
-;; ;returning the results.
+;;
+;;    Run a query with params, add one to each chunk-num before
+;;    returning the results.
+;;
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
 ;;                      #:transform-data (lambda (k v) (cons k (add1 v))))
 ;;
-;; Run a query with params, convert the keys from symbols to strings
-;; before returning the results.  (hash-keys->strings is defined in
-;; dstorrs/utils)
+;;
+;;    Run a query with params, convert the keys of the resulting
+;;    hashes from symbols to strings before returning the results.
+;;    (hash-keys->strings is defined in dstorrs/utils)
 ;;
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
 ;;                      7
 ;;                      #:transform-dict hash-keys->strings)
+;;
+;;
+;;
+;; The various procedures passed through the keywords are expected
+;; to have the following contracts.  The contracts aren't actually
+;; checked because raw lambdas and curried functions have no
+;; available contract and so would fail the check.
+;;
+;;  #:dict-maker     (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+;;  #:transform-data (-> any/c any/c pair?)      ; transform the input of dict-maker
+;;  #:transform-dict (-> dict? dict?)            ; transform the output of dict-maker
+;;
+;; The default dict-maker is make-hash, which produces a mutable
+;; hash.  If you want an immutable hash then you can pass
+;; make-immutable-hash to the #:dict-maker argument
+;;
 (define/contract (query-rows-as-dicts keys db sql
                                       #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
@@ -136,24 +180,14 @@
        #:rest list?
        (listof dict?))
 
-  ;; The various procedures passed through the keywords are expected
-  ;; to have these contracts.  The contracts aren't actually checked
-  ;; because raw lambdas and curried functions have no available
-  ;; contract and so would fail the check.
-  ;;
-  ;;  #:dict-maker     (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-  ;;  #:transform-data (-> any/c any/c pair?)      ; transform the input of dict-maker
-  ;;  #:transform-dict (-> dict? dict?)            ; transform the output of dict-maker
-  ;;
-  ;; The default dict-maker is make-hash, which produces a mutable hash.
-
+  
   ; We flatten the parameters list as a convenience to the caller.
   ; That way you can do things like pass some arguments on their own
   ; and some as the result of map calls without having to ensure that
   ; it all ends up in one list.
   (define vals (flatten params))
   (define (v->d v)
-    (vector->dict
+    (vector->dict  ; defined in dstorrs/list-utils
      keys
      v
      #:dict-maker     dict-maker
@@ -243,6 +277,11 @@
 
 ;;----------------------------------------------------------------------
 
+;  (query-flat db sql [vals '()] [converter vector->list])
+;
+; Performs a query-rows using the specified db, sql, and vals.  Maps
+; the converter function over the results, then flattens whatever
+; comes back and returns the resulting list.
 (define/contract (query-flat db sql [vals '()] [converter vector->list])
   (->* (connection? string?) (any/c procedure?) list?)
   (flatten/convert converter
@@ -255,6 +294,12 @@
 
 ;;----------------------------------------------------------------------
 
+;(define/contract (call-with-transaction/disconnect db thnk)
+;
+; Calls the specified thunk inside a transaction.  Exceptions will be
+; trapped and sent to refine-db-exn before being re-raised.
+; Regardless of whether there is an exception, the db handle is
+; guaranteed to be closed after this function completes.
 (define/contract (call-with-transaction/disconnect db thnk)
   (-> connection? (-> any) any)
 
