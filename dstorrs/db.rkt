@@ -136,13 +136,21 @@
        #:rest list?
        (listof dict?))
 
-  ;;  #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-  ;;  #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
-  ;;  #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
-  ;;  )
-  ;; #:rest (listof any/c)
-  ;; (listof dict?))
+  ;; The various procedures passed through the keywords are expected
+  ;; to have these contracts.  The contracts aren't actually checked
+  ;; because raw lambdas and curried functions have no available
+  ;; contract and so would fail the check.
+  ;;
+  ;;  #:dict-maker     (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+  ;;  #:transform-data (-> any/c any/c pair?)      ; transform the input of dict-maker
+  ;;  #:transform-dict (-> dict? dict?)            ; transform the output of dict-maker
+  ;;
+  ;; The default dict-maker is make-hash, which produces a mutable hash.
 
+  ; We flatten the parameters list as a convenience to the caller.
+  ; That way you can do things like pass some arguments on their own
+  ; and some as the result of map calls without having to ensure that
+  ; it all ends up in one list.
   (define vals (flatten params))
   (define (v->d v)
     (vector->dict
@@ -159,6 +167,14 @@
 
 ;;----------------------------------------------------------------------
 
+; query-row-as-dict keys
+;
+; Same as query-rows-as-dicts, but expects that it will find exactly
+; one row, so it returns a dict instead of a list of dicts.  If
+; query-row throws an exception (probably because there was no such
+; row) then query-row-as-dict returns an empty dict, unless you call
+; it with #:throw-on-exn? #t, in which case it throws an appropriate
+; exn:fail:db:*
 (define/contract (query-row-as-dict keys
                                     db
                                     sql
