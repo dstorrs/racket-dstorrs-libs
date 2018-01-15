@@ -1,17 +1,29 @@
 #lang at-exp racket
 
-(provide (except-out (all-defined-out)
-                     _contract-for::exn:fail:insufficient-space)
+(require (for-syntax syntax/parse))
+
+(provide (struct-out exn:fail:insufficient-space)
+         exn:fail:insufficient-space/c
+         exn:fail:insufficient-space/kw
+         create-exn
+         create/raise-exn
+         verify-arg
          )
 
-(define/contract (_contract-for::exn:fail:insufficient-space msg ccm req avail source type)
+;;======================================================================
+;;  Functions for easy creation and management of exceptions, as well
+;;  as some type definitions.
+;;======================================================================
+
+(define/contract (exn:fail:insufficient-space/c msg ccm req avail source type)
   (-> any/c any/c any/c any/c any/c any/c ;; Don't check on input...
       (values ;; ...check on output. Makes for cleaner error messages.
        string? continuation-mark-set?
        exact-positive-integer?  integer? symbol?
-      ))
+       ))
   (values msg ccm req avail source))
 
+;;----------------------------------------------------------------------
 ;; exn:fail:insufficient-space : exception for when there isn't enough
 ;; disk space available
 ;;
@@ -30,7 +42,7 @@
   exn:fail
   (requested available request-source)
   #:transparent
-  #:guard _contract-for::exn:fail:insufficient-space)
+  #:guard exn:fail:insufficient-space/c)
 
 ;;    Easier way to define the above.  Defaults the ccm field
 (define/contract (exn:fail:insufficient-space/kw #:requested requested
@@ -57,55 +69,69 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (create-exn ctor msg . args)
+;;  Creates an exception struct and returns it.  NOTE: This really needs to be
+;;  a macro, as otherwise the 'current-continuation-marks mistakenly
+;;  comes from here instead of from the caller.
+(define (create-exn ctor msg . args)
   (->* (procedure? string?) () #:rest (listof any/c) exn?)
   (apply ctor (append (list msg (current-continuation-marks)) args)))
 
 ;;----------------------------------------------------------------------
 
+;;  Creates an exception struct and throws it.
 (define/contract (create/raise-exn ctor msg . args)
   (->* (procedure? string?) () #:rest (listof any/c) any)
   (raise (apply create-exn (append (list ctor msg) args))))
 
 ;;----------------------------------------------------------------------
 
+
+;; (verify-arg arg-name arg-val pred source [pred-name #f])
+;;
+;; There doesn't seem to be a simple way to write a contract on
+;; lambdas.  You can use define/contract for named functions but not
+;; for, e.g., the #:guard clause on a struct.  This is a poor man's
+;; version of contracts.  You specify the name of the variable you're
+;; checking, its value, the predicate it must satisfy, and the name of
+;; the function you're calling it from.  Optionally, you can also
+;; specify the name of the predicate if what you're passing is a raw
+;; lambda instead of a named function.  Otherwise the name will be
+;; obtained via (object-name pred)
+;;
+;; The return value is incidental and should not be relied on.  It
+;; either passes or it throws using raise-arguments-error.
+;;
+;; Examples that pass:
+;;    (verify-arg "requested-space" 7 exact-positive-integer? 'has-sufficient-space)
+;;    (verify-arg "next-piece" 'apple (or/c 'apple 'pear) 'check-fruit-type)
+;;
+;; Examples that throw:
+;;    (verify-arg "requested-space" 'bob exact-positive-integer? 'has-sufficient-space)
+;;
+;;    The above throws an exn:fail:contract with this message:
+;; has-sufficient-space: requested-space must be exact-positive-integer?
+;;   requested-space: 'bob
+;;
+;;
+;;    (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type)
+;;    The above throws an exn:fail:contract with this message:
+;; check-fruit-type: next-piece must be flat-or/c
+;;   next-piece: 'banana
+;;
+;;    (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type "apple or pear")
+;;    The above throws an exn:fail:contract with this message:
+;; check-fruit-type: next-piece must be apple or pear
+;;   next-piece: 'banana
+;;
+;; NOTES: First off, this probably should be there has to be an easier
+;; way to do this.  Second, this probably shouldn't be in this library
+;; since it's not explicitly related to exceptions.  I'm tempted to
+;; put it in utils.rkt, but that's getting pretty overstuffed.
+;;
 (define/contract (verify-arg arg-name arg-val pred source [pred-name #f])
   (->* (string? any/c (-> any/c boolean?) symbol?)
        (string?)
        any)
-  ;; There doesn't seem to be a simple way to write a contract on
-  ;; lambdas.  You can use define/contract for named functions but not
-  ;; for, e.g., the #:guard clause on a struct.  This is a poor man's
-  ;; version of contracts.  You specify the name of the variable
-  ;; you're checking, its value, the predicate it must satisfy, and
-  ;; the name of the function you're calling it from.  Optionally, you
-  ;; can also specify the name of the predicate if what you're passing
-  ;; is a raw lambda instead of a named function.
-  ;;
-  ;; The return value is incidental and should not be relied on.  It
-  ;; either works or it throws using raise-arguments-error.
-  ;;
-  ;; Examples that pass:
-  ;;    (verify-arg "requested-space" 7 exact-positive-integer? 'has-sufficient-space)
-  ;;    (verify-arg "next-piece" 'apple (or/c 'apple 'pear) 'check-fruit-type)
-  ;;
-  ;; Examples that throw:
-  ;;    (verify-arg "requested-space" 'bob exact-positive-integer? 'has-sufficient-space)
-  ;;    The above throws an exn:fail:contract with this message:
-  ;; has-sufficient-space: requested-space must be exact-positive-integer?
-  ;;   requested-space: 'bob
-  ;;
-  ;;
-  ;;    (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type)
-  ;;    The above throws an exn:fail:contract with this message:
-  ;; check-fruit-type: next-piece must be flat-or/c
-  ;;   next-piece: 'banana
-  ;;
-  ;;    (verify-arg "next-piece" 'banana (or/c 'apple 'pear) 'check-fruit-type "apple or pear")
-  ;;    The above throws an exn:fail:contract with this message:
-  ;; check-fruit-type: next-piece must be apple or pear
-  ;;   next-piece: 'banana
-  
   (unless (pred arg-val)
     (raise-arguments-error
      source
