@@ -8,36 +8,53 @@
 
 (void (ok 1 "test harness is working"))
 
- ;; Define a struct type
- (struct/kw foo (a b [c 42]) #:transparent)
- (define (checker thnk description #:a [a-val 1] #:b [b-val 2] #:c [c-val 3])
-   (displayln (~a "entering checker"))
-   (match (thnk)
-     [(struct* foo ([a a] [b b] [c c]))
-      (begin
-        (is a a-val (~a description " => got correct a"))
-        (is b b-val (~a description " => got correct b"))
-        (is c c-val (~a description " => got correct c")))]
-     [_ (ok #f (~a description " => did not match"))])
-   (displayln (~a "leaving checker"))
-   )
+;; Define a struct type
+(struct/kw foo (a b [c 42]) #:transparent)
+(define (checker thnk description #:a [a-val 1] #:b [b-val 2] #:c [c-val 3])
+  (displayln (~a "entering checker"))
+  (match (thnk)
+    [(struct* foo ([a a] [b b] [c c]))
+     (begin
+       (is a a-val (~a description " => got correct a"))
+       (is b b-val (~a description " => got correct b"))
+       (is c c-val (~a description " => got correct c")))]
+    [_ (ok #f (~a description " => did not match"))])
+  (displayln (~a "leaving checker"))
+  )
 
-(test-suite
- "struct/kw"
+(when #t
+  (test-suite
+   "struct/kw"
 
- ;;
- ;; Use normal ctor
- (checker (thunk (foo 1 2 3)) "(foo 1 2 3)")
- ;;
- ;; Use keyword ctor
- (checker (thunk (foo/kw #:a 1 #:b 2 #:c 3))
-          "(foo/kw #:a 1 #:b 2 #:c 3)") ; => (foo 1 2 3)
- ;;
- ;; Use keyword ctor, taking advantage of default arg for #:c field
- (checker (thunk (foo/kw #:a 1 #:b 2))       ; => (foo 1 2 42)
-          "(foo/kw #:a 1 #:b 2)"
-          #:c 42)
- )
+   ;;
+   ;; Use normal ctor
+   (checker (thunk (foo 1 2 3)) "(foo 1 2 3)")
+   ;;
+   ;; Use keyword ctor
+   (checker (thunk (foo/kw #:a 1 #:b 2 #:c 3))
+            "(foo/kw #:a 1 #:b 2 #:c 3)") ; => (foo 1 2 3)
+   ;;
+   ;; Use keyword ctor, taking advantage of default arg for #:c field
+   (checker (thunk (foo/kw #:a 1 #:b 2))       ; => (foo 1 2 42)
+            "(foo/kw #:a 1 #:b 2)"
+            #:c 42)
+
+   ;; (define (make-foo . lst)
+   ;;   (hash->struct/kw foo/kw
+   ;;                    (make-hash (map cons (list 'a 'b 'c) lst))))
+
+   ;; (define test-struct  (make-foo 1 5 9))
+   ;; (is test-struct (foo 1 5 9) "make-foo worked")
+
+   ;; (for ([setter (list set-foo-a set-foo-b set-foo-c)]
+   ;;       [getter (list foo-a foo-b foo-c)]
+   ;;       [new-val 88])
+
+   ;;   (is (getter (setter test-struct new-val))
+   ;;       new-val
+   ;;       (~a "setter worked: " setter)))
+   ))
+
 
 (when #t
   (test-suite
@@ -59,7 +76,7 @@
 (when #t
   (test-suite
    "hash->struct/kw with key remapping"
-   
+
    ;;
    ;; Use a hash and rename some of the keys
    (checker (thunk (hash->struct/kw foo/kw  ; => (foo/kw #:a 1 #:b 2 #:c 3)
@@ -93,33 +110,24 @@
   );when
 
 
-(when #t
-  (test-suite
- "verify-struct"
+;; (when #t
+;;   (test-suite
+;;    "verify-data"
 
- (struct foo (a b c))
- (define x (foo 1 2 3))
- (define y (foo 0 2 3))
+;;    (struct foo (a b c))
+;;    (define x (foo 1 2 3))
+;;    (define y (foo 0 2 3))
 
- (is-type x foo? "x is a foo")
- (is-type y foo? "y is a foo")
+;;    (is-type x foo? "x is a foo")
+;;    (is-type y foo? "y is a foo")
 
- (isnt x y "x and y are not equal?")
- (ok (thunk (verify-struct #:struct x
-                           #:funcs (list foo-b foo-c)
-                           #:expected  (list 2 3)))
-     "validates when given explicit values")
+;;    (isnt x y "x and y are not equal?")
+;;    (ok (verify-data #:data x
+;;                     #:tests (list (cons foo-b 2) (cons foo-c 3)))
+;;        "validates when given list of tests")
+;;    (ok (verify-data #:data x #:type foo?) "validates when given a type predicate")
+;;    ))
 
- (ok (thunk (verify-struct #:struct x
-                           #:funcs (list foo-b foo-c)
-                           #:expected  y))
-     "validates when given a comparison struct")
 
- (not-ok (thunk (verify-struct #:struct x
-                               #:funcs (list foo-a foo-b foo-c)
-                               #:expected  y))
-         "correctly reports that they are not equal if you have it check a field that is not equal")
-
- ))
 
 (done-testing) ; this should be the last line in the file

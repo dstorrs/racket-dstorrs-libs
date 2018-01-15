@@ -55,14 +55,38 @@
   (syntax-parse stx
     [(_ struct-id:id (field:field ...) opt ...)
      (with-syntax ([ctor-id (format-id #'struct-id "~a/kw" #'struct-id)]
-                   [((ctor-arg ...) ...) #'(field.ctor-arg ...)]) ;i.e. append*
+                   [((ctor-arg ...) ...) #'(field.ctor-arg ...)]) ; The double ... flattens one level
        #'(begin
            (struct struct-id (field.id ...) opt ...)
-           (define (ctor-id ctor-arg ... ...) ;i.e. append*
-             (struct-id field.id ...))))]))
+           (define (ctor-id ctor-arg ... ...) ; The double ... flattens one level
+             (struct-id field.id ...))))]
+    ;
+    [(_ struct-id:id super-id:id (field:field ...) opt ...)
+     (with-syntax ([ctor-id (format-id #'struct-id "~a/kw" #'struct-id)]
+                   [((ctor-arg ...) ...) #'(field.ctor-arg ...)]) ; The double ... flattens one level
+       #'(begin
+           (struct struct-id super-id (field.id ...) opt ...)
+           (define (ctor-id ctor-arg ... ...) ; The double ... flattens one level
+             (struct-id field.id ...))))]
+    ))
 
 ;;----------------------------------------------------------------------
 
+;;   (hash->struct/kw struct-ctor h [restricted-keys #f] #:remap-keys [remapped-keys (hash)])
+;;
+;; Takes a struct constructor function and a hash, returns a struct of
+;; the appropriate type.  The ctor must be one that accepts keywords
+;; (e.g. created by struct/kw) and the keywords must case-sensitively
+;; match the keys of the hash.  If the hash contains keys that should
+;; not be used then you can pass the list of keys that SHOULD be used
+;; and all other will be ignored.  You can also pass a second hash
+;; (the 'remap hash') that maps the keys from the first hash (the
+;; 'data hash') to a new form that will be used for the keyword.  For
+;; example, perhaps the keys of your data hash include 'person-name
+;; but the corresponding element of your structure is 'employee-name.
+;; You could then pass a remap hash like (hash 'person-name
+;; 'employee-name) to describe the desired change.
+;;
 (define/contract (hash->struct/kw struct-ctor h [restricted-keys #f] #:remap-keys [remapped-keys (hash)])
   (->* (procedure? (hash/c symbol? any/c))
        ((non-empty-listof any/c) #:remap-keys (hash/c symbol? symbol?))
@@ -82,12 +106,23 @@
 
 ;;----------------------------------------------------------------------
 
+;; (verify-struct #:struct    s                   ; the struct to verify
+;;                #:type      [is-type? identity] ; a predicate that must return true
+;;                #:funcs     [funcs '()]         ; list of functions to test
+;;                #:expected  [expected '()])     ; required return value of corresponding func
+;;
+;; Given a struct, verify that it meets certain criteria. The 'funcs'
+;; and 'expected' list must be the same length. If you let all
+;; optional arguments default then it will return #t, but that's a
+;; little silly.
 (define/contract (verify-struct #:struct    s
                                 #:type      [is-type? identity]
-                                #:funcs     funcs
-                                #:expected  expected)
-  (->* (#:struct any/c #:funcs (listof procedure?) #:expected (or/c any/c (listof any/c)))
-       (#:type (-> any/c boolean?))
+                                #:funcs     [funcs '()]
+                                #:expected  [expected '()])
+  (->* (#:struct any/c)
+       (#:type (-> any/c boolean?)
+        #:funcs (listof procedure?)
+        #:expected (or/c any/c (listof any/c)))
        boolean?)
 
   (when (and (list? expected)
@@ -104,4 +139,3 @@
              [else (for/and ((f funcs))
                      (equal? (f s) (f expected)))]))
   )
-
