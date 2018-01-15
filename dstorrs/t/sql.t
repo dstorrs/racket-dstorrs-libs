@@ -23,57 +23,6 @@
      "many-to-many-join works")
  )
 
-(test-suite
- "date- and timestamp-related functions"
- (is (clause-convert-epoch->timestamp)
-     "timestamp 'epoch' + INTERVAL '1 second' * $1"
-     "clause-convert-epoch->timestamp: got correct string back for no params")
-
- (is (clause-convert-epoch->timestamp #:complete #t)
-     "SELECT timestamp 'epoch' + INTERVAL '1 second' * $1"
-     "clause-convert-epoch->timestamp: got correct string back for no params with #:complete")
-
- (is (clause-convert-epoch->timestamp 3)
-     "timestamp 'epoch' + INTERVAL '1 second' * $3"
-     "clause-convert-epoch->timestamp: got correct string back for one param")
-
- (is (clause-convert-epoch->timestamp 3 #:complete #t)
-     "SELECT timestamp 'epoch' + INTERVAL '1 second' * $3"
-     "clause-convert-epoch->timestamp: got correct string back for one param with #:complete")
-
- (is (clause-convert-epoch->timestamp #:subquery #t)
-     "(SELECT timestamp 'epoch' + INTERVAL '1 second' * $1)"
-     "clause-convert-epoch->timestamp: got correct string back for subquery")
-
- (is (clause-convert-epoch->timestamp #:subquery #t #:complete #f)
-     "(SELECT timestamp 'epoch' + INTERVAL '1 second' * $1)"
-     "clause-convert-epoch->timestamp: got correct string back for subquery with #:complete #f")
-
- (is (clause-convert-timestamp->epoch)
-     "extract('epoch' from $1)"
-     "clause-convert-timestamp->epoch: got correct string back for no param")
-
- (is (clause-convert-timestamp->epoch #:complete #t)
-     "SELECT extract('epoch' from $1)"
-     "clause-convert-timestamp->epoch: got correct string back for no param with #:complete")
-
- (is (clause-convert-timestamp->epoch 3)
-     "extract('epoch' from $3)"
-     "clause-convert-timestamp->epoch: got correct string back for integer param")
-
- (is (clause-convert-timestamp->epoch 3 #:complete #t)
-     "SELECT extract('epoch' from $3)"
-     "clause-convert-timestamp->epoch: got correct string back for integer param with #:complete")
-
- (is (clause-convert-timestamp->epoch (clause-convert-epoch->timestamp #:subquery #t))
-     "extract('epoch' from (SELECT timestamp 'epoch' + INTERVAL '1 second' * $1))"
-     "clause-convert-timestamp->epoch: got correct string back for string param")
-
- (is (clause-convert-timestamp->epoch #:complete #t (clause-convert-epoch->timestamp #:subquery #t))
-     "SELECT extract('epoch' from (SELECT timestamp 'epoch' + INTERVAL '1 second' * $1))"
-     "clause-convert-timestamp->epoch: got correct string back for string param with #:complete")
- )
-
 (when #t
   (test-suite
    "sql-IN-clause"
@@ -112,76 +61,6 @@
 
    );test-suite
   );when
-
-(test-suite
- "var->column"
- (is (var->column "foo")
-     "foo"
-     "var->column \"foo\" works")
-
- (is (var->column 'foo)
-     "foo"
-     "var->column 'foo works")
-
- (is (var->column "foo-bar")
-     "foo_bar"
-     "var->column \"foo-bar\" works")
-
- (is (var->column 'foo-bar)
-     "foo_bar"
-     "var->column 'foo-bar works")
-
- (is (var->column "FOO-BAR")
-     "foo_bar"
-     "var->column \"FOO-BAR\" works")
-
- (is (var->column "FOO-BAR-BAX")
-     "foo_bar_bax"
-     "var->column \"FOO-BAR-BAX\" works")
-
- (throws (thunk (var->column ""))
-         #px"expected:\\s+\\(or/c\\s+non-empty-string\\?\\s+symbol\\?\\)"
-         "var->column throws on empty string")
- )
-
-(test-suite
- "var-list->column-clause"
- (is (var-list->column-clause (list "foo" "bar"))
-     "foo,bar"
-     "var-list->column-clause '(\"foo\" \"bar\" works")
-
- (is (var-list->column-clause '(foo "bar"))
-     "foo,bar"
-     "var-list->column-clause '(foo \"bar\" works")
-
- (is (var-list->column-clause 'foo "bar")
-     "foo,bar"
-     "var-list->column-clause '(foo \"bar\" works")
-
- (is (var-list->column-clause '("foo-bar"))
-     "foo_bar"
-     "var-list->column-clause '(\"foo-bar\") works")
-
- (is (var-list->column-clause 'foo-bar)
-     "foo_bar"
-     "var-list->column-clause 'foo-bar works")
-
- (is (var-list->column-clause "FOO-BAR" 'BAZ-quux)
-     "foo_bar,baz_quux"
-     "var-list->column-clause \"FOO-BAR\" 'BAZ-quux works")
-
- (is (var-list->column-clause "FOO-BAR-BAX" "glop,blig")
-     "foo_bar_bax,glop,blig"
-     "var-list->column-clause \"FOO-BAR-BAX\" \"glop,blig\" works")
-
- ;; (is (var-list->column-clause)
- ;;     ""
- ;;     "var-list->column-clause returns empty string")
-
- (is (var-list->column-clause '())
-     ""
-     "var-list->column-clause '() returns empty string")
- )
 
 (when #t
   (test-suite

@@ -2,15 +2,18 @@
 
 (provide (all-defined-out))
 
+
+;;(define/contract (placeholders-for lst [start-from 1])
+;;
+;;    Create a string that can be used as placeholder values for a
+;;    group of values suitable for inclusion in a SELECT, INSERT,
+;;    etc.
+;; (placeholders-for '(foo bar baz))  => "$1,$2,$3"
+;; (placeholders-for '())             => ""
+;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
+;;
 (define/contract (placeholders-for lst [start-from 1])
   (->* (list?) (exact-positive-integer?) string?)
-  ;;    Create a string that can be used as placeholder values for a
-  ;;    group of values suitable for inclusion in a SELECT, INSERT,
-  ;;    etc.
-  ;; (placeholders-for '(foo bar baz))  => "$1,$2,$3"
-  ;; (placeholders-for '())             => ""
-  ;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
-  ;;
   (string-join
    (for/list ((i (in-naturals start-from))
               (ignored lst))
@@ -19,6 +22,13 @@
 
 ;;--------------------------------------------------------------------------------
 
+;; (define/contract (placeholders-for-multiple-rows data [start-from 1])
+;;
+;; Same as placeholders-for but takes a LoL and builds a string
+;; suitable for inserting multiple rows.  Example:
+;;
+;; (placeholders-for-multiple-rows '(("foo") ("bar")))   => "($1),($2)"
+;; (placeholders-for-multiple-rows '(("foo") ("bar") 4)) => "($4),($5)"
 (define/contract (placeholders-for-multiple-rows data [start-from 1])
   (->* ((or/c (non-empty-listof (not/c list?))
               (non-empty-listof (non-empty-listof (not/c list?)))))
@@ -40,7 +50,7 @@
            (raise-argument-error 'placeholders-for-multiple-rows
                                  "list of equal-length lists"
                                  data))])
-           
+
 
   ;; Turn this:   (("collab1" "desc1") ("collab2" "desc2"))
   ;; Into this:   "($1,$2), ($3,$4)"
@@ -68,6 +78,13 @@
 
 ;;----------------------------------------------------------------------
 
+;; (define/contract (sql-IN-clause lst [start-from 1])
+;;
+;; Generates an IN clause of appropriate length for its args.  Doesn't
+;; care what its args are, just how many there are.
+;;
+;;    (sql-IN-clause '(a b c))   => "IN ($1,$2,$3)"
+;;    (sql-IN-clause '(a b c) 4) => "IN ($4,$5,$6)"
 (define/contract (sql-IN-clause lst [start-from 1])
   (->* ((or/c (non-empty-listof (not/c list?))
               (non-empty-listof (non-empty-listof (not/c list?)))))
@@ -81,19 +98,26 @@
 
 ;;--------------------------------------------------------------------------------
 
+;; (define/contract (join-table-name table1 table2)
+;;
+;;  Takes two strings, each the name of a table, and generates the
+;;  name of the join table, assuming that the join table is named
+;;  "X_to_Y".
+;;
+;;  (join-table-name "users" "public_keys") => "users_to_public_keys"
 (define/contract (join-table-name table1 table2)
   (-> string? string? string?)
-  ;; given:   collaborations files
-  ;; returns: collaborations_to_files
   (string-append table1 "_to_" table2))
 
 ;;--------------------------------------------------------------------------------
 
+
+;; (define/contract (many-to-many-join table1 table2)
+;;
+;; Given:  "collaborations" "files"
+;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
 (define/contract (many-to-many-join table1 table2)
   (-> string? string? string?)
-  ;; Given:  "collaborations" "files"
-  ;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
-
   (define (singular str)
     (define res (regexp-match #px"^(.+)s$" str))
     (if res (second res) str))
@@ -114,42 +138,3 @@
 
 ;;--------------------------------------------------------------------------------
 
-(define/contract (clause-convert-epoch->timestamp [param-num 1] #:subquery [subquery #f] #:complete [complete #f])
-  (->* () (natural-number/c #:complete boolean? #:subquery boolean?) string?)
-  (string-append
-   (if subquery "(" "")
-   (if (or complete subquery) "SELECT " "")
-   @~a{timestamp 'epoch' + INTERVAL '1 second' * $@param-num}
-   (if subquery ")" "")))
-
-;;--------------------------------------------------------------------------------
-
-(define/contract (clause-convert-timestamp->epoch [source 1] #:subquery [subquery #f] #:complete [complete #f])
-  (->* () ((or/c string? natural-number/c) #:complete boolean? #:subquery boolean?) string?)
-
-  (string-append
-   (if subquery "(" "")
-   (if (or complete subquery) "SELECT " "")
-   "extract('epoch' from "
-   (if (string? source) source @~a{$@source})
-   ")"
-   (if subquery ")" "")
-   ))
-
-;;--------------------------------------------------------------------------------
-
-(define/contract (var->column v)
-  (-> (or/c non-empty-string? symbol?) string?)
-  (string-downcase (regexp-replace* #px"-" (~a v) "_")))
-
-;;--------------------------------------------------------------------------------
-
-(define/contract (var-list->column-clause . vars)
-  (->* () () #:rest (listof (or/c non-empty-string? symbol?
-                                  (listof (or/c non-empty-string? symbol?))))
-       string?)
-  (let ((lst (flatten vars)))
-    (cond [(null? lst) ""]
-          [else (string-join (map var->column lst) ",")])))
-
-;;--------------------------------------------------------------------------------
