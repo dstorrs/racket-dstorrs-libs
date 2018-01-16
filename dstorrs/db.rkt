@@ -278,8 +278,9 @@
                     (apply (curry query-rows db sql) vals)))))
         ]
        [catch (match-anything
-               (cond [trap-exns? (list (dict-maker))]
-                     [else (compose1 raise refine-db-exn)]))]))
+               (lambda (e)
+                 (cond [trap-exns? '()]
+                       [else (compose1 raise refine-db-exn)])))]))
 
 ;;----------------------------------------------------------------------
 
