@@ -20,6 +20,31 @@
 ;  libraries.
 ;======================================================================
 
+(provide num-rows
+         refine-db-exn
+         query-rows-as-dicts
+         query-row-as-dict
+         query-maybe-row-as-dict
+         query-flat
+         ensure-disconnect
+         maybe-disconnect
+         call-with-transaction/disconnect
+         (except-out (all-from-out db) disconnect)
+         (prefix-out db: disconnect)
+         (all-from-out dstorrs/sql)
+         (struct-out exn:fail:db)
+         (struct-out exn:fail:db:create)
+         (struct-out exn:fail:db:row:not-exists)
+         (struct-out exn:fail:db:row:exists)
+         (struct-out exn:fail:db:num-rows)
+         (struct-out exn:fail:db:num-rows:zero)
+         (struct-out exn:fail:db:num-rows:many)
+         )
+
+;;----------------------------------------------------------------------
+
+
+;;----------------------------------------------------------------------
 
 
 ;  First, let's define some DB-specific exceptions
@@ -50,7 +75,7 @@
 (define/contract (num-rows db table-name)
   (-> connection? (or/c symbol? string?) exact-integer?)
   (query-value db (~a "select count(1) from " table-name)))
-  
+
 ;;----------------------------------------------------------------------
 
 
@@ -109,7 +134,7 @@
 ;;
 ;;    By default, if an exception is thrown from the query then an
 ;;    empty dict is returned.  If you want the exn to be re-raised
-;;    then you can pass #:trap-exns #t.  In that case the exn will be
+;;    then you can pass #:trap-exns #f.  In that case the exn will be
 ;;    sent to 'refine-db-exn' (see above) before being re-raised.
 ;;
 ;;
@@ -118,10 +143,10 @@
 ;;  (->* (list? connection? string?) ; keys, db handle, SQL string
 ;;       (
 ;;        #:wrapper          (-> connection (-> any) any) ; e.g. call-with-transaction/disconnect
-;;        #:trap-exns?       boolean?    
-;;        #:dict-maker       procedure?  
-;;        #:transform-dict   procedure?  
-;;        #:transform-data   procedure?  
+;;        #:trap-exns?       boolean?
+;;        #:dict-maker       procedure?
+;;        #:transform-dict   procedure?
+;;        #:transform-data   procedure?
 ;;        )
 ;;       #:rest list?
 ;;       (listof dict?))
@@ -220,7 +245,7 @@
                                       params)
   (->* (list? connection? string?)
        (
-        #:wrapper          (-> connection? (-> any) any) 
+        #:wrapper          (-> connection? (-> any) any)
         #:trap-exns?       boolean?
         #:dict-maker       procedure?
         #:transform-dict   procedure?
@@ -264,12 +289,13 @@
 ; one row, so it returns a dict instead of a list of dicts.  If
 ; query-row throws an exception (probably because there was no such
 ; row) then query-row-as-dict returns an empty dict, unless you call
-; it with #:trap-exns? #t, in which case it throws an appropriate
+; it with #:trap-exns? #f, in which case it throws an appropriate
 ; exn:fail:db:*
 (define/contract (query-row-as-dict keys
                                     db
                                     sql
-                                    #:trap-exns? [trap-exns? #f]
+                                    #:wrapper    [wrapper (lambda (db thnk) (thnk))]
+                                    #:trap-exns? [trap-exns? #t]
                                     #:dict-maker [dict-maker make-hash]
                                     #:transform-dict [transform-dict identity]
                                     #:transform-data [transform-data cons]
@@ -278,6 +304,7 @@
                                     )
   (->* ((non-empty-listof any/c) connection? string?)
        (
+        #:wrapper  (-> connection? (-> any))
         #:trap-exns? boolean?
         #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
         #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
@@ -286,13 +313,6 @@
        #:rest (listof any/c)
        dict?)
 
-  (define res (query-rows-as-dicts keys db sql vals
-                                   #:trap-exns?     trap-exns? 
-                                   #:dict-maker     dict-maker
-                                   #:transform-dict transform-dict
-                                   #:transform-data transform-data
-                                   ))
-  (define vals (flatten params))
   (define (v->d v)
     (vector->dict  ; defined in dstorrs/list-utils
      keys
@@ -301,14 +321,19 @@
      #:transform-data transform-data
      #:transform-dict transform-dict)
     )
-
   (try [
-        (v->d keys (apply (curry query-row db sql) vals))
+        (define vals (flatten params))
+        (v->d
+         (wrapper db
+                  (thunk
+                   (if (null? vals)
+                       (query-row db sql)
+                       (apply (curry query-row db sql) vals)))))
         ]
        [catch (match-anything
                (lambda (e)
                  (cond [trap-exns? (dict-maker)]
-                       [else (refine-db-exn e)])))]))
+                       [else ((compose1 raise refine-db-exn) e)])))]))
 
 ;;----------------------------------------------------------------------
 
@@ -320,36 +345,48 @@
 (define/contract (query-maybe-row-as-dict keys
                                           db
                                           sql
+                                          #:wrapper        [wrapper    (lambda (db thnk) (thnk))]
+                                          #:trap-exns?     [trap-exns? #t]
                                           #:dict-maker     [dict-maker make-hash]
                                           #:transform-dict [transform-dict identity]
                                           #:transform-data [transform-data cons]
                                           .
-                                          args
+                                          params
                                           )
   (->* ((non-empty-listof any/c) connection? string?)
-       (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
+       (
+        #:wrapper          (-> connection? (-> any) any)
+        #:trap-exns?       boolean?
+        #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
         #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
         #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
         )
        #:rest (listof any/c)
        dict?)
 
-  ;;    If they passed the arguments as a list it will be received
-  ;;    with an extra list wrapper, e.g. '(("foo")). Unwrap it to
-  ;;    '("foo")
-  (define vals (flatten args))
-  (define res
-    (if (null? vals)
-        (query-maybe-row db sql)
-        (apply (curry query-maybe-row db sql) vals)))
+  (define (v->d v)
+    (vector->dict  ; defined in dstorrs/list-utils
+     keys
+     v
+     #:dict-maker     dict-maker
+     #:transform-data transform-data
+     #:transform-dict transform-dict)
+    )
+  (try [
+        (define vals (flatten params))
+        (define res (wrapper db
+                             (thunk
+                              (if (null? vals)
+                                  (query-maybe-row db sql)
+                                  (apply (curry query-maybe-row db sql) vals)))))
+        (cond [(perl-false? res) (dict-maker)] ; #f or '()
+              [else (v->d res)])
+        ]
+       [catch (match-anything
+               (lambda (e)
+                 (cond [trap-exns? (dict-maker)]
+                       [else ((compose1 raise refine-db-exn) e)])))]))
 
-  (if (not res)
-      (dict-maker)
-      (vector->dict keys
-                    res
-                    #:dict-maker dict-maker
-                    #:transform-data transform-data
-                    #:transform-dict transform-dict)))
 
 ;;----------------------------------------------------------------------
 
@@ -391,6 +428,25 @@
         (disconnect db)
         ;(say "after disconnecting.  DB is connected?: " (connected? db))
         ]))
+
+;;----------------------------------------------------------------------
+
+;;  A variant on ensure-disconnect.  If you tell it to disconnect then
+;;  it guarantees it will disconnect, even in the presence of
+;;  exceptions.  If you tell it not to disconnect then it won't and
+;;  exceptions will propagate as normal.  Useful when you have a
+;;  function that creates a db handle and then disconnects it unless
+;;  one is supplied in the args.
+;;
+;;  Aside from the #:disconnect keyword this accepts the same params
+;;  as ensure-disconnect
+(define/contract (maybe-disconnect db thnk #:disconnect disconnect? [wrapper (lambda (db thnk) (unwrap-val thnk))])
+  (->* (connection? (-> any) #:disconnect boolean?) ((-> connection? (-> any))) any)
+
+  ((if disconnect? ensure-disconnect (lambda (db thnk) (thnk)))
+   db
+   thnk))
+
 ;;----------------------------------------------------------------------
 
 ;(define/contract (call-with-transaction/disconnect db thnk)
@@ -402,24 +458,3 @@
   (ensure-disconnect db thnk call-with-transaction))
 
 ;;----------------------------------------------------------------------
-
-
-(provide num-rows
-         refine-db-exn
-         query-rows-as-dicts
-         query-row-as-dict
-         query-maybe-row-as-dict
-         query-flat
-         ensure-disconnect
-         call-with-transaction/disconnect
-         (except-out (all-from-out db) disconnect)
-         (prefix-out db: disconnect)
-         (all-from-out dstorrs/sql)
-         (struct-out exn:fail:db)
-         (struct-out exn:fail:db:create)
-         (struct-out exn:fail:db:row:not-exists)
-         (struct-out exn:fail:db:row:exists)
-         (struct-out exn:fail:db:num-rows)
-         (struct-out exn:fail:db:num-rows:zero)
-         (struct-out exn:fail:db:num-rows:many)
-         )
