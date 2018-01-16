@@ -280,7 +280,7 @@
        [catch (match-anything
                (lambda (e)
                  (cond [trap-exns? '()]
-                       [else (compose1 raise refine-db-exn)])))]))
+                       [else (raise (refine-db-exn e))])))]))
 
 ;;----------------------------------------------------------------------
 
