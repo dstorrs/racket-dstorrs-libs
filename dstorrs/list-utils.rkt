@@ -334,6 +334,43 @@
 
 ;;----------------------------------------------------------------------
 
+;; list->dict
+;;
+;; Takes a list of keys and a list of data, as well as some optional
+;; keyword params.  Default functionality is to cons the keys to their
+;; respective data then send that to make-hash in order to generate a
+;; mutable hash.  Through application of the various optional params
+;; you can make it generate anything.  NOTE: The contract does not
+;; actually require that the return value be a dict; if you know what
+;; you're doing and want to generate something else, that's fine.
+;;
+;; NB:  A dict is either:
+;;    - a hash
+;;    - a vector (uses exact integers as keys)
+;;    - a list of pairs  (could be either cons pairs or proper non-null lists of any length)
+;;    - structures that implement the gen:dict interface
+;;
+;; See the contract for what the various parameter must be.
+;;
+;; #:transform-data     Default: cons.       Accepts a key and a value, returns a pair.
+;; #:dict-maker         Default: make-hash.  Receives the list of pairs from transform-data
+;; #:transform-dict     Default: identity.   Operate on the result of dict-maker 
+;; #:make-keys          Default: #f          If set, generates the keys based on the data
+;;
+;; Examples:
+;;
+;;    (list->dict '(foo bar) '(7 8))
+;;        => (make-hash '((foo . 7) (bar . 8)))
+;;    (list->dict '(foo bar) '(7 8) #:transform-data (lambda (k v) (cons k (add1 v)))
+;;        => (make-hash '((foo . 8) (bar . 9)))
+;;    (list->dict '(foo bar) '(7 8) #:transform-dict (curryr hash-set! 'baz 9))
+;;        => (make-hash '((foo . 7) (bar . 8) (baz . 9)))
+;;    (list->dict '(foo bar) '(7 8) #:dict-maker make-immutable-hash
+;;        => (make-immutable-hash '((foo . 7) (bar . 8)))
+;;    (list->dict '(foo bar) '(65 66) #:make-keys integer->char   ; NB: specified keys were ignored
+;;        => (make-hash '((#\A . 65) (#\B . 66)))
+;;    (list->dict '() '(65 66) #:make-keys integer->char  
+;;        => (make-hash '((#\A . 65) (#\B . 66)))
 (define/contract (list->dict raw-keys
                              data
                              #:dict-maker [dict-maker make-hash]
