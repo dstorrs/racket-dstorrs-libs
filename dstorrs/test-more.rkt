@@ -1,5 +1,30 @@
 #lang racket
 
+;----------------------------------------------------------------------
+;    The racket testing module has a few problems:
+;
+; 1) The test function names are verbose and redundant.  check-this, check-that, etc
+;
+; 2) The test functions display nothing on success.  There's no way
+; to tell the difference between "no tests ran" and "all tests
+; succeeded"
+;
+; 3) The tests return nothing.  You can't do conditional tests like:
+;        (unless (is os 'Windows) (ok test-that-won't-pass-on-windows))
+;
+; This module addresses those problems.  It's named for, and largely a
+; clone of, the Test::More library on Perl's CPAN, although some
+; features are not implemented.
+;
+; http://search.cpan.org/~exodist/Test-Simple-1.302120/lib/Test/More.pm
+; for more details on the original.
+;
+; ----------------------------------------------------------------------
+; NOTE: For testing purposes, some 'private' functions are exported.
+; Their names all start with '_'; these functions should not be called
+; unless you know what you're doing.
+; ----------------------------------------------------------------------
+
 ;;    TODO:
 ;; - Make it show got and expected when test fails
 ;; - Add 'disable this test suite' keyword
@@ -13,14 +38,25 @@
          dstorrs/utils
          )
 
+(provide (except-out (all-defined-out)
+                     _tp _tf
+                     ))
 
+; Set this to put a prefix on some or all of your tests.  Example:
+;
+;    (parameterize ([prefix-for-test-report "TODO: "])
+;        ...tests...)
 (define prefix-for-test-report (make-parameter ""))
 
-(define _tp 0)
-(define _tf 0)
-(define saw-done-testing #f)
-(define expect-tests #f)
+(define _tp 0)                 ; how many tests have passed thus far?
+(define _tf 0)                 ; how many tests have failed thus far?
+(define saw-done-testing #f)   ; did we see a (done-testing) call?
+(define expect-tests #f)       ; how many tests should we expect to see? cf (expect-n-tests)
 
+;----------------------------------------------------------------------
+; Internal helper functions to set or get the number of tests passed  and failed.
+;
+; Call as (tests-passed) to get the number, (tests-passed 2) to add 2 to the number and return it
 (define (tests-passed [inc 0])
   (set! _tp (+ _tp inc))
   _tp)
@@ -28,12 +64,11 @@
 (define (tests-failed [inc 0])
   (set! _tf (+ _tf inc))
   _tf)
+;----------------------------------------------------------------------
 
-;;----------------------------------------------------------------------
-;;----------------------------------------------------------------------
-;;----------------------------------------------------------------------
-
-
+;  Track which test we're on.  splicing-let allows us to share state
+;  between these function and then treat the functions as though they
+;  were declared at top level
 (splicing-let ([test-num 0])
   (define (_inc-test-num! inc)
     (set! test-num (+ test-num inc))
@@ -47,6 +82,9 @@
 
 ;;----------------------------------------------------------------------
 
+; plumbers are called when the program exits.  In this case, when the
+; plumber flushes we will do a final report saying whether or not we
+; ran all tests.
 (void
  (plumber-add-flush! (current-plumber)
                      (lambda (flush-handle)
@@ -66,6 +104,18 @@
 
 ;;----------------------------------------------------------------------
 
+; test-more-check
+;
+; All the testing functions defined below are wrappers around this.
+;
+;  (test-more-check  #:got           got            ; the value to check
+;                    #:expected      [expected #t]  ; what it should be
+;                    #:msg           [msg ""]       ; what message to display
+;                    #:op            [op equal?]    ; (op got expected) determines success
+;                    #:show-expected/got? [show-expected/got? #t] ; display expected and got on fail?
+;                    #:report-expected-as [report-expected-as #f] ; show this as expected on fail
+;                    #:report-got-as      [report-got-as #f]      ; show this as got on fail
+;                    #:return             [return #f]             ; return value
 (define/contract
   (test-more-check  #:got           got
                     #:expected      [expected #t]
@@ -105,7 +155,7 @@
     (pass/fail-counter 1)
     (parameterize ((prefix-for-say (~a (prefix-for-test-report) (prefix-for-say))))
       (say ok-str (next-test-num) msg-str))
-  
+
     (if return
         return ; if we were told what to return, return that
         got))  ; otherwise, return the result
@@ -113,6 +163,15 @@
 
 ;;----------------------------------------------------------------------
 
+; simple boolean check.  Was the value of 'got' true? (i.e., it wasn't #f)
+;    (ok 7)        ; success.  returns 7. prints just the normal "ok <test-num>" banner
+;    (ok #f)       ; fail.  returns #f
+;    (ok 7 "foo")  ; success, returns 7, prints "ok <test-num> - foo"
+;
+; Note the use of unwrap-val.  If pass in a thunk it will be called
+; and the return value is used as the value of 'got'.  If you pass a
+; promise it will be forced.  If you pass anything else, that's the
+; value of got.
 (define (ok val [msg ""])
   (test-more-check #:got (unwrap-val val)
                    #:msg msg
@@ -120,17 +179,22 @@
                    #:op (lambda (a b) (not (false? a)))
                    ))
 
+; opposite of ok
 (define (not-ok val [msg ""])
   (ok (false? (unwrap-val val))
       msg))
 
-(define (is-false val [msg ""]) ; reads a little better than not-ok
+; alias for not-ok.  reads a little better
+(define (is-false val [msg ""])
   (ok (false? (unwrap-val val))
       msg))
 
 ;;----------------------------------------------------------------------
 
-;;    (matches (my-func) hash? "(my-func) returns a hash")
+; (matches val predicate [msg ""] [op equal?])
+;
+; Verify that the value of 'got' matches the predicate
+;    (matches (my-func) hash? "(my-func) returns a hash")
 (define (matches val predicate [msg ""] [op equal?])
   (test-more-check #:got (predicate val)
                    #:msg msg
@@ -146,7 +210,9 @@
                    #:return val
                    ))
 
-;;    alias for 'matches'
+;;    alias for 'matches'.  Reads cleaner for things like (is-type 7
+;;    integer?) but matches is more general, e.g. (matches 7 (lambda
+;;    (x) (= (add1 x) 8)))
 (define (is-type val type-pred [msg ""] [op equal?])
   (matches val type-pred msg op))
 
@@ -154,14 +220,28 @@
 (define (isnt-type val type-pred [msg ""] [op equal?])
   (not-matches val type-pred msg op))
 
+;;----------------------------------------------------------------------
 
+; (define (is val expected [msg ""] <optional comparison func> #:op <optional comparison func>
+;
+;    (is x 8 "x is 8")
+;    (is (myfunc 7) 8 "(myfunc 7) returns 8")
+;    (is x 8 "x is 8" =)       ; use = instead of equal? for comparison
+;    (is x 8 "x is 8" #:op =)  ; use = instead of equal? for comparison
+;
+; The bread and butter of test-more.  Asks if two values are the same
+; according to a particular comparison operator. (by default 'equal?')
+;
+; Returns the value that was checked (i.e. 'val', the first argument)
+;
+; NOTE: You can specify the comparison operator either positionally or
+; via a keyword. The ability to provide an operator was added after
+; this was already in use in code.  It was originally added as an
+; optional parameter, and the better idea of having it be a keyword
+; came along last.  In order to maintain backwards compatibility, both
+; are supported.  If both are provided then the positional one wins.
+;
 (define (is val expected [msg ""] [op1 #f] #:op [op2 #f])
-  ;; The ability to provide an operator was added after this was
-  ;; already in use in code.  It was originally added as an optional
-  ;; parameter, and the better idea of having it be a keyword came
-  ;; along last.  In order to maintain backwards compatibility, both
-  ;; are supported.  If both are provided then the positional one
-  ;; wins.
   (define op (or op1 op2 equal?))
   (test-more-check #:got (unwrap-val val)
                    #:expected expected
@@ -170,6 +250,11 @@
                    #:return val
                    ))
 
+;;----------------------------------------------------------------------
+
+; (define (isnt val expected [msg ""] <optional comparison func> #:op <optional comparison func>
+;
+; Same as 'is', but it checks that the values are NOT the same
 (define (isnt val
               expected
               [msg ""]
@@ -184,6 +269,9 @@
 
 ;;----------------------------------------------------------------------
 
+; (define/contract (like val regex [msg ""])
+;
+; Checks that the value matches a regex. Returns the result of the regexp match
 (define/contract (like val regex [msg ""])
   (->* (any/c regexp?) (string?) any)
   (define res (regexp-match regex (unwrap-val val)))
@@ -194,6 +282,10 @@
 
 ;;----------------------------------------------------------------------
 
+; (define/contract (unlike val regex [msg ""])
+;
+; Opposite of 'like' --checks that the value does NOT match a
+; regex. Returns either #t or #f.
 (define/contract (unlike val regex [msg ""])
   (->* (any/c regexp?)
        (string?)
@@ -206,7 +298,12 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (lives thunk [msg ""])
+; (define/contract (lives thunk [msg ""])
+;
+; Verify that a thunk will run without throwing an exception.  The
+; thunk may well contain other tests.
+
+(define/contract (lives thnk [msg ""])
   (->* (procedure?) (string?) any/c)
   (define (make-msg e)
     (cond [(exn? e) (format "Exception thrown! Test message: '~a'.  Exception: '~a'" msg (exn-message e))]
@@ -218,13 +315,34 @@
                      (test-more-check #:got #f
                                       #:return e
                                       #:msg (make-msg e)))))
-    (define result (thunk))
+    (define result (thnk))
     (test-more-check #:got result  #:expected result  #:msg msg)))
 
 ;;----------------------------------------------------------------------
 
-;; note that if you give it a function predicate that predicate must
-;; take one argument but it can be anything, not just an (exn?)
+; (define/contract (throws thnk pred [msg ""])
+;
+; Verify that a thunk DOES throw an exception and that the exception
+; matches a specified predicate.
+;
+;    'pred' could be anything, but some types are handled specially:
+;        - string: Check if it is exactly the (non-boilerplate) exn message
+;        - proc:   Pass it the exn, see if it returns #t
+;        - regex:  Check if the regex matches the (exn message || string) thrown
+;        - etc:    Check if it's equal? to the exception
+;
+; NOTE: If you give it a function predicate that predicate must take
+; one argument but it can be anything, not just an (exn?)
+;
+; NOTE: When providing a string as the value, it is matched against
+; the non-boilerplate part of the exception message (assuming there is
+; an exception).  That means that everything up to the first
+; "expected: " is snipped off, as is everything after the last \n
+;
+;    (define (get-msg e) (if (exn? e) (exn-message e) e))
+;    (let* ([str (regexp-replace #px"^.+?expected: " (get-msg the-exception) "")]
+;           [str (regexp-replace #px"(.+)\n.+$" str "\\1")])
+;        str)
 (define/contract (throws thnk pred [msg ""])
   (->* ((-> any)
         any/c
@@ -268,7 +386,9 @@
 
 ;;----------------------------------------------------------------------
 
-;;    When all you care about is that it dies, not why
+; (define/contract (dies thnk [msg ""])
+;
+; Use this when all you care about is that it dies, not why.
 (define/contract (dies thnk [msg ""])
   (->* (procedure?)
        (string?)
@@ -277,6 +397,33 @@
 
 ;;----------------------------------------------------------------------
 
+; (test-suite ...)
+;
+; Group a bunch of tests together and give them an identity.  Trap
+; exceptions that they throw and report on whether they threw.  Print
+; header and footer banners so it's easy to tell where they
+; start/finish.  Returns (void)
+;
+;    (test-suite
+;      "user creation"
+;
+;      (lives (thunk (my-list)) "(my-list) lives")
+;      (is (my-list) '() "(my-list) returns '()")
+;      (is (my-list 7) '(7) "(my-list 7) returns '(7)")
+;     )
+;
+;  The above code prints:
+;
+; ### START test-suite: user creation
+; ok 1 - (my-list) lives
+; ok 2 - (my-list) returns '()
+; ok 3 - (my-list 7) returns '(7)
+;
+; Total tests passed so far: 3
+; Total tests failed so far: 0
+;
+; ### END test-suite: user creation
+;
 (define-syntax (test-suite stx)
   (syntax-case stx ()
     [(_ msg body body1 ...)
@@ -291,12 +438,29 @@
 
 ;;----------------------------------------------------------------------
 
+; (define/contract (make-test-file fpath
+;                                  [text (rand-val "test file contents")]
+;                                  #:overwrite [overwrite #t])
+;
+; Creates (and, optionally, populates) a file for use by a test.
+;
+; If the directory for fpath does not exist then it will be created.
+;
+; If fpath is a directory, a file will be created with a random
+; name. If it's a path, that path will be used.  If the file exists
+; then make-test-file will either throw an exception or overwrite the
+; existing file, depending on the value of 'overwrite'.  DEFAULT IS
+; TO OVERWRITE.
+;
+; The file will be populated with the text you specify, or with some
+; random text if you don't specify anything.  (Note that it's written
+; via 'display'.)
 (define/contract (make-test-file fpath [text (rand-val "test file contents")] #:overwrite [overwrite #t])
   (->* (path-string?) (string? #:overwrite boolean?) path-string?)
   (define-values (dir fn ignore) (split-path fpath))
 
   (when (not (directory-exists? dir))
-    (make-directory dir))
+    (make-directory* dir))
 
   (define filepath
     (cond [(file-exists? fpath) fpath]
@@ -311,31 +475,108 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (expect-n-tests n)  ;; Call this to say "this script will run 17 tests" or however many
+;(define/contract (expect-n-tests n)
+;
+; Call this to say "this script will run 17 tests" (or however many).
+; If it runs more or fewer then an error will be reported at the end.
+;
+; See also: done-testing
+;
+; If neither this nor done-testing are seen before end of file, a
+; warning will be reported when the tests are run.
+(define/contract (expect-n-tests n)
   (-> exact-positive-integer? any)
   (set! expect-tests n))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (done-testing)  ;; call this as the last line in your script to say "yep, this is where I meant to exit"
+; (define/contract (done-testing)
+;
+; It can be a pain to count exactly how many tests you're going to
+; run, especially if some of the tests are conditional.  If you simply
+; put (done-testing) as the last line in your test file then test-more
+; will assume that you completed correctly.
+;
+; If neither this nor expect-n-tests are seen before end of file, a
+; warning will be reported when the tests are run.
+(define/contract (done-testing)
   (-> any)
   (say "Done.")
   (set! saw-done-testing #t))
 
 ;;----------------------------------------------------------------------
 
+;(define/contract (diag . args)
+;
+; Variadic print statement that outputs the specified items with a
+; standard prefix, "\t####", that's easy for test output analyzers to
+; detec
 (define/contract (diag . args)
   (->* () () #:rest (listof any/c) any)
   (say "\t#### " args))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (is-approx got expected [msg ""] #:threshold [threshold 1] #:with [with identity] #:op [op <=])
-  (->* (any/c any/c) 
+; (define/contract (is-approx got expected [msg ""]
+;                             #:threshold [threshold 1]
+;                             #:with [with identity]
+;                             #:op [op <=]
+;                             #:abs-diff? [abs-diff? #t])
+;
+;    op          boolean comparator used to determine success.  Gets two arguments. Default: <=
+;    with        A function that will generate a numeric value from each of 'got', 'expected'
+;    threshold   How close do they need to be?  Default is 1.
+;    abs-diff?   Use the absolute value of the difference?
+;
+; Test that two values ('got' and 'expected') are approximately the
+; same within a certain threshold.  got and expected must either be
+; numeric or you must provide a 'with' function that generates an
+; exact numeric value when given one of the values.  We then check if
+; difference between those values is within the specified threshold.
+; More specifically, we check if this is true:
+;
+;    (define diff (- (with expected) (with got)))
+;    (op (if abs-diff? (abs diff) diff) threshold)
+;
+; op is usually going to be <= but you can specify something else if
+; you want.  (e.g. '>' to say "it must be MORE different than this")
+;
+; Examples:
+;
+;    (define now (current-seconds)) ; epoch time
+;    (is-approx  (and (myfunc) (current-seconds)) now "(myfunc) ran in no more than 1 second")
+;
+; (for ([num (in-range 3 7)])
+;   (let ([myfunc (thunk (make-list num 'x))])
+;     (is-approx  (length (myfunc))
+;                 6
+;                 #:threshold 3
+;                 #:abs-diff? #f
+;                 "(myfunc) => list of 3-6 elements")))
+; (is-approx  (hash 'age 8)
+;             (hash 'age 9)
+;             #:with (curryr hash-ref 'age)
+;             "age is about 9")
+;
+; ;  The following is a silly example but it shows some of the versatility
+; (is-approx  ((thunk "Foobar"))
+;             "f"
+;             #:with (compose1 char->integer (curryr string-ref 0) string-downcase)
+;             #:abs-diff? #f
+;             "(myfunc) returns a string that starts with 'f', 'F', 'g', or 'G'")
+;
+(define/contract (is-approx got expected [msg ""]
+                            #:threshold [threshold 1]
+                            #:with [with identity]
+                            #:op [op <=]
+                            #:abs-diff?  [abs-diff? #t]
+                            )
+  (->* (any/c any/c)
        (string?
         #:threshold (and/c exact? (or/c zero? positive?))
         #:with (-> any/c number?)
-        #:op (-> any/c any/c boolean?))
+        #:op (-> any/c any/c boolean?)
+        #:abs-diff? boolean?)
        any/c)
   (define with-name       (object-name with))
   (define got-val         (unwrap-val got))
@@ -350,7 +591,7 @@
   ;; (say "expected-result: " expected-result)
 
   (when (not (andmap number? (list got-result expected-result)))
-    (raise-arguments-error 'isnt-approx
+    (raise-arguments-error 'is-approx
                            "arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"
                            "got" got
                            "expected" expected
@@ -360,28 +601,50 @@
 
   (define diff (- expected-result got-result))
   ;  (say "diff: " diff)
-  
-  (test-more-check #:got (op (abs diff) threshold)
+
+  (test-more-check #:got (op (if abs-diff? (abs diff) diff) threshold)
                    #:expected #t
                    #:msg msg
                    #:report-expected-as (format "(~a ~a) => ~a" with-name expected expected-result)
                    #:report-got-as (format "(~a ~a) => ~a" with-name got got-result)
                    #:return diff)
-                   
+
   )
 
 ;;----------------------------------------------------------------------
 
-(define/contract (isnt-approx got expected [msg ""] #:threshold [threshold 1] #:with [with identity] #:op [op >])
-  (->* (any/c any/c) 
-       (string? #:threshold (and/c exact? (or/c zero? positive?))  #:with (-> any/c exact?))
+; (define/contract (isnt-approx got expected [msg ""]
+;                               #:threshold [threshold 1]
+;                               #:with [with identity]
+;                               #:op [op >]
+;                               #:abs-diff?  [abs-diff? #t])
+;
+; Same as is-approx but tests that it's outside the threshold
+(define/contract (isnt-approx got expected [msg ""]
+                              #:threshold [threshold 1]
+                              #:with [with identity]
+                              #:op [op #f]
+                              #:abs-diff?  [abs-diff? #t]
+                              )
+  (->* (any/c any/c)
+       (string? #:threshold (and/c exact? (or/c zero? positive?))
+                #:with (-> any/c exact?)
+                #:op   (-> any/c any/c any/c)
+                #:abs-diff? boolean?)
        any/c)
-  (is-approx got expected msg #:threshold threshold #:with with #:op op)
+
+  (define comp
+    (cond [(procedure? op) op]
+          [abs-diff? >]
+          [else (lambda (n)
+                  (cond [(negative? n) (< n (* -1 threshold))]
+                        [else (> n threshold)]))]))
+
+  (is-approx got expected msg
+             #:threshold threshold
+             #:with with
+             #:op comp
+             #:abs-diff? abs-diff?)
   )
 
 ;;----------------------------------------------------------------------
-
-
-(provide (except-out (all-defined-out)
-                     _tp _tf
-                     ))

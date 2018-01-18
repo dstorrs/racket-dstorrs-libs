@@ -383,6 +383,37 @@
                   "(is-approx '(a b c) '(d e f g h) #:threshold 10 #:with length)")
        2
        "(is-approx '(a b c) '(d e f g) #:with length #:threshold 10) returns 2")
+
+   (define now (current-seconds)) ; epoch time
+   (is-approx  (and (sleep 1) (current-seconds)) now "(myfunc) took no more than 1 second")
+
+   (let ([myfunc (thunk (make-list 7 'x))])
+     (is-approx  (length (myfunc)) 8 "(myfunc) returned a list of about 8 elements"))
+
+   (for ([num (in-range 7)])
+     (let ([myfunc (thunk (make-list num 'x))])
+       (is-approx  (length (myfunc)) 3 #:threshold 3 (~a "(myfunc) returned list of " num " elements, which is in the expected range (0-6)"))))
+
+   (for ([num (in-range 3 7)])
+     (let ([myfunc (thunk (make-list num 'x))])
+       (is-approx  (length (myfunc))
+                   6
+                   #:threshold 3
+                   #:abs-diff? #f
+                   "(myfunc) => list of 3-6 elements")))
+
+   (is-approx  (hash 'age 8)
+               (hash 'age 9)
+               #:with (curryr hash-ref 'age)
+               "age is about 9")
+
+   ;  The following is a silly example but it shows some of the versatility
+   (is-approx  ((thunk "Foobar"))
+               "f"
+               #:with (compose1 char->integer (curryr string-ref 0) string-downcase)
+               #:abs-diff? #f
+               "(myfunc) returns a string that starts with 'f', 'F', 'g', or 'G'")
+
    )
   )
 
