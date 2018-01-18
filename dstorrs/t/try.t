@@ -17,17 +17,29 @@
                        [catch (string? (lambda (e) (raise "expected this")))]))
            #px"expected this"
            "exceptions are caught as expected")
-   (let ((finally-clause-executed #f))
+   (let ([finally-clause-executed #f]
+         [catch-clause-executed #f])
      (try [#t]
-          [catch (identity (lambda (e) (raise e)))]
+          [catch (identity (lambda (e) (set! catch-clause-executed #t) (raise e)))]
           [finally (set! finally-clause-executed 7)])
-     (ok finally-clause-executed "'finally' clause executes if you exit without error"))
+     (ok (and finally-clause-executed
+              (not catch-clause-executed))
+         "'finally' clause executes if you exit without error"))
 
    (let ((finally-clause-executed #f))
      (try [(raise "foo")]
           [catch (identity (lambda (e) #t))]
           [finally (set! finally-clause-executed 8)])
      (ok finally-clause-executed "'finally' clause executes if you have an exception"))
+
+   (let ((pre-clause-executed #f)
+         (catch-clause-executed #f))
+     (try [(raise "foo")]
+          [pre (set! pre-clause-executed #t)]
+          [catch (identity (lambda (e) (set! catch-clause-executed #t)))])
+     (ok (and pre-clause-executed
+              catch-clause-executed)
+         "try/pre/catch is a legal syntax"))
 
    (let ((finally-clause-executed #f)
          (pre-clause-executed #f))

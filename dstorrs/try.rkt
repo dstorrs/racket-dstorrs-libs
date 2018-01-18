@@ -1,6 +1,6 @@
 #lang racket
 
-(require racket/syntax)
+(require (for-syntax syntax/parse))
 
 ;;  PURPOSE: Racket's with-handlers has poor end weight; it puts the
 ;;  error conditions first, distracting from the actual point of the
@@ -92,21 +92,32 @@
 ;; *) If no exception raised:  The result of the 'try' block
 ;; *) If exception raised:     The result of the 'catch' block
 ;;
+;;    The following combinations are legal:
+;; try    ; traps anything that's raised, returns it.  (i.e., defatalizes it)
+;; try + catch
+;; try + pre + catch
+;; try + catch + finally
+;; try + pre + catch + finally
+
 (define-syntax (try stx)
-  (syntax-case stx ()
-    [(try [body0 body1 ...])
+  (syntax-parse stx
+    #:datum-literals (try catch)
+    [(try [body0:expr body1:expr ...])
      #'(with-handlers ((identity identity))
          body0
          body1
          ...
          )]
-    [(try [body0 body1 ...][catch catch0 catch1 ...])
+    [(try [body0:expr body1:expr ...]
+                     [catch catch0:expr catch1:expr ...])
      #'(with-handlers (catch0 catch1 ...)
          body0
          body1
          ...
          )]
-    [(try [body0 body1 ...][catch catch0 catch1 ...][finally f0 f1 ... ])
+    [(try [body0 body1 ...]
+          [catch catch0 catch1 ...]
+          [finally f0 f1 ... ])
      #'(with-handlers (catch0 catch1 ...)
          (dynamic-wind
            (thunk '())
@@ -116,12 +127,21 @@
            (thunk f0 f1 ...)
          ))]
     [(try [body0 body1 ...]
-          [pre p0 p1 ...]          
-          [catch catch0 catch1 ...]
+          [pre pre0 pre1 ...]
+          [catch catch0 catch1 ... ])
+     #'(with-handlers (catch0 catch1 ...)
+         (dynamic-wind
+           (thunk pre0 pre1   ...)
+           (thunk body0 body1 ...)
+           (thunk '())
+         ))]
+    [(try [body0 body1 ...]
+          [pre     pre0 pre1 ...]          
+          [catch   catch0 catch1 ...]
           [finally f0 f1 ... ])
      #'(with-handlers (catch0 catch1 ...)
          (dynamic-wind
-           (thunk p0 p1 ...)
+           (thunk pre0 pre1 ...)
            (thunk body0
                   body1
                   ...)
@@ -129,9 +149,11 @@
          ))]
     ))
 
+  
+
 (define-syntax (defatalize stx)
-  (syntax-case stx ()
-                [(defatalize body0 body1 ...)
-                 #'(try [body0 body1 ...][catch ((lambda (e) #t) identity)])]))
+  (syntax-parse stx
+    [(defatalize body0 body1 ...)
+     #'(try [body0 body1 ...][catch ((lambda (e) #t) identity)])]))
 
 (provide  (all-defined-out))
