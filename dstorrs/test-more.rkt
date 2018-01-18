@@ -449,8 +449,19 @@
 ; If fpath is a directory, a file will be created with a random
 ; name. If it's a path, that path will be used.  If the file exists
 ; then make-test-file will either throw an exception or overwrite the
-; existing file, depending on the value of 'overwrite'.  DEFAULT IS
-; TO OVERWRITE.
+; existing file, depending on the value of 'overwrite'.  DEFAULT IS TO
+; OVERWRITE because you're generating a file for testing and it's
+; assumed that you know what you're doing.
+;
+; Note: You will need to manually delete the file...
+;
+; ...unless you do something like this:
+;
+;    (let ([test-file-path (make-test-file (make-temporary-file))])
+;       ...the test file has been created and populated...
+;    )
+;    ; After leaving the scope of the 'let', the test file is
+;    ; guaranteed to have been deleted.
 ;
 ; The file will be populated with the text you specify, or with some
 ; random text if you don't specify anything.  (Note that it's written
