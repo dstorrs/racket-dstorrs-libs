@@ -12,25 +12,42 @@
 ;
 ;;  USAGE:
 ;;
-;;    Standard with-handlers
-;; (with-handlers ([(or exn? string?) (lambda (e) (say "boom"))])
-;;   (raise-argument-error 'foo "foo" "foo"))
+;;    Standard with-handlers.  (NB:  functions in the body are just examples, not real)
+;; (with-handlers ([exn:fail:contract?   (lambda (e) ...lots of stuff...)]
+;;                 [string?              (lambda (e) ...more stuff...)]
+;;                 [exn:fail:tcp-connect? (lambda (e) ...even more stuff...)])
 ;;
-;; Output:
-;; boom!
+;;   (define server-handle (or (connect-to-server) (raise "could not connect")))
+;;   (define user (get-user-data server-handle (get-password)))
+;;   ...etc...
+;;  )
 ;;
-;;    Basic try/catch:
-;; (try [(say "foo") (raise-syntax-error "foo")]
-;;      [catch (exn:fail? (lambda (e) (displayln "guarded!")))]
-;;      )
+;;  ;With the above code you're four lines in before you find out what
+;;  ;the code actually does...and that's assuming that the exception
+;;  ;handlers are concise, one-line things, which they might not be.
+;;  ;Compare to an equivalent try/catch:
 ;;
-;; Output:
-;; foo
-;; guarded!
+;; (try [
+;;        (define server-handle (or (connect-to-server) (raise "could not connect")))
+;;        (define user (get-user-data server-handle (get-password)))
+;;        ...etc...
+;;      ]
+;;      [catch ([exn:fail:contract?   (lambda (e) ...lots of stuff...)]
+;;              [string?              (lambda (e) ...more stuff...)]
+;;              [exn:fail:tcp-connect? (lambda (e) ...even more stuff...)])])
 ;;
-;;    Full try/catch/finally:
-;; (try [(say "foo") (raise-syntax-error "foo")]
-;;      [catch (exn:fail? (lambda (e) (displayln "guarded!")))]
+;;   ; With the try/catch block you immediately know that you're
+;;   ; dealing with something that's connecting to a server and fetching
+;;   ; user data.  You can read the happy path first to understand
+;;   ; what's supposed to happen, then look in the 'catch' block to see
+;;   ; how it handles problems.
+;;
+;;
+;;   ; But wait, there's more!  Want to have some cleanup that is
+;;   ; guaranteed to happen even if there's an exception?  We've got you
+;;   ; covered
+;; (try [(displayln "foo") (raise-syntax-error  'name "message")]
+;;      [catch (exn:fail? (lambda (e) (displayln "caught!")))]
 ;;      [finally (displayln "finally 1")  (displayln "finally 2")]
 ;;      )
 ;;
@@ -38,23 +55,43 @@
 ;; foo
 ;; finally 1
 ;; finally 2
-;; guarded!
+;; caught!
 ;;
-;;    Still works inside a dynamic-wind even though it generates one:
+;;    ; Still not enough?  How about some preflight setup that is
+;;    ; guaranteed to happen before the body executes, even in the
+;;    ; presence of jumping in and out via continuation?
+;; (try [(displayln "body") (raise "foo")]
+;;      [pre (displayln "pre")]
+;;      [catch (string? (lambda (e) (displayln "caught!")))]
+;;      [finally (say "finally")])
+;;
+;;  Output:
+;;  pre
+;;  body
+;;  finally!
+;;  caught!
+;;
+;;    ; 'try' still works inside a dynamic-wind even though it generates one:
 ;; (dynamic-wind
 ;;   (thunk (displayln "outer pre"))
 ;;   (thunk (try [(displayln "body") (raise "error!")]
-;;               [catch (string? (lambda (e) (displayln "body guard")))]
+;;               [pre (displayln "body pre")] 
+;;               [catch (string? (lambda (e) (displayln "body catch")))]
 ;;               [finally (displayln "body finally")]))
-;;   (thunk (displayln "outer post")))
+;;   (thunk (displayln "outer finally")))
 ;;
 ;; Output:
 ;; outer pre
+;; body pre
 ;; body
 ;; body finally
-;; body guard
-;; outer post
-
+;; body catch
+;; outer finally
+;;
+;;    The return value from a try is:
+;; *) If no exception raised:  The result of the 'try' block
+;; *) If exception raised:     The result of the 'catch' block
+;;
 (define-syntax (try stx)
   (syntax-case stx ()
     [(try [body0 body1 ...])
