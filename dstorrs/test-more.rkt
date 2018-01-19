@@ -40,12 +40,15 @@
                      _tp _tf
                      ))
 
+; Parameter: prefix-for-test-report
+;
 ; Set this to put a prefix on some or all of your tests.  Example:
 ;
 ;    (parameterize ([prefix-for-test-report "TODO: "])
 ;        ...tests...)
 (define prefix-for-test-report (make-parameter ""))
 
+; Internal variable
 (define _tp 0)                 ; how many tests have passed thus far?
 (define _tf 0)                 ; how many tests have failed thus far?
 (define saw-done-testing #f)   ; did we see a (done-testing) call?
@@ -64,9 +67,11 @@
   _tf)
 ;----------------------------------------------------------------------
 
-;  Track which test we're on.  splicing-let allows us to share state
-;  between these function and then treat the functions as though they
-;  were declared at top level
+;  Track which test we're on. (i.e. test 1, 2, 3....) 
+;  splicing-let allows us to share state between these functions and
+;  then treat the functions as though they were declared at top level
+;  without exposing the actual 'test-num' variable to the rest of the
+;  module.
 (splicing-let ([test-num 0])
   (define (_inc-test-num! inc)
     (set! test-num (+ test-num inc))
@@ -508,6 +513,10 @@
 ;
 ; If neither this nor expect-n-tests are seen before end of file, a
 ; warning will be reported when the tests are run.
+;
+; If both this and expect-n-tests are run, this wins; it will not
+; check how many tests were run.
+;
 (define/contract (done-testing)
   (-> any)
   (say "Done.")
