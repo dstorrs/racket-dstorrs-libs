@@ -26,10 +26,8 @@
 ; ----------------------------------------------------------------------
 
 ;;    TODO:
-;; - Make it show got and expected when test fails
 ;; - Add 'disable this test suite' keyword
 ;; - Add 'TODO this test suite' keyword
-;; - Add 'too few tests ran' detection
 ;; - Fix the issue where it sometimes shows 'expected #f got #f'
 ;; - On test-suite, add 'setup' and 'cleanup' keywords that take thunks
 
@@ -520,11 +518,19 @@
 ;(define/contract (diag . args)
 ;
 ; Variadic print statement that outputs the specified items with a
-; standard prefix, "\t####", that's easy for test output analyzers to
-; detec
+; standard prefix, "\t#### ", that's easy for test output analyzers to
+; detect.  This prefix is prepended to the current value of the
+; prefix-for-say parameter, so this:
+;
+;    (parameterize ([prefix-for-say "my awesome message"])
+;        (diag "foobar"))
+;
+; ...is the same as (displayln "\t#### my awesome messagefoobar")
+;
 (define/contract (diag . args)
   (->* () () #:rest (listof any/c) any)
-  (say "\t#### " args))
+  (parameterize ([prefix-for-say (~a "\t#### " (prefix-for-say))])
+    (say args)))
 
 ;;----------------------------------------------------------------------
 
@@ -573,7 +579,6 @@
 ; (is-approx  ((thunk "Foobar"))
 ;             "f"
 ;             #:with (compose1 char->integer (curryr string-ref 0) string-downcase)
-;             #:abs-diff? #f
 ;             "(myfunc) returns a string that starts with 'f', 'F', 'g', or 'G'")
 ;
 (define/contract (is-approx got expected [msg ""]
