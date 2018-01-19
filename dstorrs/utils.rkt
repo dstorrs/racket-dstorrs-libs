@@ -545,12 +545,19 @@
 ;;
 ;;  If you don't specify the path then one will be created for you.
 (define/contract (with-temp-file proc #:path [the-path (make-temporary-file)])
-  (->* ((-> path? any))
+  (->* ((-> path-string? any))
        (#:path path-string?)
        any)
   
   (dynamic-wind
-    (thunk #t)
+    (thunk
+     (define-values (dir filename ignore) (split-path the-path))
+     (make-directory* dir)
+
+     ; Note the race condition here.  Nothing to do about it.
+     (when (not (file-exists? the-path))
+       (define new-file (make-temporary-file))
+       (rename-file-or-directory new-file the-path)))
     (thunk (proc the-path))
     (thunk
      (with-handlers ([exn:fail:filesystem?

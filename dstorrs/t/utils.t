@@ -110,12 +110,10 @@
   (test-suite
    "with-temp-file"
 
-   (say "entering    with-temp-file tests")
    (define the-path "")
 
    (is (with-temp-file
          (lambda (filepath)
-           (say "filepath is; " filepath)
            (set! the-path filepath)
            (ok (file-exists? filepath)
                "the temporary file was created")
@@ -139,7 +137,7 @@
                                        (raise (fake-exn))
                                        ))
                             (true? (lambda (e)
-                                     (say "inside catch-all handler. e was: " e)
+                                     ;(say "inside catch-all handler. e was: " e)
                                      (ok #f (~a "expected to throw the string 'foo', actually threw: " e)))))
               (with-temp-file
                 (lambda (filepath)
@@ -160,7 +158,15 @@
          (is filepath test-path "file is at the specified path")
          (is filepath the-path "the-path was properly updated")))
      (ok (not (file-exists? the-path)) "after with-temp-file, the-path does not exist"))
-   
+
+   (with-temp-file
+     #:path "/tmp/askjghwkhaedjhfodjoewjowehgaegr/foo"
+     (lambda (filepath)
+       (set! the-path filepath)
+       (ok (file-exists? filepath) "test path was passed in and it exists")
+       (is filepath the-path "the-file was updated")))
+   (ok (not (file-exists? the-path)) "after with-temp-file, the-path does not exist")
+
    )
   )
 
