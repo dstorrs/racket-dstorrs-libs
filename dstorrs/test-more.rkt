@@ -480,13 +480,12 @@
 ; random text if you don't specify anything.  (Note that it's written
 ; via 'display'.)
 (define/contract (make-test-file [fpath (make-temporary-file)]
-                                 [text (rand-val "test file contents")]
+                                 #:text [text (rand-val "test file contents")]
                                  #:overwrite [overwrite #t])
-  (->* () (path-string? string? #:overwrite boolean?) path-string?)
+  (->* () (path-string? #:text string? #:overwrite boolean?) path-string?)
   (define-values (dir fn ignore) (split-path fpath))
 
-  (when (not (directory-exists? dir))
-    (make-directory* dir))
+  (make-directory* dir) ; this doesn't fail if the directory exists, so no reason not to do it
 
   (define filepath
     (cond [(file-exists? fpath) fpath]
@@ -497,7 +496,8 @@
     filepath
     (thunk (display text))
     #:exists (if overwrite 'replace 'error))
-  filepath)
+
+  (path-string->string filepath))
 
 ;;----------------------------------------------------------------------
 

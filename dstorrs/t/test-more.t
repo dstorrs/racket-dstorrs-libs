@@ -309,7 +309,7 @@
  (delete-test-file)
 
  (not-ok (file-exists? filepath) "file successfully removed")
- (lives (thunk (make-test-file filepath "this is the right text"))
+ (lives (thunk (make-test-file filepath #:text "this is the right text"))
         "lived: make-test-file filepath with specified text"
         )
 
@@ -319,7 +319,7 @@
      "this is the right text"
      "file was correctly populated")
 
- (throws (thunk (make-test-file filepath "this is new text" #:overwrite #f))
+ (throws (thunk (make-test-file filepath #:text "this is new text" #:overwrite #f))
          #px"file exists"
          "make-test-file dies if the file exists and you say '#:overwrite #f'"
          )
@@ -327,6 +327,9 @@
    (ok (file-exists? the-path) "a random filename was generated and returned"))
 
  (let ((the-path "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe/foo"))
+   (with-handlers ([void void]) ; ignore exceptions
+     (delete-directory/files "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe"))
+   
    (ok (not (directory-exists? "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe"))
        "about to run make-test-file with a directory that doesn't exist.  Fortunately, the directory really doesn't exist")
    (lives (thunk (make-test-file the-path)) "make-test-file with a path to a non-existent dir lives")
