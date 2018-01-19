@@ -4,11 +4,24 @@
          dstorrs/try
          )
 
-(provide (all-defined-out))
+(provide valid-json?)
 
+;;======================================================================
+;;    See the Racket-standard 'json' module for more.
+;;======================================================================
+
+;;    Verify that some JSON is valid.  For strings it does
+;;    string->jsexpr and (if decoding succeeds) returns the result.
+;;    If decoding fails then valid-json? returns #f
 (define/contract (valid-json? j)
-  (-> any/c boolean?)
+  (-> any/c (or/c #f jsexpr?))
+
   (cond [(not (jsexpr? j)) #f]
-        [(string? j) (try [(not (false? (string->jsexpr j)))]
-                          [catch (identity (lambda (e) #f))])]
+        [(non-empty-string? j)
+         (try [ (define result (string->jsexpr j))
+                (displayln result)
+                (cond [(eof-object? result) #f]
+                      [else result])
+                ]
+              [catch (identity (lambda (e) #f))])]
         [else #t]))
