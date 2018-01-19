@@ -15,6 +15,7 @@
 ;;  as some type definitions.
 ;;======================================================================
 
+; Contract for the exn:fail:insufficient-space exception (defined below)
 (define/contract (exn:fail:insufficient-space/c msg ccm req avail source type)
   (-> any/c any/c any/c any/c any/c any/c ;; Don't check on input...
       (values ;; ...check on output. Makes for cleaner error messages.
@@ -123,8 +124,9 @@
 ;; check-fruit-type: next-piece must be apple or pear
 ;;   next-piece: 'banana
 ;;
-;; NOTES: First off, this probably should be there has to be an easier
-;; way to do this.  Second, this probably shouldn't be in this library
+;; NOTES: First off, this probably shouldn't be here, since there has
+;; to be an easier and built-in way to do this that I simply haven't
+;; found yet.  Second, this probably shouldn't be in this library
 ;; since it's not explicitly related to exceptions.  I'm tempted to
 ;; put it in utils.rkt, but that's getting pretty overstuffed.
 ;;
