@@ -538,13 +538,27 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (with-temp-file proc)
-  (-> (-> path? any) any)
-  (define the-path (make-temporary-file))
+;; (define/contract (with-temp-file proc #:path [the-path (make-temporary-file)])
+;;
+;;  Create a temporary file, pass its path to the specified proc, then
+;;  delete it when the proc returns, even if an exception is thrown.
+;;
+;;  If you don't specify the path then one will be created for you.
+(define/contract (with-temp-file proc #:path [the-path (make-temporary-file)])
+  (->* ((-> path? any))
+       (#:path path-string?)
+       any)
+  
   (dynamic-wind
     (thunk #t)
     (thunk (proc the-path))
-    (thunk (delete-file the-path))))
+    (thunk
+     (with-handlers ([exn:fail:filesystem?
+                      (lambda (e)
+                        (match (exn-message e)
+                          [(pregexp #px"No such file or directory") #t]
+                          [_ (raise e)]))])
+       (delete-file the-path)))))
 
 ;;----------------------------------------------------------------------
 

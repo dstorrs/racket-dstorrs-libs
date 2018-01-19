@@ -108,6 +108,64 @@
 
 (when #t
   (test-suite
+   "with-temp-file"
+
+   (say "entering    with-temp-file tests")
+   (define the-path "")
+
+   (is (with-temp-file
+         (lambda (filepath)
+           (say "filepath is; " filepath)
+           (set! the-path filepath)
+           (ok (file-exists? filepath)
+               "the temporary file was created")
+           (is filepath the-path "the-path was properly updated")
+           7))
+       7
+       "with-temp-file returns its final value")
+   (ok (not (file-exists? the-path)) "the file was deleted after with-temp-file returned")
+
+   (lives (thunk
+           (with-temp-file
+             (lambda (filepath)
+               (delete-file filepath)
+               (ok (not (file-exists? filepath)) "inside proc, successfully deleted file"))))
+          "successfully completed with-temp-file where I deleted the file inside the proc and it didn't explode at the fact that the file wasn't there when it exited")
+
+   (struct fake-exn ())
+   (throws (thunk
+            (with-handlers ((string? (lambda (e)
+                                       (ok (not (file-exists? the-path)) "the file was still deleted after with-temp-file threw an exception")
+                                       (raise (fake-exn))
+                                       ))
+                            (true? (lambda (e)
+                                     (say "inside catch-all handler. e was: " e)
+                                     (ok #f (~a "expected to throw the string 'foo', actually threw: " e)))))
+              (with-temp-file
+                (lambda (filepath)
+                  (set! the-path filepath)
+                  (raise "foo")))))
+           fake-exn?
+           "with-temp-file died as expected and was processed by the with-handlers as expected")
+
+   (let ([test-path (make-temporary-file)])
+     (ok (file-exists? test-path) "before with-temp-file, temporary file was successfully created")
+     (ok (not (file-exists? the-path)) "before with-temp-file, the-path does not exist")
+
+     (with-temp-file
+       #:path test-path
+       (lambda (filepath)
+         (set! the-path filepath)
+         (ok (file-exists? test-path) "test path was passed in and it exists")
+         (is filepath test-path "file is at the specified path")
+         (is filepath the-path "the-path was properly updated")))
+     (ok (not (file-exists? the-path)) "after with-temp-file, the-path does not exist"))
+   
+   )
+  )
+
+(when #t
+  (test-suite
    "safe-file-exists?"
 
    (lives (thunk
@@ -178,7 +236,7 @@
  (define immut (hash 'a 1))
  (ok (immutable? immut) "immut is immutable")
  (ok (not (immutable? (hash->mutable immut))) "hash->mutable immut is mutable")
-)
+ )
 
 (test-suite
  "hash-meld"
@@ -192,7 +250,7 @@
  (is (hash-meld a x y z)
      (hash->mutable (hash 'a 1 'b 3 'c 5 'd 6 'e 8))
      "hash-meld works with three immutable and + one mutable hashes (result is immutable since first hash was immutable)")
-)
+ )
 
 (test-suite
  "safe-hash-set"
@@ -560,41 +618,6 @@
 
 (when #t
   (test-suite
-   "with-temp-file"
-
-   (define the-path "")
-
-   (is (with-temp-file
-         (lambda (filepath)
-           (set! the-path filepath)
-           (ok (file-exists? filepath)
-               "the temporary file was created")
-           7))
-       7
-       "with-temp-file returns its final value")
-
-   (ok (not (file-exists? the-path)) "the file was deleted after with-temp-file returned")
-
-   (struct fake-exn ())
-   (throws (thunk
-            (with-handlers ((string? (lambda (e)
-                                       (ok (not (file-exists? the-path)) "the file was still deleted after with-temp-file threw an exception")
-                                       (raise (fake-exn))
-                                       ))
-                            (true? (lambda (e)
-                                     (say "inside catch-all handler. e was: " e)
-                                     (ok #f (~a "expected to throw the string 'foo', actually threw: " e)))))
-              (with-temp-file
-                (lambda (filepath)
-                  (set! the-path filepath)
-                  (raise "foo")))))
-           fake-exn?
-           "with-temp-file died as expected and was processed by the with-handlers as expected")
-   )
-  )
-
-(when #t
-  (test-suite
    "!="
    (ok (!= 7 8 9) "(!= 7 8 9) works")
    (is-false (!= 7 7 7) "(!= 7 7 7) works")
@@ -853,7 +876,7 @@
            (is-false (delete-file-if-exists test)
                      "(delete-file-if-exists test) on a deleted file returned #f to say file not deleted"))
           "(delete-file-if-exists test) on a deleted file lived")
-   
+
    (lives (thunk
            (is (delete-file-if-exists test 0)
                0
@@ -912,20 +935,20 @@
    (is (symbol-string->string 'foo)
        "foo"
        "(symbol-string->string 'foo) works")
-   
+
    (is (symbol-string->string "foo")
        "foo"
        "(symbol-string->string \"foo\") works")
-   
+
    (is (symbol-string->symbol "foo")
        'foo
        "(symbol-string->symbol \"foo\") works")
-   
+
    (is (symbol-string->symbol 'foo)
        'foo
        "(symbol-string->symbol 'foo) works")
-   )) 
-   
+   ))
+
 ;;----------------------------------------------------------------------
 
 (when #t
