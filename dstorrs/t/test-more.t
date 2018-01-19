@@ -304,7 +304,7 @@
  (delete-test-file)
  (not-ok (file-exists? filepath) "before creation, file does not exist")
 
- (lives (thunk (make-test-file filepath)) "after creation, file exists")
+ (lives (thunk (make-test-file filepath)) "make-test-file lived") 
 
  (delete-test-file)
 
@@ -326,6 +326,11 @@
  (let ((the-path (lives (thunk (make-test-file "/tmp")) "made test file")))
    (ok (file-exists? the-path) "a random filename was generated and returned"))
 
+ (let ((the-path "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe/foo"))
+   (ok (not (directory-exists? "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe"))
+       "about to run make-test-file with a directory that doesn't exist.  Fortunately, the directory really doesn't exist")
+   (lives (thunk (make-test-file the-path)) "make-test-file with a path to a non-existent dir lives")
+   )
  )
 
 (test-suite

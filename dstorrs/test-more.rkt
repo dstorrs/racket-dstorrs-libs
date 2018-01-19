@@ -1,36 +1,5 @@
 #lang racket
 
-;----------------------------------------------------------------------
-;    The racket testing module has a few problems:
-;
-; 1) The test function names are verbose and redundant.  check-this, check-that, etc
-;
-; 2) The test functions display nothing on success.  There's no way
-; to tell the difference between "no tests ran" and "all tests
-; succeeded"
-;
-; 3) The tests return nothing.  You can't do conditional tests like:
-;        (unless (is os 'Windows) (ok test-that-won't-pass-on-windows))
-;
-; This module addresses those problems.  It's named for, and largely a
-; clone of, the Test::More library on Perl's CPAN, although some
-; features are not implemented.
-;
-; http://search.cpan.org/~exodist/Test-Simple-1.302120/lib/Test/More.pm
-; for more details on the original.
-;
-; ----------------------------------------------------------------------
-; NOTE: For testing purposes, some 'private' functions are exported.
-; Their names all start with '_'; these functions should not be called
-; unless you know what you're doing.
-; ----------------------------------------------------------------------
-
-;;    TODO:
-;; - Add 'disable this test suite' keyword
-;; - Add 'TODO this test suite' keyword
-;; - Fix the issue where it sometimes shows 'expected #f got #f'
-;; - On test-suite, add 'setup' and 'cleanup' keywords that take thunks
-
 (require racket
          racket/splicing
          dstorrs/utils
@@ -39,6 +8,41 @@
 (provide (except-out (all-defined-out)
                      _tp _tf
                      ))
+
+
+;;======================================================================
+;;    The racket testing module has a few problems:
+;;
+;; 1) The test function names are verbose and redundant.  check-this, check-that, etc
+;;
+;; 2) The test functions display nothing on success.  There's no way
+;; to tell the difference between "no tests ran" and "all tests
+;; succeeded"
+;;
+;; 3) The tests return nothing.  You can't do conditional tests like:
+;;        (unless (is os 'Windows) (ok test-that-won't-pass-on-windows))
+;;
+;; This module addresses those problems.  It's named for, and largely a
+;; clone of, the Test::More library on Perl's CPAN, although some
+;; features are not implemented.
+;;
+;; http://search.cpan.org/~exodist/Test-Simple-1.302120/lib/Test/More.pm
+;; for more details on the original.
+;;
+;; ----------------------------------------------------------------------
+;; NOTE: For testing purposes, some 'private' functions are exported.
+;; Their names all start with '_'; these functions should not be called
+;; unless you know what you're doing.
+;; ----------------------------------------------------------------------
+
+;;    TODO:
+;; - Add 'disable this test suite' keyword
+;; - Add 'TODO this test suite' keyword
+;; - Fix the issue where it sometimes shows 'expected #f got #f'
+;; - On test-suite, add 'setup' and 'cleanup' keywords that take thunks
+
+;;======================================================================
+
 
 ; Parameter: prefix-for-test-report
 ;
@@ -441,13 +445,17 @@
 
 ;;----------------------------------------------------------------------
 
-; (define/contract (make-test-file fpath
+; (define/contract (make-test-file [fpath (make-temporary-file)]
 ;                                  [text (rand-val "test file contents")]
 ;                                  #:overwrite [overwrite #t])
+;  (->* () (path-string? string? #:overwrite boolean?) path-string?)
 ;
-; Creates (and, optionally, populates) a file for use by a test.
+; Creates (and, optionally, populates) a file for use by a test.  
 ;
 ; If the directory for fpath does not exist then it will be created.
+;
+; If fpath is not specified it will default.  See make-temporary-file
+; in the Racket docs for details.
 ;
 ; If fpath is a directory, a file will be created with a random
 ; name. If it's a path, that path will be used.  If the file exists
@@ -456,21 +464,25 @@
 ; OVERWRITE because you're generating a file for testing and it's
 ; assumed that you know what you're doing.
 ;
-; Note: You will need to manually delete the file...
+; Note: You will need to manually delete the file unless you do
+; something like this:
 ;
-; ...unless you do something like this:
-;
-;    (let ([test-file-path (make-test-file (make-temporary-file))])
-;       ...the test file has been created and populated...
+;    (require dstorrs/utils)
+;    (with-temp-file #:path (make-test-file)
+;      (lambda (filepath)
+;       ...the test file is at 'filepath' and has been created and populated...
+;      )
 ;    )
-;    ; After leaving the scope of the 'let', the test file is
-;    ; guaranteed to have been deleted.
+;    ; After leaving the scope of the 'with-temp-file', the test file is
+;    ; guaranteed to have been deleted because that's what with-temp-file does
 ;
 ; The file will be populated with the text you specify, or with some
 ; random text if you don't specify anything.  (Note that it's written
 ; via 'display'.)
-(define/contract (make-test-file fpath [text (rand-val "test file contents")] #:overwrite [overwrite #t])
-  (->* (path-string?) (string? #:overwrite boolean?) path-string?)
+(define/contract (make-test-file [fpath (make-temporary-file)]
+                                 [text (rand-val "test file contents")]
+                                 #:overwrite [overwrite #t])
+  (->* () (path-string? string? #:overwrite boolean?) path-string?)
   (define-values (dir fn ignore) (split-path fpath))
 
   (when (not (directory-exists? dir))
