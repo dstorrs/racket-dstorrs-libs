@@ -452,17 +452,21 @@
 ;
 ; Creates (and, optionally, populates) a file for use by a test.  
 ;
-; If the directory for fpath does not exist then it will be created.
-;
 ; If fpath is not specified it will default.  See make-temporary-file
-; in the Racket docs for details.
+; in the Racket docs for details. 
 ;
-; If fpath is a directory, a file will be created with a random
-; name. If it's a path, that path will be used.  If the file exists
-; then make-test-file will either throw an exception or overwrite the
-; existing file, depending on the value of 'overwrite'.  DEFAULT IS TO
-; OVERWRITE because you're generating a file for testing and it's
-; assumed that you know what you're doing.
+; If fpath is an existing directory, a file with a random name will be
+; created in that directory.
+;;
+; If fpath is a filepath and its directory does not exist then it will
+; be created.
+;
+; Once we have decided on the filepath according to the above details,
+; we check to see if the file exists.  If so, make-test-file will
+; either throw an exception or overwrite the existing file depending
+; on the value of 'overwrite'.  DEFAULT IS TO OVERWRITE because you're
+; generating a file for testing and it's assumed that you know what
+; you're doing.
 ;
 ; Note: You will need to manually delete the file unless you do
 ; something like this:
@@ -479,6 +483,7 @@
 ; The file will be populated with the text you specify, or with some
 ; random text if you don't specify anything.  (Note that it's written
 ; via 'display'.)
+;
 (define/contract (make-test-file [fpath (make-temporary-file)]
                                  #:text [text (rand-val "test file contents")]
                                  #:overwrite [overwrite #t])
