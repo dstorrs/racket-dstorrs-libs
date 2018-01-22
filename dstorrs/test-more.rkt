@@ -5,9 +5,48 @@
          dstorrs/utils
          )
 
-(provide (except-out (all-defined-out)
-                     _tp _tf
-                     ))
+(provide prefix-for-test-report ; parameter printed at start of each test
+         prefix-for-diag        ; parameter printed at front of each (diag ...) message
+
+         ok                ; A value is true
+         not-ok            ; A value is false
+         is-false          ; Alias for not-ok
+
+         is                ; A value is what it should be
+         isnt              ; ...or shouldn't be
+
+         like              ; A value matches a regex
+         unlike            ; A value does not match a regex
+
+         lives             ; expression does not throw an exception 
+         dies              ; expression does throw
+         throws            ; throws an exception and that exn matches a predicate
+         
+         matches           ; value matches a predicate
+         not-matches       ; ...or doesn't
+         is-type           ; alias for matches
+         isnt-type         ; alias for not-matches
+         
+         is-approx         ; value is roughly the expected value
+         isnt-approx       ; ...or not
+         
+         test-suite        ; gather a set of tests together, trap exns, output some extra debugging
+         
+         make-test-file    ; create a file on disk, populate it
+
+         expect-n-tests    ; unless N tests ran, print error at end of file execution 
+         done-testing      ; never mind how many tests we expect, we're okay if we see this
+         diag              ; print a diagnostic message. see prefix-for-diag
+
+         tests-passed      ; # of tests passed so far
+         tests-failed      ; # of tests failed so far
+
+         test-more-check   ; fundamental test procedure.  All others call this
+         
+         inc-test-num!     ; tests start at 1.  Use this to change test number (but why?)
+         current-test-num  ; return current test number
+         next-test-num     ; return next test number and optionally modify it
+)
 
 
 ;;======================================================================
@@ -77,7 +116,7 @@
 ;  without exposing the actual 'test-num' variable to the rest of the
 ;  module.
 (splicing-let ([test-num 0])
-  (define (_inc-test-num! inc)
+  (define (inc-test-num! inc)
     (set! test-num (+ test-num inc))
     )
   (define (current-test-num) test-num)
@@ -434,14 +473,13 @@
 (define-syntax (test-suite stx)
   (syntax-case stx ()
     [(_ msg body body1 ...)
-     #'(begin (say "### START test-suite: " msg)
+     #'(begin (diag "START test-suite: " msg)
               (lives (thunk body body1 ...  (void)) ; discard return values
                      "test-suite completed without throwing uncaught exception")
               (say "")
               (say "Total tests passed so far: " (tests-passed))
               (say "Total tests failed so far: " (tests-failed))
-              (say "")
-              (say "### END test-suite: " msg))]))
+              (diag "END test-suite: " msg))]))
 
 ;;----------------------------------------------------------------------
 
@@ -544,7 +582,8 @@
 ;(define/contract (diag . args)
 ;
 ; Variadic print statement that outputs the specified items with a
-; standard prefix, "\t#### ", that's easy for test output analyzers to
+; standard prefix, stored in the 'prefix-for-diag' parameter.  By
+; default this is "\t#### ", that's easy for test output analyzers to
 ; detect.  This prefix is prepended to the current value of the
 ; prefix-for-say parameter, so this:
 ;
@@ -553,9 +592,10 @@
 ;
 ; ...is the same as (displayln "\t#### my awesome messagefoobar")
 ;
+(define prefix-for-diag (make-parameter "######## "))
 (define/contract (diag . args)
   (->* () () #:rest (listof any/c) any)
-  (parameterize ([prefix-for-say (~a "\t#### " (prefix-for-say))])
+  (parameterize ([prefix-for-say (~a (prefix-for-diag)  (prefix-for-say))])
     (say args)))
 
 ;;----------------------------------------------------------------------

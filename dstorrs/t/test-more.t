@@ -9,7 +9,7 @@
   (with-output-to-string
     (thunk (set! result (thnk))))
   ((if should-pass tests-passed tests-failed) -1)   ; only count the outer test
-  (_inc-test-num! -1) ; only count the outer test
+  (inc-test-num! -1) ; only count the outer test
   result)
 
 
@@ -73,7 +73,7 @@
   (define output (with-output-to-string (thunk (thnk))))
   ;; (say "output is: '" output "'")
   ;; (say "regex is: '" regex "'")
-  (_inc-test-num! -1) ; don't count the test inside the thunk
+  (inc-test-num! -1) ; don't count the test inside the thunk
   (tests-failed inc)
   (ok (regexp-match regex output) msg)
   )
@@ -158,7 +158,7 @@
      (thunk
       (throws (thunk "doesn't throw") "this string not used"))))
  (tests-failed -1)   ; undo the inner test above -- it was supposed to fail.
- (_inc-test-num! -1) ; undo the inner test above -- it was supposed to fail.
+ (inc-test-num! -1) ; undo the inner test above -- it was supposed to fail.
 
  (like str
        #px"NOT ok.+?\\[DID NOT THROW\\]"
@@ -350,7 +350,7 @@
      (void (with-output-to-string thnk))
      ; If we get to here then 'lives' caught the error
      (tests-failed -1)    ; Don't count 'lives' as an actual failure
-     (_inc-test-num! -1)  ; In fact, don't count it at all
+     (inc-test-num! -1)  ; In fact, don't count it at all
      (ok #t (~a "lives caught a " type))))
 
 
