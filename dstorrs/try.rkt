@@ -101,7 +101,7 @@
 
 (define-syntax (try stx)
   (syntax-parse stx
-    #:datum-literals (try catch)
+    #:datum-literals (try catch pre finally)
     [(try [body0:expr body1:expr ...])
      #'(with-handlers ((identity identity))
          body0
@@ -109,7 +109,7 @@
          ...
          )]
     [(try [body0:expr body1:expr ...]
-                     [catch catch0:expr catch1:expr ...])
+          [catch catch0:expr catch1:expr ...])
      #'(with-handlers (catch0 catch1 ...)
          body0
          body1
@@ -121,6 +121,27 @@
      #'(with-handlers (catch0 catch1 ...)
          (dynamic-wind
            (thunk '())
+           (thunk body0
+                  body1
+                  ...)
+           (thunk f0 f1 ...)
+         ))]
+    [(try [body0 body1 ...]
+          [finally f0 f1 ... ])
+     #'(with-handlers ([(lambda (x) #t) raise])
+         (dynamic-wind
+           (thunk '())
+           (thunk body0
+                  body1
+                  ...)
+           (thunk f0 f1 ...)
+         ))]
+    [(try [body0 body1 ...]
+          [pre p0 p1 ... ]
+          [finally f0 f1 ... ])
+     #'(with-handlers ([(lambda (x) #t) raise])
+         (dynamic-wind
+           (thunk p0 p1 ...)
            (thunk body0
                   body1
                   ...)

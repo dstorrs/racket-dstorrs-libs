@@ -58,6 +58,19 @@
           [finally (set! finally-clause-executed 8)])
      (ok finally-clause-executed "'finally' clause executes if you have no exception")
      (ok pre-clause-executed "'pre' clause executes if you have no exception"))
+
+   (let ((finally-clause-executed #f))
+     (try [#t]
+          [finally (set! finally-clause-executed 8)])
+     (ok finally-clause-executed "try+finally is a legal form"))
+
+   (let ([finally-clause-executed #f]
+         [pre-clause-executed #f])
+     (try [#t]
+          [pre (set! pre-clause-executed #t)]
+          [finally (set! finally-clause-executed 8)])
+     (ok pre-clause-executed "try+pre+finally is a legal form, and the pre executed")
+     (ok finally-clause-executed "try+pre_finally is a legal form, and the finally executed"))
    )
   )
 
