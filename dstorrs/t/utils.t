@@ -190,7 +190,8 @@
    (is-false (safe-file-exists? #f) "safe-file-exists? returns #f on #f")
    ))
 
-(test-suite
+(when #t 
+  (test-suite
  "safe-hash-remove"
 
  (define hash-imm (hash 'a 1 'b 2 'c 3))
@@ -230,7 +231,64 @@
    (is res
        (make-hash '((b . 2)))
        "(safe-hash-remove hash-mut 'a 'c 'x) worked"))
- );; test-suite
+
+
+   (for ([func (list mutable-hash hash)]
+         [type '(mutable immutable)])
+
+     (is (safe-hash-remove (func))
+         (func)
+         (~a "(safe-hash-remove (" (object-name func) ")) is pathological but okay"))
+
+     (is (safe-hash-remove (func) '())
+         (func)
+         (~a "(safe-hash-remove (" (object-name func) ") '()) is pathological but okay"))
+
+     (define (make-it) (func 'a 7 'b 8))
+
+     (is (safe-hash-remove (make-it) 'a)
+         (func 'b 8)
+         (~a "(safe-hash-remove h 'a) is okay when hash is " type))
+
+     (is (safe-hash-remove (make-it) '(a))
+         (func 'b 8)
+         (~a "(safe-hash-remove h '(a)) is okay when hash is " type))
+
+     (is (safe-hash-remove (make-it) 'a 'b)
+         (func)
+         (~a "(safe-hash-remove h 'a 'b) is okay when hash is " type))
+
+     (is (safe-hash-remove (make-it) '(a b))
+         (func)
+         (~a "(safe-hash-remove h '(a b)) is okay when hash is " type))
+
+     (is (safe-hash-remove (make-it) '(nosuchkey))
+         (make-it)
+         "removing a key that isn't there is a null op")
+
+     (define (make-hash-with-list-key) (func '(a b) 7 'c 8))
+     (is (safe-hash-remove (make-hash-with-list-key) 'c)
+         (func '(a b) 7)
+         "(safe-hash-remove (make-hash-with-list-key) 'c) okay")
+
+     (is (safe-hash-remove (make-hash-with-list-key) '(a b))
+         (make-hash-with-list-key)
+         "Passing '(a b) correctly does not remove the key '(a b)")
+
+     (is (safe-hash-remove (make-hash-with-list-key) '((a b)))
+         (func 'c 8)
+         "Passing '((a b)) DOES remove the key '(a b)")
+
+     (is (safe-hash-remove (make-hash-with-list-key) '((a b) c))
+         (func)
+         "Passing '((a b) c) DOES remove both the key '(a b) and the key 'c"))
+
+   (define weird-h   (hash '(foo bar) 'x 'a 7 'b 8))
+   (is (safe-hash-remove weird-h '((foo bar) a))
+       (hash 'b 8)
+       "(safe-hash-remove weird-h '((foo bar) a)) => (hash 'b 8)")
+   
+   ));; test-suite
 
 (test-suite
  "hash->mutable and hash->immutable"
