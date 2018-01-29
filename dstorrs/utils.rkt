@@ -674,6 +674,10 @@
 ;; (hash-remap h #:add (hash 'subtype 'honeycrisp))
 ;;    => (hash 'group 'fruit 'color 'red 'type 'apple 'subtype 'honeycrisp))
 ;;
+;;    ; It's not legal to add a key that is already there.  If you want to do that, use #:overwrite
+;; (hash-remap h #:add (hash 'group 'tasty))
+;;    => EXCEPTION
+;;
 ;; (hash-remap h #:remove '(group color)
 ;;    => (hash 'type 'apple)
 ;;
