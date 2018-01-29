@@ -354,7 +354,7 @@
 ;;    ; unwrap them
 ;;    (define output-h (safe-hash-remove h '(id added-to-db-at))) => only has 'food? and 'type keys
 ;;
-;;    ; Edge case: There is a key in your hash that really is a list. 
+;;    ; Edge case: There is a key in your hash that really is a list.
 ;;    (define weird-h   (hash '(foo bar) 'x 'a 7 'b 8))
 ;;    (define wrong-way (safe-hash-remove '(foo bar)))     => WRONG!  hash unchanged
 ;;    (define wrong-way (safe-hash-remove '(foo bar) 'a))  => WRONG!  hash unchanged
@@ -582,7 +582,7 @@
   (->* ((-> path-string? any))
        (#:path path-string?)
        any)
-  
+
   (dynamic-wind
     (thunk
      (define-values (dir filename ignore) (split-path the-path))
@@ -626,6 +626,16 @@
 
 ;;----------------------------------------------------------------------
 
+;; (define/contract (hash-remap h
+;;                              #:remove    [remove-keys '()]
+;;                              #:overwrite [overwrite   #f ]
+;;                              #:add       [add         #f ]
+;;                              #:rename    [remap       #f ]
+;;                              )
+;;   (->* (hash?) (#:rename hash? #:add hash? #:overwrite hash? #:remove list?) hash?)
+;;
+;;  Key mnemonic:  ROARen. Remove. Overwrite. Add. Rename.
+;;
 ;;    This will munge hashes any way you like.  You can rename keys,
 ;;    remove keys, overwrite the value of keys, and add new keys.  The
 ;;    order of application is: remove -> overwrite -> add -> rename
@@ -633,6 +643,55 @@
 ;;    The return value generally won't be eq? to the input, but it is
 ;;    guaranteed to be of the same type (mutable / immutable)
 ;;
+;;    FIRST: remove any values we were told to remove via the #:remove list
+;;        (hash-remap h #:remove '(key1 key2))
+;;
+;;    SECOND: overwrite any values from the original hash that we were
+;;    told to overwrite via the #:overwrite hash.  If the new value is
+;;    a procedure then it will be invoked and its result will be the
+;;    new value.  The procedure must have the signature:
+;;
+;;        (-> hash? any/c any/c any/c)  ; takes a hash, key, orig-val.  Returns one value
+;;
+;;    The arguments will be: the hash we're updating, the key
+;;    we're updating, and the original value.  It must return a
+;;    single value.
+;;
+;;    If you actually want to pass in a procedure (e.g. if you're
+;;    building a jumptable) then you'll have to wrap it like so:
+;;
+;;        (lambda (hsh key val orig-val)  ; the 'generate a value' procedure
+;;            (lambda ...))               ; the procedure it generates
+;;
+;;    THIRD: add any additional keys that we were told to add.
+;;    NOTE: This will throw an exception if you try to add a key
+;;    that is already there.
+;;
+;;    FOURTH: rename keys
+;;
+;; (define h (hash 'group 'fruit   'color 'red    'type 'apple))
+;;
+;; (hash-remap h #:add (hash 'subtype 'honeycrisp))
+;;    => (hash 'group 'fruit 'color 'red 'type 'apple 'subtype 'honeycrisp))
+;;
+;; (hash-remap h #:remove '(group color)
+;;    => (hash 'type 'apple)
+;;
+;; (hash-remap h #:rename (hash 'color 'shade  'type 'species )
+;;    => (hash 'group 'fruit    'shade 'red    'species 'apple)
+;;
+;; (hash-remap h #:overwrite (hash 'group 'tasty   'color 'green   'type 'granny-smith))
+;;    => (hash 'group 'tasty    'color 'green    'type 'granny-smith)
+;;
+;;    ; Alternatively, have the new value generated
+;; (hash-remap (hash 'x 7 'y 9) #:overwrite (hash 'x (lambda (h k v) (add1 v))))
+;;    =>       (hash 'x 8 'y 9)
+;;
+;; (hash-remap h  #:add       (hash 'vendor 'bob)
+;;                #:overwrite (hash 'color 'green   'type 'granny-smith)
+;;                #:remove    '(group)
+;;                #:rename    (hash 'vendor 'seller))
+;;    => (hash 'color 'green    'type 'granny-smith    'seller 'bob))
 (define/contract (hash-remap h
                              #:rename    [remap #f]
                              #:remove    [remove-keys '()]
@@ -709,14 +768,14 @@
     ;;    NOTE: This will throw an exception if you try to add a key
     ;;    that is already there.
     (define hash-with-adds
-      (let ([hsh (union-func overwritten-hash
-                             add-hash
-                             #:combine/key (lambda _ (raise-arguments-error
-                                                      'hash-remap
-                                                      "add-hash cannot include keys that are in base-hash"
-                                                      "add-hash" add-hash
-                                                      "hash to add (remove and overwrite already done)" overwritten-hash)))])
-        (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash
+         (let ([hsh (union-func overwritten-hash
+                                add-hash
+                                #:combine/key (lambda _ (raise-arguments-error
+                                                         'hash-remap
+                                                         "add-hash cannot include keys that are in base-hash"
+                                                         "add-hash" add-hash
+                                                         "hash to add (remove and overwrite already done)" overwritten-hash)))])
+           (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash
 
     ;(say "hash-with-adds is: " hash-with-adds)
     ;(say "about to rename")
