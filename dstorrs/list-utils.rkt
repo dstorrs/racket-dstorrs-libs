@@ -403,16 +403,26 @@
 
 ;;----------------------------------------------------------------------
 
-;;    Generate a list of lists where each sublist is a sequence of
-;;    consecutive chunk-nums.  For example, if given this list:
+;;(define/contract (find-contiguous-runs data #:key  [extract-key identity])
 ;;
-;;        '(1 2 3 5 7 200 201 202 203))
+;; Generate a list of lists where each sublist is a sequence of
+;; consecutive elements.  For example, if given this list:
 ;;
-;;    Then you would get this result:
+;;    '(1 2 3 5 7 200 201 202 203))
 ;;
-;;        '((1 2 3) (5) (7) (200 201 202 203))
+;; Then you would get this result:
 ;;
-
+;;    '((1 2 3) (5) (7) (200 201 202 203))
+;;
+;; Operates only on exact integers, but you can provide a function
+;; that will generate a number from your data.  For example:
+;;
+;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
+;;                           #:key (curryr hash-ref 'age))
+;;
+;;     Returns:  (list (list (hash 'age 17) (hash 'age 18))
+;;                     (list (hash 'age 27)))
+;;
 (define/contract (find-contiguous-runs data #:key  [extract-key identity])
   (->* (list?) (#:key (-> any/c exact-integer?)) list?)
   (if (null? data)
