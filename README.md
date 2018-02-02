@@ -14,7 +14,7 @@ A set of convenience libraries:
 * struct.rkt       => create structs via keyword and convert hashes to structs
 * test-more.rkt    => better (IMO) testing module; largely an expy of Perl's Test::More
 * thread.rkt       => convenience functions for running code in a thread
-* try.rkt          => syntactic sugar that gives-handlers & dynamic-wind better end weight
+* try.rkt          => syntactic sugar over with-handlers & dynamic-wind
 * utils.rkt        => overly bloated collection of random things. Should be split up.
 * web.rkt          => retrieve and process web pages and/or local HTML files
 
