@@ -4,7 +4,9 @@
          "try.rkt"
          )
 
-(provide valid-json?)
+(provide valid-json?
+         (all-from-out json)
+         )
 
 ;;======================================================================
 ;;    See the Racket-standard 'json' module for more.
