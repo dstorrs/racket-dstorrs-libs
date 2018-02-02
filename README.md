@@ -1,4 +1,24 @@
-Convenience libraries for list handling, HTML parsing, etc.
+# NAME  handy
+
+# DESCRIPTION
+
+A set of convenience libraries:
+
+* HTML-Element.rkt => adds searching and access functions missing from html/parsing 
+* db.rkt           => database manipulation, exceptions, convenient accessors, etc
+* exceptions.rkt   => easy creation and manipulation of exception structs
+* fsmonitor.rkt    => filesystem monitoring
+* json.rkt         => extends the racket 'json' library with a valid-json? predicate
+* list-utils.rkt   => large variety of list-related functionality that's missing from racket
+* sql.rkt          => functions for generating SQL
+* stats.rkt        => 
+* struct.rkt       => 
+* test-more.rkt    => 
+* thread.rkt       => 
+* try.rkt          => 
+* utils.rkt        => 
+* web.rkt          => 
+
 
 Use these by:
 
