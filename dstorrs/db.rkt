@@ -237,7 +237,7 @@
 ;;
 (define/contract (query-rows-as-dicts keys db sql
                                       #:wrapper        [wrapper    (lambda (db thnk) (thnk))]
-                                      #:trap-exns?     [trap-exns? #t]
+                                      #:trap-exns?     [trap-exns? #f]
                                       #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
                                       #:transform-data [transform-data cons]
@@ -425,9 +425,9 @@
   (try [(wrapper db thnk)]
        [catch (match-anything (lambda (e) (raise (refine-db-exn e))))]
        [finally
-        ;(say "before disconnecting.  DB is connected?: " (connected? db))
+        (say "before disconnecting.  DB is connected?: " (connected? db))
         (disconnect db)
-        ;(say "after disconnecting.  DB is connected?: " (connected? db))
+        (say "after disconnecting.  DB is connected?: " (connected? db))
         ]))
 
 ;;----------------------------------------------------------------------
@@ -443,7 +443,7 @@
 ;;  as ensure-disconnect
 (define/contract (maybe-disconnect db thnk #:disconnect? disconnect? [wrapper (lambda (db thnk) (unwrap-val thnk))])
   (->* (connection? (-> any) #:disconnect? boolean?) ((-> connection? (-> any))) any)
-
+  (say "entering maybe-disconnect.  disconnect is: " disconnect?)
   ((if disconnect? ensure-disconnect (lambda (db thnk) (thnk)))
    db
    thnk))
