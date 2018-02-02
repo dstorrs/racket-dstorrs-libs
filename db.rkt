@@ -31,7 +31,7 @@
          call-with-transaction/disconnect
          (except-out (all-from-out db) disconnect)
          (prefix-out db: disconnect)
-         (all-from-out handy/sql)
+         (all-from-out "sql.rkt")
          (struct-out exn:fail:db)
          (struct-out exn:fail:db:create)
          (struct-out exn:fail:db:row:not-exists)
