@@ -35,3 +35,8 @@ For me, this would be:
 
     In .bashrc:     export PLTCOLLECTS=/Users/dstorrs/projects/libs/racket/handy:$PLTCOLLECTS
     In Racket code: (require handy/HTML-Element)
+
+
+# VERSION HISTORY
+
+1.2.7	  - Initial release to Racket package server.  Value chosen completely arbitrarily.
