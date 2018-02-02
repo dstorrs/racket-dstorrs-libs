@@ -2,7 +2,7 @@ Convenience libraries for list handling, HTML parsing, etc.
 
 Use these by:
 
-    In Racket code: (require "../path/to/libdir/dstorrs/HTML-TreeBuilder.rkt")
+    In Racket code: (require "../path/to/libdir/handy/HTML-TreeBuilder.rkt")
 
 Or, put this in your .bashrc (or other shell setup file):
 
@@ -10,9 +10,9 @@ Or, put this in your .bashrc (or other shell setup file):
 
 Then in your code you can use:
 
-    (require dstorrs/HTML-TreeBuilder)
+    (require handy/HTML-TreeBuilder)
 
 For me, this would be:	
 
-    In .bashrc:     export PLTCOLLECTS=/Users/dstorrs/Dropbox/dstorrs/personal/scheme
-    In Racket code: (require dstorrs/HTML-TreeBuilder)
+    In .bashrc:     export PLTCOLLECTS=/Users/dstorrs/projects/libs/racket/handy:$PLTCOLLECTS
+    In Racket code: (require handy/HTML-Element)

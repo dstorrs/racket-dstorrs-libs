@@ -509,7 +509,7 @@
 ; Note: You will need to manually delete the file unless you do
 ; something like this:
 ;
-;    (require dstorrs/utils)
+;    (require handy/utils)
 ;    (with-temp-file #:path (make-test-file)
 ;      (lambda (filepath)
 ;       ...the test file is at 'filepath' and has been created and populated...

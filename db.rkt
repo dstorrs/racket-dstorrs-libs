@@ -31,7 +31,7 @@
          call-with-transaction/disconnect
          (except-out (all-from-out db) disconnect)
          (prefix-out db: disconnect)
-         (all-from-out dstorrs/sql)
+         (all-from-out handy/sql)
          (struct-out exn:fail:db)
          (struct-out exn:fail:db:create)
          (struct-out exn:fail:db:row:not-exists)
@@ -214,7 +214,7 @@
 ;;
 ;;    ;Run a query with params, convert the keys of the resulting
 ;;    ;hashes from symbols to strings before returning the results.
-;;    ;(hash-keys->strings is defined in dstorrs/utils)
+;;    ;(hash-keys->strings is defined in handy/utils)
 ;;    ;
 ;;    ;NOTE: Obviously, this is contrived.  An easier solution would
 ;;    ;be to make the keys be strings in the first place.  That might
@@ -261,7 +261,7 @@
   ; it all ends up in one list.
   (define vals (flatten params))
   (define (v->d v)
-    (vector->dict  ; defined in dstorrs/list-utils
+    (vector->dict  ; defined in handy/list-utils
      keys
      v
      #:dict-maker     dict-maker
@@ -315,7 +315,7 @@
        dict?)
 
   (define (v->d v)
-    (vector->dict  ; defined in dstorrs/list-utils
+    (vector->dict  ; defined in handy/list-utils
      keys
      v
      #:dict-maker     dict-maker
@@ -366,7 +366,7 @@
        dict?)
 
   (define (v->d v)
-    (vector->dict  ; defined in dstorrs/list-utils
+    (vector->dict  ; defined in handy/list-utils
      keys
      v
      #:dict-maker     dict-maker
