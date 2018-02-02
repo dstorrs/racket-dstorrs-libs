@@ -10,8 +10,12 @@
          "try.rkt"
          (planet neil/html-parsing:3:0)
          sxml
-         dstorrs/utils
+         "utils.rkt"
          )
+
+(provide (all-defined-out)
+         (all-from-out sxml))
+
 
 (define (xexp? x)
   (-> any/c boolean?)
@@ -22,7 +26,7 @@
 ;;--------------------------------------------------
 ;;    attr-val:  xexp 'key [default value]  -> any/c
 (define/contract (attr-val x key [def #f])
-  (->* (xexp? symbol?) (any/c) any/c)
+  (->* (list/not-null? symbol?) (any/c) any/c)
 
   (hash-ref (attr-hash x) key def))
 
@@ -43,12 +47,12 @@
   (define (from-file)
     (when (not (file-exists? src))
       (raise-arguments-error 'html-element-from "argument looks like path but not to existing file" "arg" src))
-    
+
     (define p (open-input-file src))
     (try [(html->xexp p)]
          [catch (match-anything raise)]
          [finally (close-input-port p)]))
-  
+
   (cond [(xexp? src)  src]
         [(port? src)  (html->xexp src)]
         [(path? src)  (from-file)]
@@ -151,21 +155,21 @@
 ;;----------------------------------------------------------------------
 ;;    look-down  ->  returns list or string
 ;;
-;;    Looks through an xexpr that meets criteria specified by the
-;;    #:match function and the optional #:attr keyword.  It runs the
-;;    'action' procedure on anything that matches and returns a list
-;;    of results, or a string if requested.
+;;    Looks through an xexpr for something that meets criteria
+;;    specified by the #:match function and the optional #:attr
+;;    keyword.  It runs the 'action' procedure on anything that
+;;    matches and returns a list of results, or a string if requested.
 ;;
-;;    @@IMPORTANT: the 'action' function will be autoboxed to ensure
-;;    it returns a list
+;;    @@IMPORTANT: the results of the 'action' function will be
+;;    autoboxed to ensure it returns a list
 ;;
 ;;    action        ->  optional, function to call on matched values.  Defaults to 'list'
 ;;    #:match       ->  optional, function returning boolean
 ;;    #:tag         ->  optional, a symbol representing an HTML tag
 ;;    #:attr        ->  optional, quoted-value   : attribute that must be present (e.g. 'class)
-;;                      or dotted pair : ('class . "container")
-;;                      or dotted pair : ('class . #rx"foo.+bar")
-;;                      or dotted pair : ('class . #px"foo.+bar")
+;;                      or dotted pair : '(class . "container")
+;;                      or dotted pair : '(id    . #rx"foo.+bar")
+;;                      or dotted pair : '(src   . #px"foo.+bar")
 ;;
 ;;    When the #:attr is a dotted pair, the specified key must be
 ;;    present for the match to succeed.  If the value is a string it
@@ -229,4 +233,38 @@
 
 ;;----------------------------------------------------------------------
 
-(provide (all-defined-out))
+(define block-level-elements
+  (make-immutable-hash
+   (append
+    (for/list ([i (in-range-inc 1 6)])
+      (cons (string->symbol (~a "h" i)) #t))
+    '((address . #t)
+      (article . #t)
+      (aside . #t)
+      (blockquote . #t)
+      (canvas . #t)
+      (dd . #t)
+      (div . #t)
+      (dl . #t)
+      (dt . #t)
+      (fieldset . #t)
+      (figcaption . #t)
+      (figure . #t)
+      (footer . #t)
+      (form . #t)
+      (header .#t)
+      (hgroup . #t)
+      (hr . #t)
+      (li . #t)
+      (main . #t)
+      (nav . #t)
+      (noscript . #t)
+      (ol . #t)
+      (output . #t)
+      (p . #t)
+      (pre . #t)
+      (section . #t)
+      (table . #t)
+      (tfoot . #t)
+      (ul . #t)
+      (video . #t)))))
