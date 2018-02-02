@@ -11,18 +11,17 @@ A set of convenience libraries:
 * json.rkt         => extends the racket 'json' library with a valid-json? predicate
 * list-utils.rkt   => large variety of list-related functionality that's missing from racket
 * sql.rkt          => functions for generating SQL
-* stats.rkt        => 
-* struct.rkt       => 
-* test-more.rkt    => 
-* thread.rkt       => 
-* try.rkt          => 
-* utils.rkt        => 
-* web.rkt          => 
+* struct.rkt       => create structs via keyword and convert hashes to structs
+* test-more.rkt    => better (IMO) testing module; largely an expy of Perl's Test::More
+* thread.rkt       => convenience functions for running code in a thread
+* try.rkt          => syntactic sugar that gives-handlers & dynamic-wind better end weight
+* utils.rkt        => overly bloated collection of random things. Should be split up.
+* web.rkt          => retrieve and process web pages and/or local HTML files
 
 
 Use these by:
 
-    In Racket code: (require "../path/to/libdir/handy/HTML-TreeBuilder.rkt")
+    In Racket code: (require "../path/to/libdir/handy/HTML-Element.rkt")
 
 Or, put this in your .bashrc (or other shell setup file):
 
