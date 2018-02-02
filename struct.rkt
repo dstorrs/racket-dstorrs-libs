@@ -6,7 +6,7 @@
 
 (require (for-syntax racket/syntax
                      syntax/parse)
-         dstorrs/list-utils
+         "list-utils.rkt"
          )
 
 (provide struct/kw hash->struct/kw verify-struct)

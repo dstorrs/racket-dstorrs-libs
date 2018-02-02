@@ -1,6 +1,6 @@
 #lang racket
 
-(require dstorrs/utils)
+(require "utils.rkt")
 
 (provide execute-thunk
          threaded

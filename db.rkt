@@ -1,18 +1,18 @@
 #lang at-exp racket
 
 (require db
-         dstorrs/utils
-         dstorrs/list-utils
-         dstorrs/sql
-         dstorrs/try
-         dstorrs/exceptions
+         "utils.rkt"
+         "list-utils.rkt"
+         "sql.rkt"
+         "try.rkt"
+         "exceptions.rkt"
          )
 
 
 ;======================================================================
 ;  A collection of convenience functions for working with the DB.
 ;
-;  Re-exports everything from the dstorrs/sql library
+;  Re-exports everything from the handy/sql library
 ;
 ;  Re-exports everything from the racket 'db' module except for
 ;  the 'disconnect' function.  That one is exported as 'db:disconnect'

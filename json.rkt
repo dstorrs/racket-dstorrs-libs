@@ -1,7 +1,7 @@
 #lang racket
 
 (require json
-         dstorrs/try
+         "try.rkt"
          )
 
 (provide valid-json?)

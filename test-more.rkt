@@ -2,7 +2,7 @@
 
 (require racket
          racket/splicing
-         dstorrs/utils
+         "utils.rkt"
          )
 
 (provide prefix-for-test-report ; parameter printed at start of each test

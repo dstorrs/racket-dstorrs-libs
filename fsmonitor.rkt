@@ -1,7 +1,7 @@
 #lang at-exp racket
 
-(require dstorrs/try
-         dstorrs/utils
+(require "try.rkt"
+         "utils.rkt"
          )
 
 (provide watch-dir-or-tree)
