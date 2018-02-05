@@ -506,8 +506,8 @@
 ; generating a file for testing and it's assumed that you know what
 ; you're doing.
 ;
-; Note: You will need to manually delete the file unless you do
-; something like this:
+; Note: Once you're done with your tests, you will need to manually
+; delete the file that this creates unless you do something like this:
 ;
 ;    (require handy/utils)
 ;    (with-temp-file #:path (make-test-file)
@@ -520,7 +520,8 @@
 ;
 ; The file will be populated with the text you specify, or with some
 ; random text if you don't specify anything.  (Note that it's written
-; via 'display'.)
+; via 'display', but you can use (make-test-file #:text (~v <data>))
+; if that's what you want.
 ;
 (define/contract (make-test-file [fpath (make-temporary-file)]
                                  #:text [text (rand-val "test file contents")]
