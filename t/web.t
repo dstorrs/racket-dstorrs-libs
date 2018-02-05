@@ -4,7 +4,7 @@
 
 (require net/url
          racket/runtime-path
-         "../HTML-TreeBuilder.rkt"
+         "../HTML-Element.rkt"
          "../web.rkt"
          "../test-more.rkt")
 
