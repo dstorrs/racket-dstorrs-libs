@@ -514,15 +514,15 @@
             (multi-partition #:partitions 2
                              #:filter (lambda (n) #t)
                              #:source '(1 7 8 0 15.8 -2 a)))
-           @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? exact-nonnegative-integer\?\).+? given: #t}
-           @~a{Returned #t : If your match function returns something other than #f or a 0+ exact-positive-integer number then multi-partition throws})
+           @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? natural\?\).+? given: #t}
+           @~a{Returned #t : If your match function returns something other than #f or a 0+ natural number then multi-partition throws})
 
    (throws (thunk
             (multi-partition #:partitions 2
                              #:filter (lambda (n) 8.2)
                              #:source '(1 7 8 0 15.8 -2 a)))
-           @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? exact-nonnegative-integer\?\).+? given: 8.2}
-           @~a{Returned 8.2 : If your match function returns something other than #f or a 0+ exact-positive-integer number then multi-partition throws})
+           @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? natural\?\).+? given: 8.2}
+           @~a{Returned 8.2 : If your match function returns something other than #f or a 0+ natural number then multi-partition throws})
 
    (let-values ([(x y) (multi-partition #:partitions 2
                                         #:source '(1 2 3 4 1)
@@ -662,12 +662,6 @@
    (throws (thunk (step-by-n + '() -3))
            exn:fail:contract?
            "step-by-n dies when you pass a negative step number")
-
-
-   ;; Dies if the processor function returns multiple values
-   (throws (thunk (step-by-n values '(a b c d)))
-           #px"arity mismatch"
-           "dies if the processor function returns multiple values")
 
 
    ;; Handles data that is not a list
