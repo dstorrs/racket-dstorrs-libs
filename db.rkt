@@ -425,9 +425,9 @@
   (try [(wrapper db thnk)]
        [catch (match-anything (lambda (e) (raise (refine-db-exn e))))]
        [finally
-        (say "before disconnecting.  DB is connected?: " (connected? db))
+        ;(say "before disconnecting.  DB is connected?: " (connected? db))
         (disconnect db)
-        (say "after disconnecting.  DB is connected?: " (connected? db))
+        ;(say "after disconnecting.  DB is connected?: " (connected? db))
         ]))
 
 ;;----------------------------------------------------------------------
