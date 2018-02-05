@@ -29,7 +29,7 @@ Or, put this in your .bashrc (or other shell setup file):
 
 Then in your code you can use:
 
-    (require handy/HTML-TreeBuilder)
+    (require handy/HTML-Element)
 
 For me, this would be:	
 
