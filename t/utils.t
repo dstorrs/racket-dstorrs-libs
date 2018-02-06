@@ -26,6 +26,9 @@
  (define source (make-temporary-file))
  (define dest   (make-temporary-file))
 
+ (say "source is: " source)
+ (say "dest is: " dest)
+
  (with-output-to-file
    source
    #:exists 'replace
@@ -48,6 +51,30 @@
         (port->string)))
      "1234567890"
      "got correct contents")
+
+ ; Now, let's test it with a large file.  Should be able to handle at least 10M
+ (with-output-to-file source
+   #:mode 'binary
+   #:exists 'replace
+   (thunk (display (make-string 1024 #\x))))
+
+ (with-output-to-file dest
+   #:mode 'binary
+   #:exists 'replace
+   (thunk (display (make-string 1024 #\x))))
+
+ (diag "testing that append-file doesn't blow up if given very large files.  This will take a few seconds.")
+ (define final-size
+   (call/ec
+    (lambda (break)
+      (for/last ([i 20])
+        (append-file source dest)
+        (append-file dest source)
+        (define current-size (file-size source))
+        (when (> current-size (* 100 1024 1024))
+          (break current-size))))))
+
+ (ok final-size (~a "successfully appended files up to 100M without dying from lack of RAM"))
 
  (delete-file source)
  (delete-file dest)
@@ -190,47 +217,47 @@
    (is-false (safe-file-exists? #f) "safe-file-exists? returns #f on #f")
    ))
 
-(when #t 
+(when #t
   (test-suite
- "safe-hash-remove"
+   "safe-hash-remove"
 
- (define hash-imm (hash 'a 1 'b 2 'c 3))
- (define (hash-mut) (make-hash '((a . 1) (b . 2) (c . 3))))
+   (define hash-imm (hash 'a 1 'b 2 'c 3))
+   (define (hash-mut) (make-hash '((a . 1) (b . 2) (c . 3))))
 
- (is (safe-hash-remove hash-imm 'a)
-     (hash 'b 2 'c 3)
-     "(safe-hash-remove hash-imm 'a) worked")
+   (is (safe-hash-remove hash-imm 'a)
+       (hash 'b 2 'c 3)
+       "(safe-hash-remove hash-imm 'a) worked")
 
- (is (safe-hash-remove hash-imm 'x)
-     (hash 'a 1 'b 2 'c 3)
-     "(safe-hash-remove hash-imm 'x) worked")
+   (is (safe-hash-remove hash-imm 'x)
+       (hash 'a 1 'b 2 'c 3)
+       "(safe-hash-remove hash-imm 'x) worked")
 
- (is (safe-hash-remove hash-imm 'a 'x)
-     (hash 'b 2 'c 3)
-     "(safe-hash-remove hash-imm 'a 'x) worked")
+   (is (safe-hash-remove hash-imm 'a 'x)
+       (hash 'b 2 'c 3)
+       "(safe-hash-remove hash-imm 'a 'x) worked")
 
- (is (safe-hash-remove hash-imm '(a x))
-     (hash 'b 2 'c 3)
-     "(safe-hash-remove hash-imm '(a x)) worked (list of keys)")
+   (is (safe-hash-remove hash-imm '(a x))
+       (hash 'b 2 'c 3)
+       "(safe-hash-remove hash-imm '(a x)) worked (list of keys)")
 
- (is (safe-hash-remove (hash '(a x) 7 'b 3) '(a x) #:key-is-list #t)
-     (hash 'b 3)
-     "(safe-hash-remove (hash '(a x) 7 b 3) '(a x) #:key-is-list #t) worked")
+   (is (safe-hash-remove (hash '(a x) 7 'b 3) '(a x) #:key-is-list #t)
+       (hash 'b 3)
+       "(safe-hash-remove (hash '(a x) 7 b 3) '(a x) #:key-is-list #t) worked")
 
- (is (safe-hash-remove (hash-mut) 'a)
-     (make-hash '((b . 2) (c . 3)))
-     "(safe-hash-remove hash-mut 'a) worked")
+   (is (safe-hash-remove (hash-mut) 'a)
+       (make-hash '((b . 2) (c . 3)))
+       "(safe-hash-remove hash-mut 'a) worked")
 
- (is (safe-hash-remove (hash-mut) 'x)
-     (make-hash '((a . 1) (b . 2) (c . 3)))
-     "(safe-hash-remove hash-mut 'x) worked")
+   (is (safe-hash-remove (hash-mut) 'x)
+       (make-hash '((a . 1) (b . 2) (c . 3)))
+       "(safe-hash-remove hash-mut 'x) worked")
 
- (define h (hash-mut))
- (let ((res (safe-hash-remove h 'a 'c 'x)))
-   (ok (eq? h res) "safe-hash-remove returns the same hash when given a mutable hash")
-   (is res
-       (make-hash '((b . 2)))
-       "(safe-hash-remove hash-mut 'a 'c 'x) worked"))
+   (define h (hash-mut))
+   (let ((res (safe-hash-remove h 'a 'c 'x)))
+     (ok (eq? h res) "safe-hash-remove returns the same hash when given a mutable hash")
+     (is res
+         (make-hash '((b . 2)))
+         "(safe-hash-remove hash-mut 'a 'c 'x) worked"))
 
 
    (for ([func (list mutable-hash hash)]
@@ -287,7 +314,7 @@
    (is (safe-hash-remove weird-h '((foo bar) a))
        (hash 'b 8)
        "(safe-hash-remove weird-h '((foo bar) a)) => (hash 'b 8)")
-   
+
    ));; test-suite
 
 (test-suite

@@ -13,7 +13,7 @@
 ;; *) 12hr->24hr : for time displays
 ;; *) always-return : returns a variadic function which always returns a constant value
 ;; *) always-true : variadic function that always returns #t. Useful for with-handlers
-;; *) append-file
+;; *) append-file : concat one file onto another
 ;; *) delete-file-if-exists : if it's there, get rid of it. if it's not, shut up
 ;; *) dir-and-filename : split-path without the third return value
 ;; *) directory-empty? : does the directory exist and contain nothing?
@@ -130,23 +130,21 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (append-file source dest)
-  (-> path-string? path-string? exact-positive-integer?)
+  (-> path-string? path-string? natural-number/c)
 
   ;;    Append file, return number of bytes in file afterwards so that
   ;;    we could verify the append if so desired.
-  ;;
-  ;; @@TODO: This reads the entire source file into RAM, so will work
-  ;; poorly on large files.  Should add a file-size check and make it
-  ;; do the transfer in a loop if it's too big.
-  (with-output-to-file
-    dest
-    #:mode 'binary
-    #:exists 'append
+  (with-output-to-file dest   #:mode 'binary #:exists 'append
     (thunk
-     (with-input-from-file
-       source
+     (define size (file-size source))
+
+     (with-input-from-file source #:mode 'binary
        (thunk
-        (display (port->bytes))))))
+        (let loop ()
+          (define data (read-bytes 1))
+          (when (not (eof-object? data))
+            (display data)
+            (loop)))))))
 
   (file-size dest)
   )
@@ -772,14 +770,14 @@
     ;;    NOTE: This will throw an exception if you try to add a key
     ;;    that is already there.
     (define hash-with-adds
-         (let ([hsh (union-func overwritten-hash
-                                add-hash
-                                #:combine/key (lambda _ (raise-arguments-error
-                                                         'hash-remap
-                                                         "add-hash cannot include keys that are in base-hash"
-                                                         "add-hash" add-hash
-                                                         "hash to add (remove and overwrite already done)" overwritten-hash)))])
-           (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash
+      (let ([hsh (union-func overwritten-hash
+                             add-hash
+                             #:combine/key (lambda _ (raise-arguments-error
+                                                      'hash-remap
+                                                      "add-hash cannot include keys that are in base-hash"
+                                                      "add-hash" add-hash
+                                                      "hash to add (remove and overwrite already done)" overwritten-hash)))])
+        (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash
 
     ;(say "hash-with-adds is: " hash-with-adds)
     ;(say "about to rename")
