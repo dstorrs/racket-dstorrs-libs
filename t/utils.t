@@ -929,12 +929,6 @@
    "hash-slice"
    (define h (hash 'a 1 'b 2 'c 3 'd 4))
 
-   (lives (thunk
-           (is (hash-slice (hash) '(a b c))
-               '()
-               "success: (hash-slice (hash) '(a b c)) returns empty list")
-           )
-          "slicing an empty hash didn't die.")
    (is (hash-slice h '(a b c d))
        '(1 2 3 4)
        "success: (hash-slice h '(a b c d))")
@@ -946,6 +940,14 @@
    (is (hash-slice h '(d c a b))
        '(4 3 1 2)
        "success: (hash-slice h  '(d c a b))")
+
+   (throws (thunk
+            (is (hash-slice (hash) '(a b c))
+                '()
+                "success: (hash-slice (hash) '(a b c)) returns empty list")
+            )
+           #px"no value found for key"
+          "slicing for a key that doesn't exist dies")
    ))
 
 ;;----------------------------------------------------------------------

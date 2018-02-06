@@ -27,6 +27,7 @@
 ;; *) hash->meld   : combine to or more hashes with later entries overwriting earlier ones
 ;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
 ;; *) hash-rename-key : change, e.g., key 'name to be 'first-name
+;; *) hash-slice      : takes a hash and a list of keys, returns the matching values
 ;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash)
 ;; *) not-equal?      : what it says on the tin
 ;; *) not-null?       : is something the null list?
@@ -217,10 +218,8 @@
 
 (define/contract (hash-slice the-hash keys)
   (-> hash? list? list?)
-  (define default (gensym)) ; guaranteed unique value
-  (filter-not (curry equal? default)
-              (for/list ((k keys))
-                (hash-ref the-hash k default))))
+  (for/list ((k keys))
+    (hash-ref the-hash k)))
 
 ;;----------------------------------------------------------------------
 
