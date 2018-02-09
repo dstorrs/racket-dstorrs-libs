@@ -443,7 +443,7 @@
 ;;  as ensure-disconnect
 (define/contract (maybe-disconnect db thnk #:disconnect? disconnect? [wrapper (lambda (db thnk) (unwrap-val thnk))])
   (->* (connection? (-> any) #:disconnect? boolean?) ((-> connection? (-> any))) any)
-  (say "entering maybe-disconnect.  disconnect is: " disconnect?)
+  ;(say "entering maybe-disconnect.  disconnect is: " disconnect?)
   ((if disconnect? ensure-disconnect (lambda (db thnk) (thnk)))
    db
    thnk))
