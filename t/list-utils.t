@@ -157,6 +157,21 @@
              (list (conv (second vec-list))
                    (conv (third vec-list))))
        "correctly found runs in a list of hashes")
+
+   (is (find-contiguous-runs '((1 2 3) (4 5 7) (200 201) (203))
+                             #:op (lambda (a b) (= (add1 (last a)) (first b))))
+       '((
+          (1 2 3)
+          (4 5 7)
+          )
+         (
+          (200 201)
+          )
+         (
+          (203)
+          )
+         )
+       "was able to find contiguous runs when the data was lists of multiple items")
    )
   )
 

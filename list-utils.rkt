@@ -111,7 +111,7 @@
     (for/fold ([result '()]
                [already-seen seen])
               ([item lst])
-      
+
       (cond [(list? item)
              (define-values (res new-seen)
                (_helper item
@@ -147,7 +147,7 @@
         [else
          (define lst-length (length lst))
          (define last-idx   (sub1 lst-length))
-         
+
          (cond [(not end)          (drop lst start)] ; no end specified
                [(> start last-idx) '()]              ; invalid start
                [(> end   last-idx) (drop lst start)] ; invalid end
@@ -354,7 +354,7 @@
 ;;
 ;; #:transform-data     Default: cons.       Accepts a key and a value, returns a pair.
 ;; #:dict-maker         Default: make-hash.  Receives the list of pairs from transform-data
-;; #:transform-dict     Default: identity.   Operate on the result of dict-maker 
+;; #:transform-dict     Default: identity.   Operate on the result of dict-maker
 ;; #:make-keys          Default: #f          If set, generates the keys based on the data
 ;;
 ;; Examples:
@@ -369,7 +369,7 @@
 ;;        => (make-immutable-hash '((foo . 7) (bar . 8)))
 ;;    (list->dict '(foo bar) '(65 66) #:make-keys integer->char   ; NB: specified keys were ignored
 ;;        => (make-hash '((#\A . 65) (#\B . 66)))
-;;    (list->dict '() '(65 66) #:make-keys integer->char  
+;;    (list->dict '() '(65 66) #:make-keys integer->char
 ;;        => (make-hash '((#\A . 65) (#\B . 66)))
 (define/contract (list->dict raw-keys
                              data
@@ -423,33 +423,45 @@
 ;;     Returns:  (list (list (hash 'age 17) (hash 'age 18))
 ;;                     (list (hash 'age 27)))
 ;;
-(define/contract (find-contiguous-runs data #:key  [extract-key identity])
-  (->* (list?) (#:key (-> any/c exact-integer?)) list?)
-  (if (null? data)
-      null
-      (let () ; need the let only to establish a definition context
-        (define-values (n final result)
-          (for/fold ((prev (car data))
-                     (acc  (list (car data)))
-                     (result '())
-                     )
-                    ((curr (cdr data)))
+(define/contract (find-contiguous-runs data
+                                       #:key [extract-key identity]
+                                       #:op  [op #f])
+  (->* (list?)
+       (#:key (-> any/c any/c)
+        #:op  (-> any/c any/c boolean?)
+        )
+       list?)
 
-            ;; if curr is contiguous with prev, add curr to acc (build the run)
-            ;; if curr not contiguous, add acc to result and clear acc for next time
+  (define contiguous? (or op
+                          (lambda (a b) (= (add1 (extract-key a)) (extract-key b)))))
+  
+  (cond [(null? data) '()]
+        [else
+         (define-values (extract-key-a extract-key-b)
+           (cond [(list? extract-key) (list->values extract-key)]
+                 [else (values extract-key extract-key)]))
 
-            (define is-contiguous (= (extract-key curr) (add1 (extract-key prev))))
-            (values curr                  ;; the one we just processed becomes 'prev(ious)'
-                    (if is-contiguous     ;; add to or clear accumulator
-                        (cons curr acc)
-                        (list curr))
-                    (if is-contiguous     ;; add accumulator to result if the run is over
-                        result
-                        (cons (reverse acc) result)
-                        ))
-            ))
-        (reverse (cons (reverse final) result)))
-      ))
+         (define-values (n final result)
+           (for/fold ((prev (car data))
+                      (acc  (list (car data)))
+                      (result '())
+                      )
+                     ((curr (cdr data)))
+
+             ;; if curr is contiguous with prev, add curr to acc (build the run)
+             ;; if curr not contiguous, add acc to result and clear acc for next time
+
+             (define is-contiguous (contiguous? prev curr))
+             (values curr                  ;; the one we just processed becomes 'prev(ious)'
+                     (if is-contiguous     ;; add to or clear accumulator
+                         (cons curr acc)
+                         (list curr))
+                     (if is-contiguous     ;; add accumulator to result if the run is over
+                         result
+                         (cons (reverse acc) result)
+                         ))
+             ))
+         (reverse (cons (reverse final) result))]))
 
 ;;----------------------------------------------------------------------
 
