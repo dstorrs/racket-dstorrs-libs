@@ -415,12 +415,16 @@
 ; exception, the db handle is guaranteed to be closed after this
 ; function completes.
 ;
-; Args are:  database connection, thunk, optionally a function of two arguments
+; Args are: database connection, thunk, optionally a function of two
+; arguments (db handle + thunk) via the #:wrapper keyword.
 ;
 ; NOTE:  See call-with-transaction/disconnect below.
 ;
-(define/contract (ensure-disconnect db thnk [wrapper (lambda (db thnk) (unwrap-val thnk))])
-  (->* (connection? (-> any)) ((-> connection? (-> any))) any)
+(define/contract (ensure-disconnect db thnk
+                                    #:wrapper [wrapper (lambda (db thnk) (thnk))])
+  (->* (connection? (-> any))
+       (#:wrapper (-> connection? (-> any) any))
+       any)
 
   (try [(wrapper db thnk)]
        [catch (match-anything (lambda (e) (raise (refine-db-exn e))))]
@@ -441,12 +445,15 @@
 ;;
 ;;  Aside from the #:disconnect keyword this accepts the same params
 ;;  as ensure-disconnect
-(define/contract (maybe-disconnect db thnk #:disconnect? disconnect? [wrapper (lambda (db thnk) (unwrap-val thnk))])
-  (->* (connection? (-> any) #:disconnect? boolean?) ((-> connection? (-> any))) any)
+(define/contract (maybe-disconnect db thnk
+                                   #:disconnect? disconnect?
+                                   #:wrapper [wrapper (lambda (db thnk) (thnk))])
+  (->* (connection? (-> any) #:disconnect? boolean?)
+       (#:wrapper (-> connection? (-> any) any))
+       any)
   ;(say "entering maybe-disconnect.  disconnect is: " disconnect?)
-  ((if disconnect? ensure-disconnect (lambda (db thnk) (thnk)))
-   db
-   thnk))
+  (cond [disconnect? (ensure-disconnect db thnk #:wrapper wrapper)]
+        [else (wrapper db thnk)]))
 
 ;;----------------------------------------------------------------------
 
@@ -456,6 +463,6 @@
 (define/contract (call-with-transaction/disconnect db thnk)
   (-> connection? (-> any) any)
 
-  (ensure-disconnect db thnk call-with-transaction))
+  (ensure-disconnect db thnk #:wrapper call-with-transaction))
 
 ;;----------------------------------------------------------------------
