@@ -2,12 +2,15 @@
 
 #lang racket
 
-(require "../test-more.rkt"
+(require "../HTML-Element.rkt"
+         "../test-more.rkt"
+         (planet neil/html-parsing:1:2/html-parsing)
+         ;(planet neil/html-parsing:3:0)
          racket/runtime-path
-         (planet neil/html-parsing:3:0)
          sxml
          "../list-utils.rkt"
-         "../HTML-Element.rkt")
+         )
+
 
 (define-runtime-path thisdir ".")
 (define test-file (build-path thisdir "some_HTML-Element_test_data.html"))

@@ -1,7 +1,8 @@
 #lang racket
 
 (require net/url
-         (planet neil/html-parsing:3:0))
+         (planet neil/html-parsing:1:2/html-parsing)
+         )
 
 ;;----------------------------------------------------------------------
 ;;    Check if a url-ish thing refers to a local resource or one on
