@@ -1,7 +1,7 @@
 #lang racket
 
 (require net/url
-         (planet neil/html-parsing:1:2/html-parsing)
+         html-parsing
          )
 
 ;;----------------------------------------------------------------------

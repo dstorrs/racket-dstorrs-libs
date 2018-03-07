@@ -4,8 +4,7 @@
 
 (require "../HTML-Element.rkt"
          "../test-more.rkt"
-         (planet neil/html-parsing:1:2/html-parsing)
-         ;(planet neil/html-parsing:3:0)
+         html-parsing
          racket/runtime-path
          sxml
          "../list-utils.rkt"
