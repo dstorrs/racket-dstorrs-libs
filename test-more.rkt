@@ -18,23 +18,23 @@
          like              ; A value matches a regex
          unlike            ; A value does not match a regex
 
-         lives             ; expression does not throw an exception 
+         lives             ; expression does not throw an exception
          dies              ; expression does throw
          throws            ; throws an exception and that exn matches a predicate
-         
+
          matches           ; value matches a predicate
          not-matches       ; ...or doesn't
          is-type           ; alias for matches
          isnt-type         ; alias for not-matches
-         
+
          is-approx         ; value is roughly the expected value
          isnt-approx       ; ...or not
-         
+
          test-suite        ; gather a set of tests together, trap exns, output some extra debugging
-         
+
          make-test-file    ; create a file on disk, populate it
 
-         expect-n-tests    ; unless N tests ran, print error at end of file execution 
+         expect-n-tests    ; unless N tests ran, print error at end of file execution
          done-testing      ; never mind how many tests we expect, we're okay if we see this
          diag              ; print a diagnostic message. see prefix-for-diag
 
@@ -42,11 +42,11 @@
          tests-failed      ; # of tests failed so far
 
          test-more-check   ; fundamental test procedure.  All others call this
-         
+
          inc-test-num!     ; tests start at 1.  Use this to change test number (but why?)
          current-test-num  ; return current test number
          next-test-num     ; return next test number and optionally modify it
-)
+         )
 
 
 ;;======================================================================
@@ -91,40 +91,52 @@
 ;        ...tests...)
 (define prefix-for-test-report (make-parameter ""))
 
-; Internal variable
-(define _tp 0)                 ; how many tests have passed thus far?
-(define _tf 0)                 ; how many tests have failed thus far?
-(define saw-done-testing #f)   ; did we see a (done-testing) call?
-(define expect-tests #f)       ; how many tests should we expect to see? cf (expect-n-tests)
+; Internal variables
+(define _tp (make-parameter 0))                 ; how many tests have passed thus far?
+(define _tf (make-parameter 0))                 ; how many tests have failed thus far?
+(define saw-done-testing (make-parameter #f))   ; did we see a (done-testing) call?
+
+;;----------------------------------------------------------------------
+;
+; Parameter: expect-n-tests
+; Default  : #f
+;
+; Set this to say "this script will run 17 tests" (or however many).
+; If it runs more or fewer then an error will be reported at the end.
+;
+; See also: done-testing
+;
+; If neither this nor done-testing are seen before end of file, a
+; warning will be reported when the tests are run.
+;
+(define expect-n-tests (make-parameter #f))
 
 ;----------------------------------------------------------------------
 ; Internal helper functions to set or get the number of tests passed  and failed.
 ;
 ; Call as (tests-passed) to get the number, (tests-passed 2) to add 2 to the number and return it
 (define (tests-passed [inc 0])
-  (set! _tp (+ _tp inc))
-  _tp)
+  (_tp (+ (_tp) inc))
+  (_tp))
 
 (define (tests-failed [inc 0])
-  (set! _tf (+ _tf inc))
-  _tf)
+  (_tf (+ (_tf) inc))
+  (_tf))
+
 ;----------------------------------------------------------------------
 
-;  Track which test we're on. (i.e. test 1, 2, 3....) 
+;  Track which test we're on. (i.e. test 1, 2, 3....)
 ;  splicing-let allows us to share state between these functions and
 ;  then treat the functions as though they were declared at top level
 ;  without exposing the actual 'test-num' variable to the rest of the
 ;  module.
-(splicing-let ([test-num 0])
-  (define (inc-test-num! inc)
-    (set! test-num (+ test-num inc))
-    )
-  (define (current-test-num) test-num)
-  (define (next-test-num #:inc [should-increment #t])
-    (define next (add1 test-num))
-    (when should-increment
-      (set! test-num (add1 test-num)))
-    test-num))
+(define current-test-num (make-parameter 0))
+(define (inc-test-num! inc) (current-test-num (+ (current-test-num) inc)))
+(define (next-test-num #:inc [should-increment #t])
+  (define next (add1 (current-test-num)))
+  (when should-increment
+    (current-test-num next))
+  (current-test-num))
 
 ;;----------------------------------------------------------------------
 
@@ -134,19 +146,19 @@
 (void
  (plumber-add-flush! (current-plumber)
                      (lambda (flush-handle)
-                       (let ((test-num (current-test-num)))
-                         (cond [saw-done-testing #t]
-                               [(equal? test-num expect-tests) #t]
-                               [(false? expect-tests)
-                                (say "WARNING: Neither (expect-n-tests N) nor (done-testing) was called.  May not have run all tests.")]
-                               [else
-                                (say (format "ERROR:  Expected ~a tests, ~a saw ~a"
-                                             expect-tests
-                                             (if (> test-num expect-tests) "actually" "only")
-                                             test-num))
-                                #t]))
-                       (plumber-flush-handle-remove! flush-handle)
-                       )))
+                       (cond [(saw-done-testing) #t]
+                             [(equal? (current-test-num) (expect-n-tests)) #t]
+                             [(false? (expect-n-tests))
+                              (say "WARNING: Neither (expect-n-tests N) nor (done-testing) was called.  May not have run all tests.")]
+                             [else
+                              (say (format "ERROR:  Expected ~a tests, ~a saw ~a"
+                                           (expect-n-tests)
+                                           (cond [(> (current-test-num) (expect-n-tests))
+                                                  "actually"]
+                                                 [else "only"])
+                                           (current-test-num)))
+                              #t])
+                       (plumber-flush-handle-remove! flush-handle))))
 
 ;;----------------------------------------------------------------------
 
@@ -483,15 +495,16 @@
 
 ;;----------------------------------------------------------------------
 
+
 ; (define/contract (make-test-file [fpath (make-temporary-file)]
 ;                                  [text (rand-val "test file contents")]
 ;                                  #:overwrite [overwrite #t])
 ;  (->* () (path-string? string? #:overwrite boolean?) path-string?)
 ;
-; Creates (and, optionally, populates) a file for use by a test.  
+; Creates (and, optionally, populates) a file for use by a test.
 ;
 ; If fpath is not specified it will default.  See make-temporary-file
-; in the Racket docs for details. 
+; in the Racket docs for details.
 ;
 ; If fpath is an existing directory, a file with a random name will be
 ; created in that directory.
@@ -545,21 +558,6 @@
 
 ;;----------------------------------------------------------------------
 
-;(define/contract (expect-n-tests n)
-;
-; Call this to say "this script will run 17 tests" (or however many).
-; If it runs more or fewer then an error will be reported at the end.
-;
-; See also: done-testing
-;
-; If neither this nor done-testing are seen before end of file, a
-; warning will be reported when the tests are run.
-(define/contract (expect-n-tests n)
-  (-> exact-positive-integer? any)
-  (set! expect-tests n))
-
-;;----------------------------------------------------------------------
-
 ; (define/contract (done-testing)
 ;
 ; It can be a pain to count exactly how many tests you're going to
@@ -576,7 +574,7 @@
 (define/contract (done-testing)
   (-> any)
   (say "Done.")
-  (set! saw-done-testing #t))
+  (saw-done-testing #t))
 
 ;;----------------------------------------------------------------------
 
