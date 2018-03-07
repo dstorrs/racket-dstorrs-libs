@@ -8,7 +8,8 @@
          "list-utils.rkt" ; for atom?
          "web.rkt"        ; for web/call
          "try.rkt"
-         (planet neil/html-parsing:3:0)
+         (planet neil/html-parsing:1:2/html-parsing)
+         ;(planet neil/html-parsing:3:0)
          sxml
          "utils.rkt"
          )

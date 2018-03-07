@@ -1,8 +1,8 @@
 #!/usr/bin/env racket
 
 #lang racket
-(require "../test-more.rkt")
-(require dstorrs/utils)
+(require "../test-more.rkt"
+         "../utils.rkt")
 
 (define (inner-test thnk [should-pass #t])
   (define result #f)

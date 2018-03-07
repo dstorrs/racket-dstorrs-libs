@@ -2,8 +2,8 @@
 
 #lang at-exp racket
 
-(require dstorrs/utils
-         dstorrs/test-more
+(require "../utils.rkt"
+         "../test-more.rkt"
          racket/runtime-path
          )
 

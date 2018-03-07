@@ -2,9 +2,9 @@
 
 #lang at-exp racket
 
-(require dstorrs/utils
-         dstorrs/json
-         dstorrs/test-more
+(require "../utils.rkt"
+         "../json.rkt"
+         "../test-more.rkt"
          json
 		 )
 

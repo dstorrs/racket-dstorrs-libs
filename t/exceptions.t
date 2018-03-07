@@ -2,10 +2,10 @@
 
 #lang at-exp racket
 
-(require dstorrs/utils
-         dstorrs/try
-         dstorrs/test-more
-         dstorrs/exceptions
+(require "../utils.rkt"
+         "../try.rkt"
+         "../test-more.rkt"
+         "../exceptions.rkt"
          )
 
 (ok #t "test harness is working")

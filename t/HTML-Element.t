@@ -2,7 +2,7 @@
 
 #lang racket
 
-(require dstorrs/test-more
+(require "../test-more.rkt"
          racket/runtime-path
          (planet neil/html-parsing:3:0)
          sxml

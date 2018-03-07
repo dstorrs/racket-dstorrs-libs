@@ -2,9 +2,9 @@
 
 #lang at-exp racket
 
-(require dstorrs/test-more
-         dstorrs/utils
-         dstorrs/fsmonitor
+(require "../test-more.rkt"
+         "../utils.rkt"
+         "../fsmonitor.rkt"
          db
          racket/runtime-path
 		 )
