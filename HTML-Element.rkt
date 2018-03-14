@@ -9,7 +9,6 @@
          "web.rkt"        ; for web/call
          "try.rkt"
          html-parsing
-         ;(planet neil/html-parsing:3:0)
          sxml
          "utils.rkt"
          )
