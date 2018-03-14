@@ -435,7 +435,7 @@
                            "thrown value" e))
 
   (cond [(false? threw)    (test-more-check #:got #f  #:msg (~a msg " [DID NOT THROW]")  #:return e)]
-        [(procedure? pred) (test-more-check #:msg msg #:got (pred e) #:report-got-as e #:return e)]
+        [(procedure? pred) (test-more-check #:msg msg #:got (and (pred e) #t) #:report-got-as e #:return e)]
         [(string? pred)    (test-more-check #:msg msg #:got (equal? pred (remove-exn-boilerplate e)) #:report-got-as e  #:return e)]
         [(regexp? pred)    (test-more-check #:msg msg #:got (regexp-match? pred (get-msg e)) #:report-got-as e  #:return e)]
         [else              (test-more-check #:msg msg #:got e  #:expected pred #:return e)]
