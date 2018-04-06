@@ -110,24 +110,26 @@
   );when
 
 
-;; (when #t
-;;   (test-suite
-;;    "verify-data"
+(when #t
+  (test-suite
+   "verify-struct"
 
-;;    (struct foo (a b c))
-;;    (define x (foo 1 2 3))
-;;    (define y (foo 0 2 3))
+   (struct foo (a b c))
+   (define x (foo 1 2 3))
+   (define y (foo 0 2 3))
 
-;;    (is-type x foo? "x is a foo")
-;;    (is-type y foo? "y is a foo")
+   (is-type x foo? "x is a foo")
+   (is-type y foo? "y is a foo")
 
-;;    (isnt x y "x and y are not equal?")
-;;    (ok (verify-data #:data x
-;;                     #:tests (list (cons foo-b 2) (cons foo-c 3)))
-;;        "validates when given list of tests")
-;;    (ok (verify-data #:data x #:type foo?) "validates when given a type predicate")
-;;    ))
+   (isnt x y "x and y are not equal?")
+   (ok (verify-struct #:struct x 
+                      #:funcs (list foo-b foo-c)
+                      #:expected '(2 3))
+       "validates when given list of tests")
+   
+   (ok (verify-struct #:struct x #:type foo?) "validates when given a type predicate")
+   ))
 
 
 
-(done-testing) ; this should be the last line in the file
+(done-testing) ;this should be the last line in the file

@@ -108,7 +108,7 @@
 
 ;; (verify-struct #:struct    s                   ; the struct to verify
 ;;                #:type      [is-type? identity] ; a predicate that must return true
-;;                #:funcs     [funcs '()]         ; list of functions to test
+;;                #:tests     [funcs '()]         ; list of functions to test
 ;;                #:expected  [expected '()])     ; required return value of corresponding func
 ;;
 ;; Given a struct, verify that it meets certain criteria. The 'funcs'
