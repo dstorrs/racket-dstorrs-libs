@@ -6,7 +6,7 @@
          handy/test-more
          handy/files/compression
          )
-(expect-n-tests 37)
+(expect-n-tests 39)
 
 (void (ok 1 "test harness working"))
 
@@ -134,8 +134,8 @@
        ;;    specified by generator.  The zip file should be removed
        ;;    by default
        (diag "compress files to a target specified by generator")
-       (let* ([compressed-filepath (setup)]
-              [target-filepath (path-string->string (make-temporary-file))])
+       (let ([compressed-filepath (setup)]
+             [target-filepath (path-string->string (make-temporary-file))])
          (is (gunzip* compressed-filepath (lambda (x y) target-filepath))
              target-filepath
              "(gunzip* compressed-filepath <generator>) returns correct target")
@@ -145,12 +145,27 @@
 
        ;;    Uncompress the file to a specified path with target
        ;;    specified by filepath. Do NOT remove the zip
-       (let* ([compressed-filepath (setup)]
-              [target-filepath (make-temporary-file)])
+       (let ([compressed-filepath (setup)]
+             [target-filepath (make-temporary-file)])
          (is (gunzip* compressed-filepath target-filepath #:remove-zip? #f)
              target-filepath
              "(gunzip* compressed-filepath target) returns correct target")
          (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #f)
          (delete-file-if-exists compressed-filepath)
          )
-       ))))
+
+
+       ;;  Verify that if you try to unzip something that is not a zip
+       ;;  file then you will get an exn:fail:gunzip back instead of
+       ;;  an exn:fail.  Any other error will come back undisturbed
+       (with-temp-file
+         (lambda (the-path)
+           (throws (thunk (gunzip* the-path))
+                   exn:fail:gunzip?
+                   "trying to unzip something that is not a zip file will thrown an exn:fail:gunzip, not an exn:fail")
+           (delete-file-if-exists the-path)
+           (throws (thunk (gunzip* the-path))
+                   exn:fail:filesystem?
+                   "trying to unzip something that doesn't exist is an exn:fail:filesystem?, not an exn:fail:gunzip")))
+
+           ))))

@@ -3,11 +3,15 @@
 (require file/gzip
          file/gunzip
          handy/utils
+         handy/try
          )
 
 (provide gzip*
          gunzip*
+         (struct-out exn:fail:gunzip)
          )
+
+(struct exn:fail:gunzip exn:fail ())
 
 ;; (define/contract (gzip* in-file [out-file #f] #:remove-original? [remove-original? #f])
 ;;    (->*  (path-string?) (path-string? #:remove-original? boolean?) path-string?)
@@ -83,7 +87,19 @@
              (set! out-filepath result)
              result)]))
 
-  (gunzip in-file path-maker)
+  ;;  gunzip the file.  If the file is not a gzip or is corrupted then
+  ;;  the default gunzip will raise an 'exn:fail'.  If that happens,
+  ;;  re-raise it as an 'exn:fail:gunzip' with the same information.
+  ;;  For any other kind of exception, re-raise it as is
+  ;;
+  (try [(gunzip in-file path-maker)]
+       [catch (exn:fail? (lambda (e)
+                           (define msg (exn-message e))
+                           (raise (cond [(regexp-match #px"^gnu-unzip:" msg)
+                                         (exn:fail:gunzip msg (exn-continuation-marks e))]
+                                        [(regexp-match #px"^inflate: unexpected end-of-file" msg)
+                                         (exn:fail:gunzip msg (exn-continuation-marks e))]
+                                        [else e]))))])
 
   (and remove-zip? (file-exists? out-filepath) (delete-file-if-exists in-file))
   out-filepath)
