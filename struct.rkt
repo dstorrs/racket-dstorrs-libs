@@ -108,19 +108,21 @@
 
 ;; (verify-struct #:struct    s                   ; the struct to verify
 ;;                #:type      [is-type? identity] ; a predicate that must return true
-;;                #:tests     [funcs '()]         ; list of functions to test
+;;                #:funcs     [funcs '()]         ; list of functions to test
 ;;                #:expected  [expected '()])     ; required return value of corresponding func
 ;;
 ;; Given a struct, verify that it meets certain criteria. The 'funcs'
 ;; and 'expected' list must be the same length. If you let all
 ;; optional arguments default then it will return #t, but that's a
 ;; little silly.
-(define/contract (verify-struct #:struct    s
-                                #:type      [is-type? identity]
-                                #:funcs     [funcs '()]
-                                #:expected  [expected '()])
+(define/contract (verify-struct #:struct     s
+                                #:type       [is-type? identity]
+                                #:predicates [predicates '()]
+                                #:funcs      [funcs '()]
+                                #:expected   [expected '()])
   (->* (#:struct any/c)
        (#:type (-> any/c boolean?)
+        #:predicates (listof (-> any/c any))
         #:funcs (listof procedure?)
         #:expected (or/c any/c (listof any/c)))
        boolean?)
@@ -133,6 +135,8 @@
                            "expected"  (length expected)))
 
   (and (is-type? s)
+       (for/and ([p predicates])
+         (p s))
        (cond [(list? expected) (for/and ((f funcs)
                                          (val expected))
                                  (equal? (f s) val))]
