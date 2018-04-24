@@ -513,6 +513,7 @@
                                   #:filter                 [chooser #f]
                                   #:post-process-partition [post-process-partition identity]
                                   #:post-process-element   [post-process-element   (lambda (idx elem) elem)]
+                                  #:post-process-all-data  [post-process-all-data  vector->list]
                                   )
   (->* (#:partitions exact-positive-integer?
         #:source list?)
@@ -520,6 +521,7 @@
         #:filter (-> any/c (or/c #f void? exact-nonnegative-integer?))
         #:post-process-partition (-> list? any/c)
         #:post-process-element   (-> exact-nonnegative-integer? any/c any/c)
+        #:post-process-all-data  (-> vector? any)
         )
        any
        )
@@ -554,7 +556,7 @@
                         i
                         (post-process-partition
                          (reverse (vector-ref results i)))))
-         (vector->values results)]))
+         (post-process-all-data results)]))
 
 ;;----------------------------------------------------------------------
 

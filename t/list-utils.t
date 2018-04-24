@@ -394,7 +394,7 @@
 
    (is (slice '() 5 10)
        '()
-       "slice will return null if given a start index that's off the end") 
+       "slice will return null if given a start index that's off the end")
 
    (is (slice '(a b c) 0 10)
        '(a b c)
@@ -494,6 +494,7 @@
    (lives (thunk
            (let-values ([(x y) (multi-partition #:partitions 2
                                                 #:filter (lambda (n) 1)
+                                                #:post-process-all-data vector->values
                                                 #:source '())])
              (is (list x y)
                  (list '() '())
@@ -504,6 +505,7 @@
    (lives (thunk
            (let-values ([(x y z) (multi-partition #:partitions 3
                                                   #:filter (lambda (n) 1)
+                                                  #:post-process-all-data vector->values
                                                   #:source '())])
              (is (list x y z)
                  (list '() '() '())
@@ -518,6 +520,7 @@
                                       [(odd?  (floor n)) 2]))))
              (let-values ([(x y z) (multi-partition #:partitions 3
                                                     #:filter f
+                                                    #:post-process-all-data vector->values
                                                     #:source '(1 7 8 0 15.8 -2))])
                (is (list x y z)
                    '( (0) (8 -2) (1 7 15.8) )
@@ -528,6 +531,7 @@
    (throws (thunk
             (multi-partition #:partitions 2
                              #:filter (lambda (n) #t)
+                             #:post-process-all-data vector->values
                              #:source '(1 7 8 0 15.8 -2 a)))
            @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? natural\?\).+? given: #t}
            @~a{Returned #t : If your match function returns something other than #f or a 0+ natural number then multi-partition throws})
@@ -535,6 +539,7 @@
    (throws (thunk
             (multi-partition #:partitions 2
                              #:filter (lambda (n) 8.2)
+                             #:post-process-all-data vector->values
                              #:source '(1 7 8 0 15.8 -2 a)))
            @pregexp{multi-partition: contract violation.+? expected:.+?\(or/c #f void\? natural\?\).+? given: 8.2}
            @~a{Returned 8.2 : If your match function returns something other than #f or a 0+ natural number then multi-partition throws})
@@ -542,6 +547,7 @@
    (let-values ([(x y) (multi-partition #:partitions 2
                                         #:source '(1 2 3 4 1)
                                         #:post-process-partition unique
+                                        #:post-process-all-data vector->values
                                         #:filter (lambda (i) (if (odd? i) 0 1)))])
      (is x '(1 3) "all odd numbers are in x and it was uniqueified")
      (is y '(2 4) "all even numbers are in y")
@@ -550,6 +556,7 @@
    (let-values ([(x y) (multi-partition #:partitions 2
                                         #:source '(1 2 3 4 1)
                                         #:post-process-partition unique
+                                        #:post-process-all-data vector->values
                                         #:filter (lambda (i)
                                                    (cond [(odd? i) 0]
                                                          [(= 4 i) #f]
@@ -561,6 +568,7 @@
    (let-values ([(x y) (multi-partition #:partitions 2
                                         #:source '(1 2 3 4 1)
                                         #:post-process-partition unique
+                                        #:post-process-all-data vector->values
                                         #:filter (lambda (i)
                                                    (cond [(odd? i) 0]
                                                          [(= 8 i)    1]))
@@ -571,6 +579,7 @@
    (let-values ([(x y) (multi-partition #:partitions 2
                                         #:source '(1 2 3 4 1)
                                         #:post-process-element (lambda (x y) (add1 y))
+                                        #:post-process-all-data vector->values
                                         #:filter (lambda (i)
                                                    (cond [(odd? i) 0]
                                                          [(= 8 i)    1]))
@@ -579,19 +588,25 @@
      (is y '() "y is empty")
      )
 
-   (define-values (more? next) (sequence-generate (in-naturals)))
-   (define-values (start mid end)
-     (multi-partition #:partitions 3 #:source '(a b c d e f g)))
+   (let ()
+     (define-values (start mid end)
+       (multi-partition #:partitions 3 #:source '(a b c d e f g)
+                        #:post-process-all-data vector->values))
+     (is start
+         '(a d g)
+         "when defaulting the index chooser, start got (a d g)")
+     (is mid
+         '(b e)
+         "when defaulting the index chooser, mid got (b e)")
+     (is end
+         '(c f)
+         "when defaulting the index chooser, end got (c f)"))
 
-   (is start
-       '(a d g)
-       "when defaulting the index chooser, start got (a d g)")
-   (is mid
-       '(b e)
-       "when defaulting the index chooser, mid got (b e)")
-   (is end
-       '(c f)
-       "when defaulting the index chooser, end got (c f)")
+   (is
+    (multi-partition #:partitions 3 #:source '(a b c d e f g))
+    '((a d g) (b e) (c f))
+    "by default, returns LoL")
+
    )
   )
 
