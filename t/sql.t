@@ -21,6 +21,14 @@
  (is (many-to-many-join c f)
      "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
      "many-to-many-join works")
+
+ (is (many-to-many-join "collaborations" '("files" "endpoints"))
+     "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id"
+     "(many-to-many-join \"collaborations\" '(\"files\" \"endpoints\")) works")
+
+ (is (many-to-many-join "collaborations" '("files" "endpoints" "users"))
+     "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id JOIN collaborations_to_users c2u ON c.id = c2u.collaboration_id JOIN users u ON c2u.user_id = u.id"
+     "(many-to-many-join \"collaborations\" '(\"files\" \"endpoints\" \"users\")) works")
  )
 
 (when #t

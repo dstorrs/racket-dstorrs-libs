@@ -112,29 +112,48 @@
 ;;--------------------------------------------------------------------------------
 
 
-;; (define/contract (many-to-many-join table1 table2)
+;; (define/contract (many-to-many-join table1 join-to)
+;;  (-> string? (or/c string? (non-empty-listof string?)) string?)
 ;;
-;; Given:  "collaborations" "files"
+;;    ; Join two tables together
+;; (many-to-many-join "collaborations" "files")
 ;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
-(define/contract (many-to-many-join table1 table2)
-  (-> string? string? string?)
-  (define (singular str)
-    (define res (regexp-match #px"^(.+)s$" str))
-    (if res (second res) str))
+;;
+;;    ; Join three tables by way of a central table
+;; (many-to-many-join "collaborations" '("files" "endpoints"))
+;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id"
+;;
+(require handy/utils)
+(define/contract (many-to-many-join table1 join-to)
+  (-> string? (or/c string? (non-empty-listof string?)) string?)
 
-  (define join-table  (join-table-name table1 table2))     ; collaborations_to_files
-  (define t1a         (~a (string-ref table1 0)))          ; c
-  (define t2a         (~a (string-ref table2 0)))          ; f
-  (define jta         (~a t1a "2" t2a))                    ; c2f
-  (define t1-id       (~a t1a ".id"))                      ; c.id
-  (define t2-id       (~a t2a ".id"))                      ; f.id
-  (define t1-link     (~a jta "." (singular table1) "_id")); c2f.collaboration_id
-  (define t2-link     (~a jta "." (singular table2) "_id")); c2f.file_id
+  (define t1a         (~a (string-ref table1 0)))          ; collaborations => c
+  
+  (cond [(list? join-to)
+         (say "join-to: " (~v join-to))
+         (define lst (for/list ([to join-to])
+                       (many-to-many-join table1 to)))
+         (say "lst is: " (~v lst))
+         (string-join (cons (car lst)
+                            (map (lambda (s)
+                                   (string-trim s @~a{@table1 @t1a }))
+                                 (cdr lst))))]
+        [else
+         (define (singular str)
+           (define res (regexp-match #px"^(.+)s$" str))
+           (if res (second res) str))
 
-  ;; collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id
+         (define join-table  (join-table-name table1 join-to))     ; collaborations_to_files
+         (define t2a         (~a (string-ref join-to 0)))          ; f
+         (define jta         (~a t1a "2" t2a))                    ; c2f
+         (define t1-id       (~a t1a ".id"))                      ; c.id
+         (define t2-id       (~a t2a ".id"))                      ; f.id
+         (define t1-link     (~a jta "." (singular table1) "_id")); c2f.collaboration_id
+         (define t2-link     (~a jta "." (singular join-to) "_id")); c2f.file_id
 
-  @~a{@table1 @t1a JOIN @join-table @jta ON @t1-id = @t1-link JOIN @table2 @t2a ON @t2-link = @t2-id}
-  )
+         ;; collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id
+         ;; collaborations c JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id
+         @~a{@table1 @t1a JOIN @join-table @jta ON @t1-id = @t1-link JOIN @join-to @t2a ON @t2-link = @t2-id}
+         ]))
 
 ;;--------------------------------------------------------------------------------
-
