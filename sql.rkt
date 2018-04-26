@@ -106,10 +106,11 @@
 ;;
 ;;  (join-table-name "users" "public_keys") => "public_keys_to_users"
 ;;  (join-table-name "public_keys" "users") => "public_keys_to_users"
-(define/contract (join-table-name t1 t2)
+(define/contract (join-table-name table1 table2)
   (-> string? string? string?)
-  (define-values (table1 table2) (sort (list t1 t2) string-ci<?))
-  (string-append table1 "_to_" table2))
+  (string-join (sort (list table1 table2)
+                     string-ci<?)
+               "_to_"))
 
 ;;--------------------------------------------------------------------------------
 
@@ -122,8 +123,8 @@
 ;;
 (define/contract (join-table-abbrev t1 t2)
   (-> string? string? string?)
-  (define-values (table1 table2) (sort (list t1 t2) string-ci<?))
-  (string-append (string-ref table1 0) "2" (string-ref table2 0)))
+  (define-values (table1 table2) (apply values (sort (list t1 t2) string-ci<?)))
+  (~a (string-ref table1 0) "2" (string-ref table2 0)))
 
 ;;--------------------------------------------------------------------------------
 
@@ -135,21 +136,25 @@
 ;; (many-to-many-join "collaborations" "files")
 ;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
 ;;
-;;    ; Join three tables by way of a central table
-;; (many-to-many-join "collaborations" '("files" "endpoints"))
-;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id"
+;;    ; Join three tables by way of a central table.
+;; (many-to-many-join "users" '("endpoints" "collaborations"))
+;; Return: "users u JOIN endpoints_to_users e2u on e2u.user_id = u.id JOIN endpoints e ON e2u.endpoint_id = e.id JOIN collaborations_to_users c2u ON c2u.user_id = u.id JOIN collaborations c ON c2u.collaboration_id = c.id"
 ;;
-(require handy/utils)
+;;   NOTE: You *must* join through a central table. Joining from one
+;;   end of the chain does not work, since there is not a direct connection. 
+;; (many-to-many-join "endpoints" '("users" "collaborations")) ; RESULT INVALID
+;; Return: "endpoints e JOIN endpoints_to_users e2u ON e2u.endpoint_id = e.id JOIN users u ON e2u.user_id = u.id JOIN collaborations_to_endpoints c2e ON c2e.endpoint_id = e.id JOIN collaborations c ON c2e.collaboration_id = c.id"
+;;    THE ABOVE SQL DOES NOT WORK. THERE IS NO collaborations_to_endpoints TABLE
+;;
 (define/contract (many-to-many-join table1 join-to)
   (-> string? (or/c string? (non-empty-listof string?)) string?)
 
-  (define t1a         (~a (string-ref table1 0)))          ; collaborations => c
-  
+  ;  NB: string-ref returns a char and we want a string, hence the ~a
+  (define t1a         (~a (string-ref table1 0)))          ; e.g. collaborations => c
+
   (cond [(list? join-to)
-         (say "join-to: " (~v join-to))
          (define lst (for/list ([to join-to])
                        (many-to-many-join table1 to)))
-         (say "lst is: " (~v lst))
          (string-join (cons (car lst)
                             (map (lambda (s)
                                    (string-trim s @~a{@table1 @t1a }))
@@ -159,16 +164,19 @@
            (define res (regexp-match #px"^(.+)s$" str))
            (if res (second res) str))
 
+         ; If given, e.g., (many-to-many-join "files" "collaborations")
+         ;
+         ;(define table1     "files")                              ; argument to func
+         ;(define join-to    "collaborations")                     ; argument to func
+         ;(define t1a        (string-ref table1 0))                ; f  [defined above]
+         (define t2a         (~a (string-ref join-to 0)))          ; c
          (define join-table  (join-table-name table1 join-to))     ; collaborations_to_files
-         (define t2a         (~a (string-ref join-to 0)))          ; f
-         (define jta         (~a t1a "2" t2a))                    ; c2f
-         (define t1-id       (~a t1a ".id"))                      ; c.id
-         (define t2-id       (~a t2a ".id"))                      ; f.id
-         (define t1-link     (~a jta "." (singular table1) "_id")); c2f.collaboration_id
-         (define t2-link     (~a jta "." (singular join-to) "_id")); c2f.file_id
+         (define jta         (join-table-abbrev table1 join-to))   ; c2f
+         (define t1-id       (~a t1a ".id"))                       ; f.id
+         (define t2-id       (~a t2a ".id"))                       ; c.id
+         (define t1-link     (~a jta "." (singular table1) "_id")) ; c2f.file_id
+         (define t2-link     (~a jta "." (singular join-to) "_id")); c2f.collaboration_id
 
-         ;; collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id
-         ;; collaborations c JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id
          @~a{@table1 @t1a JOIN @join-table @jta ON @t1-id = @t1-link JOIN @join-to @t2a ON @t2-link = @t2-id}
          ]))
 
