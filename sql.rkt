@@ -102,12 +102,28 @@
 ;;
 ;;  Takes two strings, each the name of a table, and generates the
 ;;  name of the join table, assuming that the join table is named
-;;  "X_to_Y".
+;;  "X_to_Y" where X and Y are alphabetical.
 ;;
-;;  (join-table-name "users" "public_keys") => "users_to_public_keys"
-(define/contract (join-table-name table1 table2)
+;;  (join-table-name "users" "public_keys") => "public_keys_to_users"
+;;  (join-table-name "public_keys" "users") => "public_keys_to_users"
+(define/contract (join-table-name t1 t2)
   (-> string? string? string?)
+  (define-values (table1 table2) (sort (list t1 t2) string-ci<?))
   (string-append table1 "_to_" table2))
+
+;;--------------------------------------------------------------------------------
+
+;;   Produces the abbrevation for a join table, which will be of the
+;;   format "x2y" See join-table-name above for how to get the name.
+;;   Names are always in alphabetical order and so are abbreviations:
+;;
+;;    (join-table-abbrev "endpoints" "users") => e2u
+;;    (join-table-abbrev "users" "endpoints") => e2u
+;;
+(define/contract (join-table-abbrev t1 t2)
+  (-> string? string? string?)
+  (define-values (table1 table2) (sort (list t1 t2) string-ci<?))
+  (string-append (string-ref table1 0) "2" (string-ref table2 0)))
 
 ;;--------------------------------------------------------------------------------
 
