@@ -33,7 +33,24 @@
 
    (is (many-to-many-join "collaborations" '("files" "endpoints" "users"))
        "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id JOIN collaborations_to_users c2u ON c.id = c2u.collaboration_id JOIN users u ON c2u.user_id = u.id"
-       "(many-to-many-join \"collaborations\" '(\"files\" \"endpoints\" \"users\")) works")
+       "(many-to-many-natural-join \"collaborations\" '(\"files\" \"endpoints\" \"users\")) works")
+
+   
+  (is (many-to-many-natural-join c f)
+       "collaborations c NATURAL JOIN collaborations_to_files c2f NATURAL JOIN files f"
+       "many-to-many-natural-join works")
+
+   (is (many-to-many-natural-join "collaborations" '("files" "endpoints"))
+       "collaborations c NATURAL JOIN collaborations_to_files c2f NATURAL JOIN files f NATURAL JOIN collaborations_to_endpoints c2e NATURAL JOIN endpoints e"
+       "(many-to-many-natural-join \"collaborations\" '(\"files\" \"endpoints\")) works")
+
+   (is (many-to-many-natural-join "users" '("endpoints" "collaborations"))
+       "users u NATURAL JOIN endpoints_to_users e2u NATURAL JOIN endpoints e NATURAL JOIN collaborations_to_users c2u NATURAL JOIN collaborations c"
+       "(many-to-many-natural-join \"users\" '(\"endpoints\" \"collaborations\")) works")
+
+   (is (many-to-many-natural-join "collaborations" '("files" "endpoints" "users"))
+       "collaborations c NATURAL JOIN collaborations_to_files c2f NATURAL JOIN files f NATURAL JOIN collaborations_to_endpoints c2e NATURAL JOIN endpoints e NATURAL JOIN collaborations_to_users c2u NATURAL JOIN users u"
+       "(many-to-many-natural-join \"collaborations\" '(\"files\" \"endpoints\" \"users\")) works")
    )
   )
 

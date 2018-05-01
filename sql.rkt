@@ -128,9 +128,21 @@
 
 ;;--------------------------------------------------------------------------------
 
-
-;; (define/contract (many-to-many-join table1 join-to)
-;;  (-> string? (or/c string? (non-empty-listof string?)) string?)
+;; (define/contract (many-to-many-join table1 join-to #:left? [left? #f])
+;;   (->* (string? (or/c string? (non-empty-listof string?)))
+;;        (#:left? boolean?)
+;;        string?)
+;;
+;;  ASSUMPTIONS:
+;;    This function is opinionated.  It assumes that:
+;;        * tables are named as plurals ending in 's' (e.g. 'collaborations', 'users')
+;;        * join tables are named in the style X_to_Y in alphabetical order (e.g. 'collaborations_to_users')
+;;        * all id fields are 'id' (e.g. 'collaborations.id')
+;;        * join table fields are of the form collaboration_id, user_id, etc
+;;
+;;
+;;   See 'many-to-many-natural-join' below for a different set of assumptions
+;;
 ;;
 ;;    ; Join two tables together
 ;; (many-to-many-join "collaborations" "files")
@@ -141,10 +153,13 @@
 ;; Return: "users u JOIN endpoints_to_users e2u on e2u.user_id = u.id JOIN endpoints e ON e2u.endpoint_id = e.id JOIN collaborations_to_users c2u ON c2u.user_id = u.id JOIN collaborations c ON c2u.collaboration_id = c.id"
 ;;
 ;;   NOTE: You *must* join through a central table. Joining from one
-;;   end of the chain does not work, since there is not a direct connection. 
+;;   end of the chain does not work, since there is not a direct
+;;   connection between the tables on the ends.
+;;
 ;; (many-to-many-join "endpoints" '("users" "collaborations")) ; RESULT INVALID
 ;; Return: "endpoints e JOIN endpoints_to_users e2u ON e2u.endpoint_id = e.id JOIN users u ON e2u.user_id = u.id JOIN collaborations_to_endpoints c2e ON c2e.endpoint_id = e.id JOIN collaborations c ON c2e.collaboration_id = c.id"
-;;    THE ABOVE SQL DOES NOT WORK. THERE IS NO collaborations_to_endpoints TABLE
+;;
+;;    THE ABOVE SQL DOES NOT WORK if there is no collaborations_to_endpoints table
 ;;
 (define/contract (many-to-many-join table1 join-to #:left? [left? #f])
   (->* (string? (or/c string? (non-empty-listof string?)))
@@ -181,6 +196,74 @@
          (define join-type   (if left? "LEFT JOIN" "JOIN"))
          
          @~a{@table1 @t1a @join-type @join-table @jta ON @t1-id = @t1-link @join-type @join-to @t2a ON @t2-link = @t2-id}
+         ]))
+
+;;--------------------------------------------------------------------------------
+
+;; (define/contract (many-to-many-join table1 join-to)
+;;   (->* (string? (or/c string? (non-empty-listof string?)))
+;;        (#:left? boolean?)
+;;        string?)
+;;
+;;  ASSUMPTIONS:
+;;    This function is opinionated.  It assumes that:
+;;        * tables are named as plurals ending in 's' (e.g. 'collaborations', endpoints')
+;;        * join tables are named in the style X_to_Y in alphabetical order (e.g. 'collaborations_to_endpoints')
+;;        * all id fields are of the form '<singular_table_name>_id' (e.g. 'collaboration_id')
+;;        * join table fields follow the same convention to allow for NATURAL JOIN
+;;
+;;
+;;    ; Join two tables together
+;; (many-to-many-join "collaborations" "files")
+;; Return: "collaborations c NATURAL JOIN collaborations_to_files c2f NATURAL JOIN files f"
+;;
+;;    ; Order doesn't matter
+;; (many-to-many-join "files" "collaborations")
+;; Return: "collaborations c NATURAL JOIN collaborations_to_files c2f NATURAL JOIN files f"
+;;
+;;    ; Join three tables by way of a central table
+;; (many-to-many-join "users" '("endpoints" "collaborations"))
+;; Return: "users u NATURAL JOIN endpoints_to_users e2u NATURAL JOIN endpoints e NATURAL JOIN collaborations_to_users c2u NATURAL JOIN collaborations c"
+;;
+;;   NOTE: You *must* join through a central table. Joining from one
+;;   end of the chain does not work, since there is not a direct connection. 
+;; (many-to-many-join "endpoints" '("users" "collaborations")) ; RESULT INVALID
+;; Return: "endpoints e NATURAL JOIN endpoints_to_users e2u NATURAL JOIN users u NATURAL JOIN collaborations_to_endpoints c2e NATURAL JOIN collaborations c"
+;;    THE ABOVE SQL DOES NOT WORK if there is no collaborations_to_endpoints table
+;;
+;;   You can use the optional '#:left?' param to make it use 'NATURAL LEFT JOIN' on all links
+;;
+(define/contract (many-to-many-natural-join table1 join-to #:left? [left? #f])
+  (->* (string? (or/c string? (non-empty-listof string?)))
+       (#:left? boolean?)
+       string?)
+
+  ;  NB: string-ref returns a char and we want a string, hence the ~a
+  (define t1a         (~a (string-ref table1 0)))          ; e.g. collaborations => c
+
+  (cond [(list? join-to)
+         (define lst (for/list ([to join-to])
+                       (many-to-many-natural-join table1 to)))
+         (string-join (cons (car lst)
+                            (map (lambda (s)
+                                   (string-trim s @~a{@table1 @t1a }))
+                                 (cdr lst))))]
+        [else
+         (define (singular str)
+           (define res (regexp-match #px"^(.+)s$" str))
+           (if res (second res) str))
+
+         ; If given, e.g., (many-to-many-join "files" "collaborations")
+         ;
+         ;(define table1     "files")                              ; argument to func
+         ;(define join-to    "collaborations")                     ; argument to func
+         ;(define t1a        (string-ref table1 0))                ; f  [defined above]
+         (define t2a         (~a (string-ref join-to 0)))          ; c
+         (define join-table  (join-table-name table1 join-to))     ; collaborations_to_files
+         (define jta         (join-table-abbrev table1 join-to))   ; c2f
+         (define join-type   (if left? "NATURAL LEFT JOIN" "NATURAL JOIN"))
+         
+         @~a{@table1 @t1a @join-type @join-table @jta @join-type @join-to @t2a}
          ]))
 
 ;;--------------------------------------------------------------------------------
