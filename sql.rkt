@@ -146,8 +146,10 @@
 ;; Return: "endpoints e JOIN endpoints_to_users e2u ON e2u.endpoint_id = e.id JOIN users u ON e2u.user_id = u.id JOIN collaborations_to_endpoints c2e ON c2e.endpoint_id = e.id JOIN collaborations c ON c2e.collaboration_id = c.id"
 ;;    THE ABOVE SQL DOES NOT WORK. THERE IS NO collaborations_to_endpoints TABLE
 ;;
-(define/contract (many-to-many-join table1 join-to)
-  (-> string? (or/c string? (non-empty-listof string?)) string?)
+(define/contract (many-to-many-join table1 join-to #:left? [left? #f])
+  (->* (string? (or/c string? (non-empty-listof string?)))
+       (#:left? boolean?)
+       string?)
 
   ;  NB: string-ref returns a char and we want a string, hence the ~a
   (define t1a         (~a (string-ref table1 0)))          ; e.g. collaborations => c
@@ -176,8 +178,9 @@
          (define t2-id       (~a t2a ".id"))                       ; c.id
          (define t1-link     (~a jta "." (singular table1) "_id")) ; c2f.file_id
          (define t2-link     (~a jta "." (singular join-to) "_id")); c2f.collaboration_id
-
-         @~a{@table1 @t1a JOIN @join-table @jta ON @t1-id = @t1-link JOIN @join-to @t2a ON @t2-link = @t2-id}
+         (define join-type   (if left? "LEFT JOIN" "JOIN"))
+         
+         @~a{@table1 @t1a @join-type @join-table @jta ON @t1-id = @t1-link @join-type @join-to @t2a ON @t2-link = @t2-id}
          ]))
 
 ;;--------------------------------------------------------------------------------
