@@ -9,8 +9,6 @@
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
-;; *) hash->keywork-apply : take a function and a hash.  Assume the
-;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) L : alias for 'list'
 ;; *) list->values  ; because it's dumb that this doesn't exist
 ;; *) list-remf* filter all desired elements out of a list, by default #<void>
@@ -560,17 +558,7 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash->keyword-apply func hsh [positionals '()])
-  (->* (procedure? (hash/c symbol? any/c)) (list?) any)
-
-  (define keys (sort (hash-keys hsh) symbol<?))
-
-  (keyword-apply func
-                 (symbols->keywords keys)
-                 (map (curry hash-ref hsh) keys)
-                 positionals))
-
-;;----------------------------------------------------------------------
-
+(require (only-in handy/hash hash->keyword-apply))
 (provide (all-defined-out)
+         (all-from-out handy/hash)
          (struct-out dict-disjunction))
