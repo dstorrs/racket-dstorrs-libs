@@ -151,7 +151,7 @@
                              [(false? (expect-n-tests))
                               (say "WARNING: Neither (expect-n-tests N) nor (done-testing) was called.  May not have run all tests.")]
                              [else
-                              (say (format "ERROR:  Expected ~a tests, ~a saw ~a"
+                              (say (format "\n\t!!ERROR!!:  Expected ~a tests, ~a saw ~a\n"
                                            (expect-n-tests)
                                            (cond [(> (current-test-num) (expect-n-tests))
                                                   "actually"]
