@@ -183,16 +183,18 @@
 
          ; If given, e.g., (many-to-many-join "files" "collaborations")
          ;
-         ;(define table1     "files")                              ; argument to func
-         ;(define join-to    "collaborations")                     ; argument to func
-         ;(define t1a        (string-ref table1 0))                ; f  [defined above]
-         (define t2a         (~a (string-ref join-to 0)))          ; c
-         (define join-table  (join-table-name table1 join-to))     ; collaborations_to_files
-         (define jta         (join-table-abbrev table1 join-to))   ; c2f
-         (define t1-id       (~a t1a ".id"))                       ; f.id
-         (define t2-id       (~a t2a ".id"))                       ; c.id
-         (define t1-link     (~a jta "." (singular table1) "_id")) ; c2f.file_id
-         (define t2-link     (~a jta "." (singular join-to) "_id")); c2f.collaboration_id
+         ;(define table1     "files")                             ; argument to func
+         ;(define join-to    "collaborations")                    ; argument to func
+         ;(define t1a        (string-ref table1 0))               ; f  [defined above]
+         (define t2a         (~a (string-ref join-to 0)))         ; c
+         (define join-table  (join-table-name table1 join-to))    ; collaborations_to_files
+         (define jta         (join-table-abbrev table1 join-to))  ; c2f
+         (define t1-id-field (~a (singular table1) "_id"))        ; file_id
+         (define t2-id-field (~a (singular join-to) "_id"))       ; collaboration_id
+         (define t1-id       (~a t1a "." t1-id-field))            ; f.file_id
+         (define t2-id       (~a t2a "." t2-id-field))            ; c.file_id
+         (define t1-link     (~a jta "." t1-id-field))            ; c2f.file_id
+         (define t2-link     (~a jta "." t2-id-field))            ; c2f.collaboration_id
          (define join-type   (if left? "LEFT JOIN" "JOIN"))
          
          @~a{@table1 @t1a @join-type @join-table @jta ON @t1-id = @t1-link @join-type @join-to @t2a ON @t2-link = @t2-id}

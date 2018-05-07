@@ -20,19 +20,19 @@
        "join-table-name works")
 
    (is (many-to-many-join c f)
-       "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
+       "collaborations c JOIN collaborations_to_files c2f ON c.collaboration_id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.file_id"
        "many-to-many-join works")
 
    (is (many-to-many-join "collaborations" '("files" "endpoints"))
-       "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id"
+       "collaborations c JOIN collaborations_to_files c2f ON c.collaboration_id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.file_id JOIN collaborations_to_endpoints c2e ON c.collaboration_id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.endpoint_id"
        "(many-to-many-join \"collaborations\" '(\"files\" \"endpoints\")) works")
 
    (is (many-to-many-join "users" '("endpoints" "collaborations"))
-       "users u JOIN endpoints_to_users e2u ON u.id = e2u.user_id JOIN endpoints e ON e2u.endpoint_id = e.id JOIN collaborations_to_users c2u ON u.id = c2u.user_id JOIN collaborations c ON c2u.collaboration_id = c.id"
+       "users u JOIN endpoints_to_users e2u ON u.user_id = e2u.user_id JOIN endpoints e ON e2u.endpoint_id = e.endpoint_id JOIN collaborations_to_users c2u ON u.user_id = c2u.user_id JOIN collaborations c ON c2u.collaboration_id = c.collaboration_id"
        "(many-to-many-join \"users\" '(\"endpoints\" \"collaborations\")) works")
 
    (is (many-to-many-join "collaborations" '("files" "endpoints" "users"))
-       "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id JOIN collaborations_to_endpoints c2e ON c.id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.id JOIN collaborations_to_users c2u ON c.id = c2u.collaboration_id JOIN users u ON c2u.user_id = u.id"
+       "collaborations c JOIN collaborations_to_files c2f ON c.collaboration_id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.file_id JOIN collaborations_to_endpoints c2e ON c.collaboration_id = c2e.collaboration_id JOIN endpoints e ON c2e.endpoint_id = e.endpoint_id JOIN collaborations_to_users c2u ON c.collaboration_id = c2u.collaboration_id JOIN users u ON c2u.user_id = u.user_id"
        "(many-to-many-natural-join \"collaborations\" '(\"files\" \"endpoints\" \"users\")) works")
 
    
