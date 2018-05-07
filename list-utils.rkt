@@ -1,5 +1,10 @@
 #lang racket
 
+(require (only-in handy/hash hash->keyword-apply))
+(provide (all-defined-out)
+         (all-from-out handy/hash)
+         (struct-out dict-disjunction))
+
 ;;    Functions:
 ;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
@@ -558,7 +563,6 @@
 
 ;;----------------------------------------------------------------------
 
-(require (only-in handy/hash hash->keyword-apply))
-(provide (all-defined-out)
-         (all-from-out handy/hash)
-         (struct-out dict-disjunction))
+(define/contract (pick lst)
+  (-> (non-empty-listof any/c) any/c)
+  (list-ref lst (random (length lst))))
