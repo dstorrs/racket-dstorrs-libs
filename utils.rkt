@@ -1,8 +1,8 @@
 #lang at-exp racket
 
-(require handy/hash) 
+(require "hash.rkt")
 
-(provide (all-from-out handy/hash)
+(provide (all-from-out "hash.rkt")
          prefix-for-say
          __LINE__
          __FILE__         __FILE:__
