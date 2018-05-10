@@ -241,18 +241,20 @@
                                       #:dict-maker     [dict-maker make-hash]
                                       #:transform-dict [transform-dict identity]
                                       #:transform-data [transform-data cons]
+                                      #:post-process   [post-processor identity]
                                       .
                                       params)
   (->* (list? connection? string?)
        (
         #:wrapper          (-> connection? (-> any) any)
-        #:trap-exns?       boolean?
-        #:dict-maker       procedure?
-        #:transform-dict   procedure?
-        #:transform-data   procedure?
+        #:trap-exns?       boolean?      
+        #:dict-maker       (-> (listof pair?) dict?)
+        #:transform-dict   (-> dict? dict?)
+        #:transform-data   (-> any/c any/c pair?)
+        #:post-process     (-> (listof dict?) any)
         )
        #:rest list?
-       (listof dict?))
+       any)
 
 
   ; We flatten the parameters list as a convenience to the caller.
@@ -269,13 +271,14 @@
      #:transform-dict transform-dict)
     )
   (try [
-        (map  v->d
-              (wrapper
-               db
-               (thunk
-                (if (null? vals)
-                    (query-rows db sql)
-                    (apply (curry query-rows db sql) vals)))))
+        (post-processor
+         (map  v->d
+               (wrapper
+                db
+                (thunk
+                 (if (null? vals)
+                     (query-rows db sql)
+                     (apply (curry query-rows db sql) vals))))))
         ]
        [catch (match-anything
                (lambda (e)
