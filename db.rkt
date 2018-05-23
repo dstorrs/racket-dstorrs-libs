@@ -36,6 +36,7 @@
          (struct-out exn:fail:db:create)
          (struct-out exn:fail:db:row:not-exists)
          (struct-out exn:fail:db:row:exists)
+         (struct-out exn:fail:db:row:not-updated)
          (struct-out exn:fail:db:num-rows)
          (struct-out exn:fail:db:num-rows:zero)
          (struct-out exn:fail:db:num-rows:many)
@@ -61,6 +62,7 @@
 (struct exn:fail:db:row exn:fail:db () #:transparent)
 (struct exn:fail:db:row:not-exists exn:fail:db:row () #:transparent)
 (struct exn:fail:db:row:exists exn:fail:db:row () #:transparent)
+(struct exn:fail:db:row:not-updated exn:fail:db:row () #:transparent)
 
 ; issues related to multiple rows. NB: exn:fail:db:num-rows:zero and
 ; exn:fail:db:row:not-exists cover the same ground. Which one to use
