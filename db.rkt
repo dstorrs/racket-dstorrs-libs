@@ -458,7 +458,9 @@
        any)
   ;(say "entering maybe-disconnect.  disconnect is: " disconnect?)
   (cond [disconnect? (ensure-disconnect db thnk #:wrapper wrapper)]
-        [else (wrapper db thnk)]))
+        [else
+         (try [(wrapper db thnk)]
+              [catch (match-anything (compose1 raise refine-db-exn))])]))
 
 ;;----------------------------------------------------------------------
 
