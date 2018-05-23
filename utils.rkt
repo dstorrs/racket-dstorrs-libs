@@ -7,7 +7,7 @@
          __LINE__
          __FILE__         __FILE:__
          __WHERE__        __WHERE:__
-         
+
          ->string
          !=
          12hr->24hr
@@ -25,7 +25,7 @@
          running-file-dir
          safe-build-path
          with-temp-file
-         
+
          not-equal?
          not-null?
          one?
@@ -491,17 +491,22 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (ensure-field-set thing getter setter make-val [val-for-unset #f])
+(define/contract (ensure-field-set thing getter setter make-val [val-for-unset #f]
+                                   #:uses-mutation? [uses-mutation? #f])
   (->* (any/c
         (-> any/c any/c)         ; getter
         (-> any/c any/c any/c)   ; setter
         thunk?)
        ;
-       (any/c) ; the value that means this field was not set, typically #f
+       (any/c ; the value that means this field was not set, typically #f
+        #:uses-mutation? boolean?)
        ;
        any/c)
 
   (cond [(not-equal? val-for-unset (getter thing)) thing] ; field was set
-        [else (setter thing (make-val))]))
+        [else (let ([new-val (setter thing (make-val))])
+                (if uses-mutation?
+                    thing        ; mutation funcs often return (void), so can't trust new-val
+                    new-val))]))
 
 ;;----------------------------------------------------------------------

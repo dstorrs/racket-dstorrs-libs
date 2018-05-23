@@ -15,7 +15,7 @@
          racket/runtime-path
          )
 
-(expect-n-tests 247)
+(expect-n-tests 252)
 
 (define-runtime-path thisdir ".")
 
@@ -36,9 +36,6 @@
    ;;    Create two test files
    (define source (make-temporary-file))
    (define dest   (make-temporary-file))
-
-   (say "source is: " source)
-   (say "dest is: " dest)
 
    (with-output-to-file
      source
@@ -74,7 +71,7 @@
      #:exists 'replace
      (thunk (display (make-string 1024 #\x))))
 
-   (diag "testing that append-file doesn't blow up if given very large files.  This will take a few seconds.")
+     (diag "testing that append-file doesn't blow up if given very large files.  This will take a few seconds.")
    (define final-size
      (call/ec
       (lambda (break)
@@ -85,7 +82,8 @@
           (when (> current-size (* 100 1024 1024))
             (break current-size))))))
 
-   (ok final-size (~a "successfully appended files up to 100M without dying from lack of RAM"))
+   (ok final-size (~a "successfully appended files up to 100M without dying from lack of RAM"
+                      ))
 
    (delete-file source)
    (delete-file dest)
@@ -875,6 +873,37 @@
                          7)
        (hash 'foo 9)
        "can supply a value to determine what counts as 'unset'")
+
+   (struct fish (name) #:transparent)
+   (struct mammal (name) #:transparent #:mutable)
+   
+   (is (ensure-field-set (fish #f)
+                         fish-name
+                         (lambda (f val) (struct-copy fish f [name val]))
+                         (thunk 17))
+       (fish 17)
+       "successfully set immutable struct field")
+
+
+   (define bob (mammal #f))
+   (is (mammal-name bob) #f "to start, bob is named #f")
+   (is (ensure-field-set bob
+                         mammal-name
+                         set-mammal-name!
+                         (thunk "bob"))
+       (void) ; didn't specify it used mutation, so it returned the (void) result of setter.
+       "successfully set mutable struct field; as expected, returned void")
+   (is (mammal-name bob) "bob" "it was set correctly")
+
+   (define fred (mammal #f))
+   (is (ensure-field-set fred
+                         #:uses-mutation? #t
+                         mammal-name
+                         set-mammal-name!
+                         (thunk "fred"))
+       (mammal "fred")
+       "successfully set mutable struct field and returned new value")
+
    ))
 
 ;;----------------------------------------------------------------------
