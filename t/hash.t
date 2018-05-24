@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 67)
+(expect-n-tests 69)
 
 (when #t
   (test-suite
@@ -238,3 +238,11 @@
            "throws when the hash has a key that isn't a param")
    )
   )
+
+(when #t
+  (test-suite
+   "hash-remap"
+
+   (is (hash-remap (hash 'type 'fruit)   #:default (hash 'subtype 'apple))
+       (apply hash '(type fruit subtype apple)))
+   ))
