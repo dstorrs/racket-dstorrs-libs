@@ -46,9 +46,10 @@
          true?
          directory-empty?
 
+         make-unique-string
          safe-substring
          empty-string?
-
+         
          unwrap-val
          ensure-field-set
          )
@@ -93,6 +94,7 @@
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) thunk?  ; is it a procedure of no arguments?
 ;; *) true? : opposite of false? (useful for coercing to boolean)
+;; *) make-unique-string : returns a unique string derived from (gensym) 
 ;; *) unwrap-val : call a thunk, force a promise, or return a val
 ;; *) with-temp-file : creates a temp file, ensures it will be deleted
 ;; WITH-TEMP-FILE IS NOT REENTRANT. ONCE YOU LEAVE THE FUNCTION,
@@ -449,6 +451,13 @@
 
   ((if (or as-str as-str?) path->string identity)
    (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
+
+
+;;----------------------------------------------------------------------
+
+(define/contract (make-unique-string [base ""])
+  (->* () (string?) string?)
+  (~a base (gensym)))
 
 ;;----------------------------------------------------------------------
 
