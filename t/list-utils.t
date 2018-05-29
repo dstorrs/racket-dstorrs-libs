@@ -6,7 +6,7 @@
          "../test-more.rkt"
          )
 
-(expect-n-tests 232)
+(expect-n-tests 233)
 
 (ok 1 "test harness is working")
 
@@ -239,6 +239,10 @@
                                         d))
        (make-hash '((a . 2) (b . 3) (c . 4)))
        "vector->dict accepts transformer")
+
+   (parameterize ([current-dict-maker-function make-immutable-hash])
+     (ok (immutable? (vector->dict '(a b c) (vector 1 2 3)))
+         "vector->dict respects the current-dict-maker-function parameter"))
    )
   )
 

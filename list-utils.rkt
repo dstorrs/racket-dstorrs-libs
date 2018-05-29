@@ -5,6 +5,9 @@
          (all-from-out handy/hash)
          (struct-out dict-disjunction))
 
+;;    Parameters:
+;; *) current-dict-maker-function : customize what vector->dict and list->dict do
+
 ;;    Functions:
 ;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
 ;; *) atom? : true if something is not a pair. (symbol, number, vector...)
@@ -33,6 +36,8 @@
 ;;     list.  Useful when dealing with rest params
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (by default a mutable hash)
+
+(define current-dict-maker-function (make-parameter make-hash))
 
 (define L list)
 (define/contract (safe-first l [default '()])
@@ -315,7 +320,7 @@
 
 (define/contract (vector->dict keys
                                data
-                               #:dict-maker [dict-maker make-hash]
+                               #:dict-maker [dict-maker (current-dict-maker-function)]
                                #:transform-dict [transform-dict identity]
                                #:transform-data [transform-data cons]
                                )
@@ -356,9 +361,13 @@
 ;; See the contract for what the various parameter must be.
 ;;
 ;; #:transform-data     Default: cons.       Accepts a key and a value, returns a pair.
-;; #:dict-maker         Default: make-hash.  Receives the list of pairs from transform-data
+;; #:dict-maker         Default: make-hash.  Gets the list of pairs from transform-data
 ;; #:transform-dict     Default: identity.   Operate on the result of dict-maker
 ;; #:make-keys          Default: #f          If set, generates the keys based on the data
+;;
+;;    ***NOTE*** dict-maker's default value is actually whatever is in
+;;    the current-dict-maker-function parameter.  By default that's
+;;    make-hash.
 ;;
 ;; Examples:
 ;;
@@ -376,7 +385,7 @@
 ;;        => (make-hash '((#\A . 65) (#\B . 66)))
 (define/contract (list->dict raw-keys
                              data
-                             #:dict-maker [dict-maker make-hash]
+                             #:dict-maker [dict-maker (current-dict-maker-function)]
                              #:transform-dict [transform-dict identity]
                              #:transform-data [transform-data cons]
                              #:make-keys  (key-maker #f)
