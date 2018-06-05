@@ -115,7 +115,9 @@
 ;;----------------------------------------------------------------------
 
 (define/contract (mutable-hash . args)
-  (->* () () #:rest (listof any/c) (and/c hash? (not/c immutable?)))
+  (->* () ()
+       #:rest (and/c (listof any/c) (compose even? length))
+       (and/c hash? (not/c immutable?)))
   (hash->mutable (apply hash args)))
 
 ;;----------------------------------------------------------------------
