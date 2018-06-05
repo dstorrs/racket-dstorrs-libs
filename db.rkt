@@ -28,6 +28,7 @@
          query-flat
          ensure-disconnect
          maybe-disconnect
+         disconnect-if
          call-with-transaction/disconnect
          (except-out (all-from-out db) disconnect)
          (prefix-out db: disconnect)
@@ -461,6 +462,19 @@
         [else
          (try [(wrapper db thnk)]
               [catch (match-anything (compose1 raise refine-db-exn))])]))
+
+;;    Better name for maybe-disconnect that doesn't need the keyword
+(define/contract (disconnect-if should-disconnect? db thnk
+                                #:wrapper [wrapper (lambda (db thnk) (thnk))])
+  (->* (boolean? connection? (-> any))
+       (#:wrapper (-> connection? (-> any) any))
+       any)
+  ;(say "entering maybe-disconnect.  disconnect is: " disconnect?)
+  (cond [should-disconnect? (ensure-disconnect db thnk #:wrapper wrapper)]
+        [else
+         (try [(wrapper db thnk)]
+              [catch (match-anything (compose1 raise refine-db-exn))])]))
+
 
 ;;----------------------------------------------------------------------
 
