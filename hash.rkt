@@ -2,6 +2,22 @@
 
 (require racket/hash) ; for hash-union
 
+;; *) hash->keyword-apply : take a function and a hash.  Assume the
+;;     keys of the hash are keyword arguments and call appropriately.
+;; *) hash-key-exists?    : alias for hash-has-key? because I always forget the name
+;; *) hash-keys->strings  : convert keys to strings, maybe changing "_" to "-" or vice versa
+;; *) hash-keys->symbols  : take a hash where keys are symbols or strings, make them symbols
+;; *) hash->immutable     : convert an (im)mutable hash to an immutable one
+;; *) hash->mutable       : convert an (im)mutable hash to a mutable one
+;; *) mutable-hash        : creates a mutable hash using the convenient syntax of (hash)
+;; *) hash-meld           : combine hashes with later entries overwriting earlier ones
+;; *) hash-remap          : munge a hash by (remove, overwrite, add, rename, default) keys
+;; *) hash-rename-key     : change, e.g., key 'name to be 'first-name
+;; *) hash-slice          : takes a hash and a list of keys, returns the matching values
+;; *) safe-hash-remove    : does hash-remove or hash-remove! as needed.  Returns the hash.
+;; *) safe-hash-set       : does hash-set or hash-set! as needed. Returns the hash.
+;; *) sorted-hash-keys    : returns sorted list of keys from the hash
+
 (provide hash->keyword-apply
          hash-key-exists?
          
@@ -23,23 +39,6 @@
          sorted-hash-keys
          )
 
-
-;; *) hash->keyword-apply : take a function and a hash.  Assume the
-;;     keys of the hash are keyword arguments and call appropriately.
-
-;; *) hash-key-exists? : alias for hash-has-key? because I always forget the name
-;; *) hash-keys->strings : take a hash where keys are symbols or strings, make them strings
-;; *) hash-keys->symbols : take a hash where keys are symbols or strings, make them symbols
-;; *) hash->immutable : convert an (im)mutable hash to an immutable one
-;; *) hash-meld   : combine two or more hashes with later entries overwriting earlier ones
-;; *) hash->mutable   : convert an (im)mutable hash to a mutable one
-;; *) hash-remap      : munge a hash by (remove, overwrite, add, rename, default) keys
-;; *) hash-rename-key : change, e.g., key 'name to be 'first-name
-;; *) hash-slice      : takes a hash and a list of keys, returns the matching values
-;; *) mutable-hash    : creates a mutable hash using the convenient syntax of (hash)
-;; *) safe-hash-remove : does hash-remove or hash-remove! as needed.  Returns the hash.
-;; *) safe-hash-set : does hash-set or hash-set! as needed. Returns the hash.
-;; *) sorted-hash-keys  : returns sorted list of keys from the hash
 
 
 (define hash-key-exists? hash-has-key?) ; just as alias because I always forget the name
