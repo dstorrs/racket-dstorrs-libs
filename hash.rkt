@@ -368,9 +368,11 @@
        (#:rename hash? #:add hash? #:overwrite hash? #:remove list? #:default hash?)
        hash?)
 
-  ; Just return unless we are going to rename, remove, overwrite, or
-  ; add someting.
-  (cond [(not (ormap (negate false?) (list remap remove-keys overwrite add default))) h]
+  ; Just return the original hash unless we are going to rename,
+  ; remove, overwrite, add, or default something.
+  (cond [(and (andmap false? (list remap remove-keys overwrite add))
+              (null? (hash-keys default)))
+         h]
         [else
          ;
          ; Okay, we're going to make some sort of change
