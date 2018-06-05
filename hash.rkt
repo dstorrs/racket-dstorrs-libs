@@ -41,8 +41,9 @@
 
 
 
-(define hash-key-exists? hash-has-key?) ; just as alias because I always forget the name
+;;----------------------------------------------------------------------
 
+(define hash-key-exists? hash-has-key?) ; alias because I always forget the name
 
 ;;----------------------------------------------------------------------
 
@@ -122,6 +123,7 @@
 
 ;;----------------------------------------------------------------------
 
+;;    Takes a list of keys, returns the hash value for each of those keys
 (define/contract (hash-slice the-hash keys)
   (-> hash? list? list?)
   (for/list ((k keys))
@@ -251,15 +253,24 @@
 ;;    The return value generally won't be eq? to the input, but it is
 ;;    guaranteed to be of the same type (mutable / immutable)
 ;;
+;;    NOTE: You could do all this via appropriate application of the
+;;    built-in 'hash-union' function, but hash-remap makes it clearer
+;;    what you want and will handle mutable or immutable hashes
+;;    without complaining.
+;;
+;; EXAMPLES:
+;;
+;;  REMOVE any values we were told to remove via the #:remove list
 ;;
 ;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
-;;
-;; FIRST: REMOVE any values we were told to remove via the #:remove list
-;;
 ;;    (hash-remap h #:remove '(group color)   => (hash 'type 'apple)
 ;;
 ;;
-;; SECOND: OVERWRITE values.
+;;  OVERWRITE values.
+;;
+;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
+;;    (hash-remap h #:overwrite (hash 'group 'food))
+;;       => (hash 'group 'food 'color 'red 'type 'apple)
 ;;
 ;;    If the new value is a procedure then it will be invoked and its
 ;;    result will be the new value.  The procedure must have the
@@ -267,65 +278,61 @@
 ;;
 ;;        (-> hash? any/c any/c any/c)  ; takes a hash, key, orig-val.  Returns one value
 ;;
-;;    The arguments will be: the hash we're updating, the key
-;;    we're updating, and the original value.  It must return a
-;;    single value.
-;;
 ;;    If you actually want to pass in a procedure (e.g. if you're
 ;;    building a jumptable) then you'll have to wrap it like so:
 ;;
 ;;        (lambda (hsh key val orig-val)  ; the 'generate a value' procedure
 ;;            (lambda ...))               ; the procedure it generates
 ;;
-;; THIRD: ADD any additional keys that we were told to add.
+;;    If you ask to overwrite keys that are not there, they will be added.
+;;
+;;  ADD additional keys
 ;;
 ;;    NOTE: This will throw an exception if you try to add a key that
 ;;    is already there. If you want to force a key to a value then use
-;;    #:overwrite.  If you want to be sure that a hash has a key then
-;;    use #:default and it will only be added if it's not there.
+;;    #:overwrite and it will be added or set as necessary.  If you
+;;    want to be sure that a hash has a key then use #:default and it
+;;    will only be added if it's not there.
 ;;
-;;        (hash-remap h #:add (hash 'subtype 'honeycrisp))
-;;           => (hash 'group 'fruit 'color 'red 'type 'apple 'subtype 'honeycrisp))
+;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
+;;    (hash-remap h #:add (hash 'subtype 'honeycrisp))
+;;       => (hash 'group 'fruit 'color 'red 'type 'apple 'subtype 'honeycrisp))
 ;;
-;;        (hash-remap h #:add (hash 'group 'tasty)) => EXCEPTION
+;;    (hash-remap h #:add (hash 'group 'tasty)) => EXCEPTION
 ;;
-;; FOURTH: RENAME keys
+;;  RENAME keys
 ;;
+;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
 ;;    (hash-remap h #:rename (hash 'color 'shade  'type 'species )
 ;;       => (hash 'group 'fruit    'shade 'red    'species 'apple)
 ;;
-;;    (hash-remap h #:overwrite (hash 'group 'tasty   'color 'green   'type 'granny-smith))
-;;       => (hash 'group 'tasty    'color 'green    'type 'granny-smith)
-;;
-;;       ; Alternatively, have the new value generated
-;;    (hash-remap (hash 'x 7) #:overwrite (hash 'x (lambda (h k v) (add1 v))))
-;;       =>       (hash 'x 8)
-;;
-;; FIFTH: Set default values
+;;  DEFAULT values for keys that aren't there but don't touch ones that are
 ;;
 ;;  (hash-remap (hash 'x 1)      #:default (hash 'y 2)) => (hash 'x 1 'y 2)
 ;;  (hash-remap (hash 'x 1 'y 7) #:default (hash 'y 2)) => (hash 'x 1 'y 7)
 ;;
-;;      As with the #:overwrite parameter, you can have your values
-;;      generated if you want, although the procedure only takes one
-;;      argument (the key that will be set).  Again, if you actually
-;;      want to have the value be a procedure then you'll need to wrap
-;;      it.
+;;      As with the #:overwrite parameter, you can have your default
+;;      values generated if you want, although the procedure only
+;;      takes one argument (the key that will be set).  Again, if you
+;;      actually want to have the value be a procedure then you'll
+;;      need to wrap it.
+;;
 ;;  (hash-remap (hash 'x 1) #:default (hash 'y (lambda (key) (~a key))))
 ;;     => (hash 'x 1 'y "y")
 ;;
 ;; COMPLETE EXAMPLE
 ;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
-;;    (hash-remap h  #:add       (hash 'vendor 'bob)
+;;    (hash-remap h  #:remove    '(group)
 ;;                   #:overwrite (hash 'color 'green   'type 'granny-smith)
-;;                   #:remove    '(group)
+;;                   #:add       (hash 'vendor 'bob)
 ;;                   #:rename    (hash 'vendor 'seller)
-;;                   #:default   (hash 'group (lambda (key) (~a key)))
+;;                   #:default   (hash 'group "group" 'taste ~a))
 ;;
-;;       => (hash 'group  "group"
-;;                'color  'green
-;;                'type   'granny-smith
-;;                'seller 'bob))
+;;       => (hash 'group  "group"        ; removed via #:remove, then set via #:default
+;;                'color  'green         ; overwritten
+;;                'type   'granny-smith  ; overwritten
+;;                'seller 'bob           ; added
+;;                'taste  "taste")       ; defaulted (NB: generated from key name)
 ;;
 ;;
 (define/contract (hash-remap h
@@ -395,12 +402,12 @@
                                                   ;(say "entering combiner with args: " (string-join (map ~v (list key orig-val overwrite-val)) "; "))
                                                   (cond [(procedure? overwrite-val)
                                                          ;(say "proc: " overwrite-val)
-                                                         (overwrite-val base-hash key orig-val)]
+                                                         (overwrite-val base-hash
+                                                                        key
+                                                                        orig-val)]
                                                         [else overwrite-val])))])
              ;(say "finished overwrite")
              (if (void?  hsh) base-hash hsh))) ; void if we're dealing with mutable hash
-
-         ;(say "hash with overwrites: " overwritten-hash)
 
          ;;    Next, add any additional keys that we were told to add.
          ;;
@@ -417,10 +424,6 @@
                                                            "hash to add (remove and overwrite already done)" overwritten-hash)))])
              (if (void? hsh) overwritten-hash hsh))) ; it's void when using mutable hash
 
-         ;(say "hash-with-adds is: " hash-with-adds)
-         ;(say "about to rename")
-
-
          ;;    Rename keys
          (define renamed-hash
            (for/fold ([h hash-with-adds])
@@ -432,7 +435,8 @@
          (define keys-to-default
            (set-subtract (list->set (hash-keys default))
                          (list->set (hash-keys renamed-hash))))
-         (cond [(null? keys-to-default) renamed-hash]
+
+         (cond [(null? keys-to-default)  renamed-hash]
                [else
                 (union-func renamed-hash
                             (for/hash ([key keys-to-default])
