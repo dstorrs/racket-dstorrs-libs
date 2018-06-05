@@ -47,9 +47,29 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-keys->strings h #:dash->underscore? [dash->underscore? #f])
-  (->* (hash?) (#:dash->underscore? boolean?) hash?)
+;;    Convert the keys of a hash from whatever they are to strings.
+;;    Optionally, you can convert dashes in the key to underscores or
+;;    vice versa; the normal use case is when inserting into a
+;;    database and you want keys to match field names.  The normal
+;;    string representation of a vector or list isn't terribly useful
+;;    (e.g. (vector 'a 'b) => "#(a b)"), so we change them to be the
+;;    concatenation of their elements with '-' as a
+;;    separator. (e.g. (vector 'a 'b) => "a-b")
+(define/contract (hash-keys->strings h
+                                     #:dash->underscore? [dash->underscore? #f]
+                                     #:underscore->dash? [underscore->dash? #f])
+  (->* (hash?)
+       (#:dash->underscore? boolean?
+        #:underscore->dash? boolean?
+        )
+       hash?)
 
+  (when (and dash->underscore? underscore->dash?)
+    (raise-arguments-error 'hash-keys->strings
+                           "It's not sensible to set both dash->underscore? and underscore->dash?."
+                           "dash->underscore?" dash->underscore?
+                           "underscore->dash?" underscore->dash?))
+  
   (define (to-string x)
     (cond ((list?   x)   (apply string-append (map to-string x)))
           ((vector?   x) (to-string (vector->list x)))
@@ -58,7 +78,9 @@
   ((if (immutable? h) identity hash->mutable)
    (for/hash ([(k v) h])
      (let ([key (to-string k)])
-       (values (if dash->underscore? (regexp-replace* #px"-" key "_") key)
+       (values (cond [dash->underscore?  (regexp-replace* #px"-" key "_")]
+                     [underscore->dash?  (regexp-replace* #px"_" key "-")]
+                     [else key])
                v)))))
 
 ;;----------------------------------------------------------------------
