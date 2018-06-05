@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 69)
+(expect-n-tests 79)
 
 (when #t
   (test-suite
@@ -243,6 +243,99 @@
   (test-suite
    "hash-remap"
 
-   (is (hash-remap (hash 'type 'fruit)   #:default (hash 'subtype 'apple))
-       (apply hash '(type fruit subtype apple)))
+   ;;  REMOVE any values we were told to remove via the #:remove list
+   ;;
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+     (is (hash-remap h #:remove '(group color))
+         (hash 'type 'apple)
+         "remove successful"))
+   ;;
+   ;;
+   ;;  OVERWRITE values.
+   ;;
+   ;;    If the new value is a procedure then it will be invoked and its
+   ;;    result will be the new value.  The procedure must have the
+   ;;    signature:
+   ;;
+   ;;        (-> hash? any/c any/c any/c)  ; takes a hash, key, orig-val.  Returns one value
+   ;;
+   ;;    If you actually want to pass in a procedure (e.g. if you're
+   ;;    building a jumptable) then you'll have to wrap it like so:
+   ;;
+   ;;        (lambda (hsh key val orig-val)  ; the 'generate a value' procedure
+   ;;            (lambda ...))               ; the procedure it generates
+   ;;
+   ;;    If you ask to overwrite keys that are not there, they will be added.
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+     (is  (hash-remap h #:overwrite (hash 'group 'food))
+          (hash 'group 'food 'color 'red 'type 'apple)
+          "overwrite successful for base case")
+
+     (is  (hash-remap h #:overwrite (hash 'baz 'jaz))
+          (hash 'group 'fruit 'color 'red 'type 'apple 'baz 'jaz)
+          "overwrite successfully added keys that were't there")
+
+     (is  (hash-remap h #:overwrite (hash 'group (lambda (hsh key val) "group")))
+          (hash 'group "group" 'color 'red 'type 'apple)
+          "overwrite successful when generating values"))
+
+
+   ;;
+   ;;  ADD additional keys
+   ;;
+   ;;    NOTE: This will throw an exception if you try to add a key that
+   ;;    is already there. If you want to force a key to a value then use
+   ;;    #:overwrite and it will be added or set as necessary.  If you
+   ;;    want to be sure that a hash has a key then use #:default and it
+   ;;    will only be added if it's not there.
+   ;;
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+     (is (hash-remap h #:add (hash 'subtype 'honeycrisp))
+         (hash 'group 'fruit 'color 'red 'type 'apple 'subtype 'honeycrisp)
+         "add worked")
+     (dies (thunk (hash-remap h #:add (hash 'group 'tasty)))
+           "it's an exception to #:add on keys that are already there"))
+
+   ;;
+   ;;  RENAME keys
+   ;;
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+     (is (hash-remap h #:rename (hash 'color 'shade  'type 'species))
+         (hash 'group 'fruit    'shade 'red    'species 'apple)
+         "rename worked"))
+
+   ;;
+   ;;  DEFAULT values for keys that aren't there but don't touch ones that are
+   ;;
+   ;;      As with the #:overwrite parameter, you can have your default
+   ;;      values generated if you want, although the procedure only
+   ;;      takes one argument (the key that will be set).  Again, if you
+   ;;      actually want to have the value be a procedure then you'll
+   ;;      need to wrap it.
+   ;;
+   (is (hash-remap (hash 'x 1) #:default (hash 'y 2))
+       (hash 'x 1 'y 2)
+       "#:default correctly added a key that wasn't there")
+   (is (hash-remap (hash 'x 1 'y 7) #:default (hash 'y 2))
+       (hash 'x 1 'y 7)
+       "#:default correctly did not disturb a key that was there")
+   (is (hash-remap (hash 'x 1) #:default (hash 'y ~a))
+       (hash 'x 1 'y "y")
+       "hash-remap can generate values")
+
+   ;;
+   ;; COMPLETE EXAMPLE
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+     (is (hash-remap h
+                     #:remove    '(group)
+                     #:overwrite (hash 'color 'green   'type 'granny-smith)
+                     #:add       (hash 'vendor 'bob)
+                     #:rename    (hash 'vendor 'seller)
+                     #:default   (hash 'group "group" 'taste ~a))
+         (hash 'group  "group"        ; removed via #:remove, then set via #:default
+               'color  'green         ; overwritten
+               'type   'granny-smith  ; overwritten
+               'seller 'bob           ; added
+               'taste  "taste")       ; defaulted (NB: generated from key name)
+         "complete example worked"))
    ))
