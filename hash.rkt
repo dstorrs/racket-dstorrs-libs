@@ -233,9 +233,19 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-rename-key h old-key new-key)
+;; Change the name of a key.  The new key can be passed directly or
+;; you can pass a procedure which will be used to generate the new
+;; key.
+;;
+;; (hash-rename-key (hash 'x 1) 'x 'y)  => (hash 'y 1)
+;; (hash-rename-key (hash 'x 1) 'x symbol->string)  => (hash "x" 1)
+;;
+(define/contract (hash-rename-key h old-key nk)
   (-> hash? any/c any/c hash?)
 
+  (define new-key (cond [(procedure? nk) (nk old-key)]
+                        [else nk]))
+   
   (when (not (hash-has-key? h old-key))
     (raise-arguments-error 'hash-rename-key
                            "no such key"

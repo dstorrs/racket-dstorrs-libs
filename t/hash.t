@@ -5,8 +5,21 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 81)
+(expect-n-tests 84)
 
+(when #t
+  (test-suite
+   "hash-rename-key"
+
+   (is (hash-rename-key (hash 'x 1) 'x 'y)
+       (hash 'y 1)
+       "(hash-rename-key (hash 'x 1) 'x 'y) works")
+   
+   (is (hash-rename-key (hash 'x 1) 'x symbol->string)
+       (hash "x" 1)
+       "(hash-rename-key (hash 'x 1) 'x symbol->string) works")
+   ))
+   
 (when #t
   (test-suite
    "safe-hash-remove"
