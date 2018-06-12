@@ -44,7 +44,35 @@
 (define current-transform-data-function (make-parameter cons))
 (define current-transform-dict-function (make-parameter identity))
 
-;; *) make-transform-data-func
+;;    (make-transform-data-func pg-array? pg-array->list sql-null? #f)
+;;
+;; The above line returns a func that will take a key and a value,
+;; convert values that are pg-arrays into lists and values that are
+;; sql-null into #f, then return (cons key val).  You can parameterize
+;; it into current-query-as-dict-transform-data-function for all your
+;; data-cleaning needs.
+;;
+(define/contract (make-transform-data-func . args)
+  (->* () () #:rest (and/c (listof any/c) (compose even? length)) procedure?)
+
+  (define the-map
+    (make-immutable-hash
+     (step-by-n (lambda (p f)
+                  (define pred (if (procedure? p) p (curry equal? p)))
+                  (define func (if (procedure? f) f (lambda (ignore) f)))
+                  (cons pred func))
+                args)))
+
+  (lambda (key val)
+    (call/ec (lambda (return)
+               ;;  Check to see if our value matches one of the
+               ;;  predicates / key-vals in our hash
+               (for ([(pred func) the-map])
+                 (when (pred val)
+                   (return (cons key (func val)))))
+               ;; Nope, it didn't.
+               (cons key val)))))
+
 
 (define L list)
 (define/contract (safe-first l [default '()])
@@ -453,7 +481,7 @@
 
   (define contiguous? (or op
                           (lambda (a b) (= (add1 (extract-key a)) (extract-key b)))))
-  
+
   (cond [(null? data) '()]
         [else
          (define-values (extract-key-a extract-key-b)

@@ -6,7 +6,7 @@
          "../test-more.rkt"
          )
 
-(expect-n-tests 235)
+(expect-n-tests 240)
 
 (ok 1 "test harness is working")
 
@@ -791,5 +791,15 @@
                                            (if (procedure? e) (e) e)))
        (list 1 2 3 'a h1)
        "extract-key can redefine what the value is beforehand, e.g. by evaling a thunk")
+   ))
 
+(when #t
+  (test-suite
+   "make-transform-data-func"
+
+   (let ([func (make-transform-data-func false? 7 integer? 'a string? string->symbol)])
+     (is (func 'foo 'a) (cons 'foo 'a) "doesn't touch symbol vals")
+     (is (func 8 #f) (cons 8 7)  "converts #f to 7")
+     (is (func 'a 9) (cons 'a 'a) "converts ints to 'a")
+     (is (func 'a "foo") (cons 'a 'foo) "converts strings to symbols"))
    ))
