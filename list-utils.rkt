@@ -7,6 +7,9 @@
 
 ;;    Parameters:
 ;; *) current-dict-maker-function : customize what vector->dict and list->dict do
+;; *) current-transform-data-function
+;; *) current-transform-data-function
+;; *) make-transform-data-func
 
 ;;    Functions:
 ;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
@@ -37,7 +40,11 @@
 ;; *) vector->dict, list->dict : turn a vector/list into some kind of
 ;;     dict (by default a mutable hash)
 
-(define current-dict-maker-function (make-parameter make-hash))
+(define current-dict-maker-function     (make-parameter make-hash))
+(define current-transform-data-function (make-parameter cons))
+(define current-transform-dict-function (make-parameter identity))
+
+;; *) make-transform-data-func
 
 (define L list)
 (define/contract (safe-first l [default '()])
@@ -321,8 +328,8 @@
 (define/contract (vector->dict keys
                                data
                                #:dict-maker [dict-maker (current-dict-maker-function)]
-                               #:transform-dict [transform-dict identity]
-                               #:transform-data [transform-data cons]
+                               #:transform-dict [transform-dict (current-transform-dict-function)]
+                               #:transform-data [transform-data (current-transform-data-function)]
                                )
   (->* (list? vector?)                           ; keys and data
        (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
@@ -386,8 +393,8 @@
 (define/contract (list->dict raw-keys
                              data
                              #:dict-maker [dict-maker (current-dict-maker-function)]
-                             #:transform-dict [transform-dict identity]
-                             #:transform-data [transform-data cons]
+                             #:transform-dict [transform-dict (current-transform-dict-function)]
+                             #:transform-data [transform-data (current-transform-data-function)]
                              #:make-keys  (key-maker #f)
                              )
   (->* (list? list?)         ;; keys and data
