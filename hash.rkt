@@ -20,7 +20,7 @@
 
 (provide hash->keyword-apply
          hash-key-exists?
-         
+
          hash-keys->strings
          hash-keys->symbols
 
@@ -69,7 +69,7 @@
                            "It's not sensible to set both dash->underscore? and underscore->dash?."
                            "dash->underscore?" dash->underscore?
                            "underscore->dash?" underscore->dash?))
-  
+
   (define (to-string x)
     (cond ((list?   x)   (apply string-append (map to-string x)))
           ((vector?   x) (to-string (vector->list x)))
@@ -134,15 +134,15 @@
         [else
          (define base-hash (first hshs))
          (define is-immutable?  (immutable? base-hash))
-         
+
          (define-values (union-func converter)
            (if is-immutable?
                (values hash-union hash->immutable)
                (values hash-union! hash->mutable)))
 
          (let ([result (apply union-func
-                (map converter hshs)
-                #:combine (lambda (x y) y))])
+                              (map converter hshs)
+                              #:combine (lambda (x y) y))])
            (if is-immutable? result base-hash))]))
 
 ;;----------------------------------------------------------------------
@@ -262,9 +262,11 @@
 ;;                              #:add       [add         #f ]
 ;;                              #:rename    [remap       #f ]
 ;;                              #:default   [default     #f ]
+;;                              #:post      [post        identity]
 ;;                              )
 ;;   (->* (hash?)
-;;        (#:rename hash? #:add hash? #:overwrite hash? #:remove list? #:default hash?)
+;;        (#:rename hash? #:add hash? #:overwrite hash? #:remove list? #:default hash?
+;;         #:post (-> hash? any)
 ;;        hash?)
 ;;
 ;;  Order of application mnemonic:  ROARenD. Remove. Overwrite. Add. Rename. Default.
@@ -365,16 +367,18 @@
                              #:overwrite [overwrite #f]
                              #:add       [add #f]
                              #:default   [default (hash)]
+                             #:post      [post-process identity]
                              )
   (->* (hash?)
-       (#:rename hash? #:add hash? #:overwrite hash? #:remove list? #:default hash?)
-       hash?)
+       (#:rename hash? #:add hash? #:overwrite hash? #:remove list? #:default hash?
+        #:post (-> hash? any))
+       any)
 
-  ; Just return the original hash unless we are going to rename,
-  ; remove, overwrite, add, or default something.
+  ; Just return the (post-processed) original hash unless we are going
+  ; to rename, remove, overwrite, add, or default something.
   (cond [(and (andmap false? (list remap remove-keys overwrite add))
               (null? (hash-keys default)))
-         h]
+         (post-process h)]
         [else
          ;
          ; Okay, we're going to make some sort of change
@@ -462,15 +466,15 @@
            (set-subtract (list->set (hash-keys default))
                          (list->set (hash-keys renamed-hash))))
 
-         (cond [(null? keys-to-default)  renamed-hash]
+         (cond [(null? keys-to-default)  (post-process renamed-hash)]
                [else
-                (union-func renamed-hash
-                            (for/hash ([key keys-to-default])
-                              (values key
-                                      (let ([val (hash-ref default key)])
-                                        (cond [(procedure? val) (val key)]
-                                              [else val])))))])]))
-
+                (post-process
+                 (union-func renamed-hash
+                             (for/hash ([key keys-to-default])
+                               (values key
+                                       (let ([val (hash-ref default key)])
+                                         (cond [(procedure? val) (val key)]
+                                               [else val]))))))])]))
 
 ;;----------------------------------------------------------------------
 

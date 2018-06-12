@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 79)
+(expect-n-tests 81)
 
 (when #t
   (test-suite
@@ -323,6 +323,18 @@
        (hash 'x 1 'y "y")
        "hash-remap can generate values")
 
+   (let ()
+     (struct jaz (glug))
+     (is (hash-remap (hash 'x 1) #:default (hash 'y 2) #:post hash-keys->strings)
+         (hash "x" 1 "y" 2)
+         "#:post works")
+
+     (is (hash-remap (hash 'x-y 1)
+                     #:default (hash 'y 2)
+                     #:post (curry curry hash-keys->strings #:dash->underscore? #t))
+         (hash "x_y" 1 "y" 2)
+         "#:post with curried keywords works"))
+   
    ;;
    ;; COMPLETE EXAMPLE
    (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
@@ -338,4 +350,5 @@
                'seller 'bob           ; added
                'taste  "taste")       ; defaulted (NB: generated from key name)
          "complete example worked"))
+   
    ))
