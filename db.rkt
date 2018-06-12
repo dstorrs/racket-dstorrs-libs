@@ -30,7 +30,7 @@
          maybe-disconnect
          disconnect-if
          call-with-transaction/disconnect
-         (except-out (all-from-out db) disconnect)
+         (except-out (all-from-out db) disconnect) ; includes sql-null->false
          (prefix-out db: disconnect)
          (all-from-out "sql.rkt")
          (struct-out exn:fail:db)
@@ -44,15 +44,23 @@
 
          ;;   Parameters that allows you to customize how the various
          ;;   'query...-as-dict' functions work
-         current-dict-maker-function ; defined in list-utils, re-exported
+         current-query-as-dict-dict-maker-function
          current-query-as-dict-transform-data-function
-         make-transform-data-func
-         ;sql-null->false ; this comes from (require db), not (require handy/db)
+         current-query-as-dict-transform-dict-function
          )
 
 ;;----------------------------------------------------------------------
 
-(define current-query-as-dict-transform-data-function (make-parameter cons))
+
+(define current-query-as-dict-dict-maker-function
+  (make-parameter (current-dict-maker-function))) ; cf in list-utils
+
+(define current-query-as-dict-transform-data-function
+  (make-parameter (current-transform-data-function))) ; cf list-utils
+
+(define current-query-as-dict-transform-dict-function
+  (make-parameter (current-transform-dict-function))) ; cf list-utils
+
 
 ;;    (make-transform-data-func pg-array? pg-array->list sql-null? #f)
 ;;
@@ -91,8 +99,6 @@
                    (return (cons key (func val)))))
                ;; Nope, it didn't.
                (cons key val)))))
-
-(define sql-null->false (make-transform-data-func sql-null? #f))
 
 ;;----------------------------------------------------------------------
 
@@ -289,8 +295,8 @@
 (define/contract (query-rows-as-dicts keys db sql
                                       #:wrapper        [wrapper    (lambda (db thnk) (thnk))]
                                       #:trap-exns?     [trap-exns? #f]
-                                      #:dict-maker     [dict-maker (current-dict-maker-function)] ; defined in list-utils
-                                      #:transform-dict [transform-dict identity]
+                                      #:dict-maker     [dict-maker (current-query-as-dict-dict-maker-function)] ; defined in list-utils
+                                      #:transform-dict [transform-dict (current-query-as-dict-transform-dict-function)]
                                       #:transform-data [transform-data (current-query-as-dict-transform-data-function)]
                                       #:post-process   [post-processor identity]
                                       .
@@ -345,16 +351,15 @@
 ; query-row throws an exception (probably because there was no such
 ; row) then query-row-as-dict returns an empty dict, unless you call
 ; it with #:trap-exns? #f, in which case it throws an appropriate
-; exn:fail:db:*
+; exn:fail:b:*
 (define/contract (query-row-as-dict keys
                                     db
                                     sql
                                     #:wrapper    [wrapper (lambda (db thnk) (thnk))]
                                     #:trap-exns? [trap-exns? #t]
-                                    #:dict-maker [dict-maker (current-dict-maker-function)]
-                                    #:transform-dict [transform-dict identity]
+                                    #:dict-maker     [dict-maker (current-query-as-dict-dict-maker-function)] ; defined in list-utils
+                                    #:transform-dict [transform-dict (current-query-as-dict-transform-dict-function)]
                                     #:transform-data [transform-data (current-query-as-dict-transform-data-function)]
-
                                     .
                                     params
                                     )
@@ -403,10 +408,9 @@
                                           sql
                                           #:wrapper        [wrapper    (lambda (db thnk) (thnk))]
                                           #:trap-exns?     [trap-exns? #t]
-                                          #:dict-maker     [dict-maker (current-dict-maker-function)]
-                                          #:transform-dict [transform-dict identity]
+                                          #:dict-maker     [dict-maker (current-query-as-dict-dict-maker-function)] ; defined in list-utils
+                                          #:transform-dict [transform-dict (current-query-as-dict-transform-dict-function)]
                                           #:transform-data [transform-data (current-query-as-dict-transform-data-function)]
-
                                           .
                                           params
                                           )
