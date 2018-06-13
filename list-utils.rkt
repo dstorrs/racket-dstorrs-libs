@@ -44,13 +44,16 @@
 (define current-transform-data-function (make-parameter cons))
 (define current-transform-dict-function (make-parameter identity))
 
+;;----------------------------------------------------------------------
+
 ;;    (make-transform-data-func pg-array? pg-array->list sql-null? #f)
 ;;
 ;; The above line returns a func that will take a key and a value,
 ;; convert values that are pg-arrays into lists and values that are
 ;; sql-null into #f, then return (cons key val).  You can parameterize
-;; it into current-query-as-dict-transform-data-function for all your
-;; data-cleaning needs.
+;; it into current-transform-data-function for all your data-cleaning
+;; needs.  Also, see the derived parameter in db.rkt:
+;; current-query-as-dict-transform-data-function
 ;;
 (define/contract (make-transform-data-func . args)
   (->* () () #:rest (and/c (listof any/c) (compose even? length)) procedure?)
