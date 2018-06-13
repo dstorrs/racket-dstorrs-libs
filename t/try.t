@@ -5,6 +5,7 @@
 (require "../test-more.rkt"
          "../try.rkt")
 
+(expect-n-tests 22)
 
 (when #t
   (test-suite
@@ -41,12 +42,42 @@
               catch-clause-executed)
          "try/pre/catch is a legal syntax"))
 
+   (let ((pre-clause-executed #f)
+         (catch-clause-executed #f))
+     (define val (try [pre (set! pre-clause-executed #t) 8]
+                      [2]))
+     (ok (and pre-clause-executed
+              (equal? val 2))
+         "pre/try is a legal syntax and it properly distinguished the clauses"))
+
+   (let ((pre-clause-executed #f)
+         (catch-clause-executed #f))
+     (try [pre (set! pre-clause-executed #t)]
+          [(raise "foo")]
+          [catch (identity (lambda (e) (set! catch-clause-executed #t)))])
+     (ok (and pre-clause-executed
+              catch-clause-executed)
+         "pre/try/catch is a legal syntax"))
+
+   (let ((pre-clause-executed #f)
+         (catch-clause-executed #f)
+         (finally-clause-executed #f))
+     (try [pre (set! pre-clause-executed #t)]
+          [(raise "foo")]
+          [catch (identity (lambda (e) (set! catch-clause-executed #t)))]
+          [finally (set! finally-clause-executed #t)])
+     (ok (and pre-clause-executed
+              catch-clause-executed
+              finally-clause-executed)
+         "pre/try/catch/finally is a legal syntax"))
+
    (let ((finally-clause-executed #f)
          (pre-clause-executed #f))
      (try [(raise "foo")]
           [pre (set! pre-clause-executed #t)]
           [catch (identity (lambda (e) #t))]
           [finally (set! finally-clause-executed 8)])
+     (ok #t "body/pre/catch/finally is legal syntax")
      (ok finally-clause-executed "'finally' clause executes if you have an exception")
      (ok pre-clause-executed "'pre' clause executes if you have an exception"))
 
@@ -70,7 +101,7 @@
           [pre (set! pre-clause-executed #t)]
           [finally (set! finally-clause-executed 8)])
      (ok pre-clause-executed "try+pre+finally is a legal form, and the pre executed")
-     (ok finally-clause-executed "try+pre_finally is a legal form, and the finally executed"))
+     (ok finally-clause-executed "try+pre+finally is a legal form, and the finally executed"))
    )
   )
 
@@ -92,4 +123,4 @@
   )
 
 
-(done-testing)
+

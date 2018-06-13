@@ -75,7 +75,7 @@
 ;; (dynamic-wind
 ;;   (thunk (displayln "outer pre"))
 ;;   (thunk (try [(displayln "body") (raise "error!")]
-;;               [pre (displayln "body pre")] 
+;;               [pre (displayln "body pre")]
 ;;               [catch (string? (lambda (e) (displayln "body catch")))]
 ;;               [finally (displayln "body finally")]))
 ;;   (thunk (displayln "outer finally")))
@@ -115,6 +115,50 @@
          body1
          ...
          )]
+    [(try [pre p0:expr p1:expr ... ]
+          [body0:expr body1:expr ...])
+     #'(with-handlers ((identity identity))
+         (dynamic-wind
+           (thunk p0 p1 ...)
+           (thunk body0
+                  body1
+                  ...)
+           (thunk '()))
+         )]
+    [(try [pre p0:expr p1:expr ... ]
+          [body0:expr body1:expr ...]
+          [catch catch0 catch1 ...])
+     #'(with-handlers (catch0 catch1 ...)
+         (dynamic-wind
+           (thunk p0 p1 ...)
+           (thunk body0
+                  body1
+                  ...)
+           (thunk '()))
+         )]
+    [(try [pre p0:expr p1:expr ... ]
+          [body0:expr body1:expr ...]
+          [finally f0 f1 ...])
+     #'(with-handlers ((identity identity))
+         (dynamic-wind
+           (thunk p0 p1 ...)
+           (thunk body0
+                  body1
+                  ...)
+           (thunk f0 f1 ...))
+         )]
+    [(try [pre p0:expr p1:expr ... ]
+          [body0:expr body1:expr ...]
+          [catch catch0 catch1 ...]
+          [finally f0 f1 ...])
+     #'(with-handlers (catch0 catch1 ...)
+         (dynamic-wind
+           (thunk p0 p1 ...)
+           (thunk body0
+                  body1
+                  ...)
+           (thunk f0 f1 ...))
+         )]
     [(try [body0 body1 ...]
           [catch catch0 catch1 ...]
           [finally f0 f1 ... ])
@@ -125,7 +169,7 @@
                   body1
                   ...)
            (thunk f0 f1 ...)
-         ))]
+           ))]
     [(try [body0 body1 ...]
           [finally f0 f1 ... ])
      #'(with-handlers ([(lambda (x) #t) raise])
@@ -135,7 +179,7 @@
                   body1
                   ...)
            (thunk f0 f1 ...)
-         ))]
+           ))]
     [(try [body0 body1 ...]
           [pre p0 p1 ... ]
           [finally f0 f1 ... ])
@@ -146,7 +190,7 @@
                   body1
                   ...)
            (thunk f0 f1 ...)
-         ))]
+           ))]
     [(try [body0 body1 ...]
           [pre pre0 pre1 ...]
           [catch catch0 catch1 ... ])
@@ -155,9 +199,9 @@
            (thunk pre0 pre1   ...)
            (thunk body0 body1 ...)
            (thunk '())
-         ))]
+           ))]
     [(try [body0 body1 ...]
-          [pre     pre0 pre1 ...]          
+          [pre     pre0 pre1 ...]
           [catch   catch0 catch1 ...]
           [finally f0 f1 ... ])
      #'(with-handlers (catch0 catch1 ...)
@@ -167,10 +211,10 @@
                   body1
                   ...)
            (thunk f0 f1 ...)
-         ))]
+           ))]
     ))
 
-  
+
 
 (define-syntax (defatalize stx)
   (syntax-parse stx
