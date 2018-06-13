@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 84)
+(expect-n-tests 86)
 
 (when #t
   (test-suite
@@ -14,12 +14,12 @@
    (is (hash-rename-key (hash 'x 1) 'x 'y)
        (hash 'y 1)
        "(hash-rename-key (hash 'x 1) 'x 'y) works")
-   
+
    (is (hash-rename-key (hash 'x 1) 'x symbol->string)
        (hash "x" 1)
        "(hash-rename-key (hash 'x 1) 'x symbol->string) works")
    ))
-   
+
 (when #t
   (test-suite
    "safe-hash-remove"
@@ -299,8 +299,7 @@
    ;;    NOTE: This will throw an exception if you try to add a key that
    ;;    is already there. If you want to force a key to a value then use
    ;;    #:overwrite and it will be added or set as necessary.  If you
-   ;;    want to be sure that a hash has a key then use #:default and it
-   ;;    will only be added if it's not there.
+   ;;    want to be sure that a hash has a key then use #:default
    ;;
    (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
      (is (hash-remap h #:add (hash 'subtype 'honeycrisp))
@@ -326,20 +325,32 @@
    ;;      actually want to have the value be a procedure then you'll
    ;;      need to wrap it.
    ;;
-   (is (hash-remap (hash 'x 1) #:default (hash 'y 2))
-       (hash 'x 1 'y 2)
-       "#:default correctly added a key that wasn't there")
-   (is (hash-remap (hash 'x 1 'y 7) #:default (hash 'y 2))
-       (hash 'x 1 'y 7)
-       "#:default correctly did not disturb a key that was there")
-   (is (hash-remap (hash 'x 1) #:default (hash 'y ~a))
-       (hash 'x 1 'y "y")
-       "hash-remap can generate values")
+   (let ()
+     (is (hash-remap (hash 'x 1) #:default (hash 'y 2))
+         (hash 'x 1 'y 2)
+         "#:default correctly added a key that wasn't there")
+     (is (hash-remap (hash 'x 1 'y 7) #:default (hash 'y 2))
+         (hash 'x 1 'y 7)
+         "#:default correctly did not disturb a key that was there")
+     (is (hash-remap (hash 'x 1 'y #f) #:default (hash 'y ~a) #:value-is-default? false?)
+         (hash 'x 1 'y "y")
+         "default can generate values and will overwrite something that matched the 'value-is-default?' predicate")
+     (is (hash-remap (hash 'x 1 'y #f) #:default (hash 'y ~a) #:value-is-default? #f)
+         (hash 'x 1 'y "y")
+         "same as previous test except default value was specified as a value (#f)")
+
+     (is (hash-remap (hash 'x 2 'y #f 'z 2)
+                     #:default (hash 'y ~a 'z ~a 'a 7)
+                     #:value-is-default? 2)
+         (hash 'x 2   ; untouched because not in the default hash
+               'y #f  ; untouched because not the default value
+               'z "z" ; set and generated
+               'a 7)  ; added
+         "default with a specified default val: only touched things in the 'default' hash that had the specified value.  Generated and added keys when necessary"))
 
    (let ()
-     (struct jaz (glug))
-     (is (hash-remap (hash 'x 1) #:default (hash 'y 2) #:post hash-keys->strings)
-         (hash "x" 1 "y" 2)
+     (is (hash-remap (hash 'x 1)  #:post hash-keys->strings)
+         (hash "x" 1)
          "#:post works")
 
      (is (hash-remap (hash 'x-y 1)
@@ -347,21 +358,22 @@
                      #:post (curry curry hash-keys->strings #:dash->underscore? #t))
          (hash "x_y" 1 "y" 2)
          "#:post with curried keywords works"))
-   
+
+
    ;;
    ;; COMPLETE EXAMPLE
-   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple 'taste #f)])
      (is (hash-remap h
                      #:remove    '(group)
-                     #:overwrite (hash 'color 'green   'type 'granny-smith)
+                     #:overwrite (hash 'color 'green   'type (lambda (k a b) "fuji"))
                      #:add       (hash 'vendor 'bob)
                      #:rename    (hash 'vendor 'seller)
-                     #:default   (hash 'group "group" 'taste ~a))
+                     #:default   (hash 'group "group" 'taste ~a)
+                     #:value-is-default? false?)
          (hash 'group  "group"        ; removed via #:remove, then set via #:default
-               'color  'green         ; overwritten
-               'type   'granny-smith  ; overwritten
+               'color  'green         ; overwritten with specified value
+               'type   "fuji"         ; overwritten with generated value
                'seller 'bob           ; added
                'taste  "taste")       ; defaulted (NB: generated from key name)
          "complete example worked"))
-   
    ))
