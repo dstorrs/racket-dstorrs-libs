@@ -18,7 +18,9 @@
 ;; *) safe-hash-set       : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) sorted-hash-keys    : returns sorted list of keys from the hash
 
-(provide hash->keyword-apply
+(provide (all-from-out racket/hash)
+
+         hash->keyword-apply
          hash-key-exists?
 
          hash-keys->strings
