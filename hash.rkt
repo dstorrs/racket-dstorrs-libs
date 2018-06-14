@@ -351,9 +351,10 @@
 ;;  matches value-is-default? predicate.  Predicates can be either a
 ;;  single value or a function matching (-> any/c boolean?) In order
 ;;  to maintain backwards compatibility you must specify the
-;;  #:value-is-default? if you want to default values.  At some point
-;;  I'll make it default to #f, but the original version of this
-;;  wouldn't touch things that were already there.
+;;  #:value-is-default? if you want to default existing values as
+;;  opposed to inserting keys that aren't there.  At some point I'll
+;;  make it default to #f, but the original version of this wouldn't
+;;  touch things that were already there.
 ;;
 ;;    (hash-remap (hash 'x #f) #:default (hash 'x 7))                       => (hash 'x #f)
 ;;    (hash-remap (hash 'x 2)  #:default (hash 'x 7))                       => (hash 'x 2)
@@ -383,7 +384,7 @@
                              #:add               [add #f]
                              #:rename            [remap #f]  ; rename is taken
                              #:default           [default #f]
-                             #:value-is-default? [def-val (gensym)]
+                             #:value-is-default? [def-val (and/c #t #f)]
                              #:post              [post-process identity]
                              )
   (->* (hash?)
