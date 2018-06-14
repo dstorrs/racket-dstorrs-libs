@@ -464,14 +464,33 @@
 ;;
 ;;    '((1 2 3) (5) (7) (200 201 202 203))
 ;;
-;; Operates only on exact integers, but you can provide a function
-;; that will generate a number from your data.  For example:
+;; Keyword arguments are:
+;;
+;;    #:key Function to use in order to generate the values that
+;;    define what a run is.  By default this is 'identity'.  You can
+;;    pass a function of (-> any/c any/c boolean?) to use instead.
+;;
+;;    #:op The function to use for determining if two elements are
+;;    contiguous.  By default this is (lambda (a b) (= (add1
+;;    (extract-value a) (extract-value b)))), where 'extract-value is
+;;    the function that was passed to #:key (or its default value).
+;;
+;; Examples:
 ;;
 ;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
 ;;                           #:key (curryr hash-ref 'age))
+;;        =>  (list (list (hash 'age 17) (hash 'age 18))
+;;                  (list (hash 'age 27)))
 ;;
-;;     Returns:  (list (list (hash 'age 17) (hash 'age 18))
-;;                     (list (hash 'age 27)))
+;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
+;;                           #:key (curryr hash-ref 'age))
+;;        => (list (list (hash 'age 17) (hash 'age 18))
+;;                 (list (hash 'age 27)))
+;;
+;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
+;;                           #:key (curryr hash-ref 'age))
+;;        => (list (list (hash 'age 17) (hash 'age 18))
+;;                 (list (hash 'age 27)))
 ;;
 (define/contract (find-contiguous-runs data
                                        #:key [extract-key identity]
@@ -487,28 +506,25 @@
 
   (cond [(null? data) '()]
         [else
-         (define-values (extract-key-a extract-key-b)
-           (cond [(list? extract-key) (list->values extract-key)]
-                 [else (values extract-key extract-key)]))
-
-         (define-values (n final result)
+         (define-values (ignore final result)
            (for/fold ((prev (car data))
-                      (acc  (list (car data)))
+                      (current-run  (list (car data)))
                       (result '())
                       )
                      ((curr (cdr data)))
 
-             ;; if curr is contiguous with prev, add curr to acc (build the run)
-             ;; if curr not contiguous, add acc to result and clear acc for next time
+             ;; if curr is contiguous with prev, add curr to current-run
+             ;; if curr not contiguous, add acc to result and clear current-run for next time
 
              (define is-contiguous (contiguous? prev curr))
              (values curr                  ;; the one we just processed becomes 'prev(ious)'
-                     (if is-contiguous     ;; add to or clear accumulator
-                         (cons curr acc)
-                         (list curr))
+                     (if is-contiguous     ;; add to or clear accumulator of current run
+                         (cons curr current-run)
+                         (list curr))      ;; start a new run
+                     ;;
                      (if is-contiguous     ;; add accumulator to result if the run is over
                          result
-                         (cons (reverse acc) result)
+                         (cons (reverse current-run) result)
                          ))
              ))
          (reverse (cons (reverse final) result))]))

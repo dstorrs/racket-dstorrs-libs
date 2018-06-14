@@ -148,16 +148,14 @@
        '((1 2 3) (5) (7) (200 201 202 203))
        "correctly found runs in a list of numbers")
 
-   (define conv (curry vector->dict '(chunk-hash chunk-num chunkdir-path scratchdir-path)))
    (define vec-list '(#("hash-7347" 6 "/foo/bar-2541" #f)
                       #("hash-1983" 8 "/foo/bar-2542" #f)
                       #("hash-5917" 9 "/foo/bar-9014" #f)))
-
-   (is (find-contiguous-runs (map conv vec-list)
-                             #:key (lambda (h) (hash-ref h 'chunk-num)))
-       (list (list (conv (first vec-list)))
-             (list (conv (second vec-list))
-                   (conv (third vec-list))))
+   (is (find-contiguous-runs vec-list
+                             #:key (lambda (v) (vector-ref v 1)))
+       (list (list (first vec-list))
+             (list (second vec-list)
+                   (third vec-list)))
        "correctly found runs in a list of hashes")
 
    (is (find-contiguous-runs '((1 2 3) (4 5 7) (200 201) (203))
@@ -174,8 +172,7 @@
           )
          )
        "was able to find contiguous runs when the data was lists of multiple items")
-   )
-  )
+   ))
 
 (when #t
   (test-suite
