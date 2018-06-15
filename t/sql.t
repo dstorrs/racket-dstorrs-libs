@@ -6,6 +6,8 @@
          "../sql.rkt"
          )
 
+(expect-n-tests 34)
+
 (void (ok #t "test harness is working"))
 
 (when #t
@@ -104,6 +106,10 @@
    (is (placeholders-for '(foo bar 3) 3)
        "$3,$4,$5"
        @~a{(placeholders-for '(foo bar 3) 3) is "$3,$4,$5"})
+
+   (is (placeholders-for '(foo bar baz) 3 #:for-update? #t)
+       "foo=$3,bar=$4,baz=$5"
+       @~a{#:for-update? #t works})
    )
   )
 
@@ -132,5 +138,3 @@
        "correctly built one-row placeholders from LoL with start-from 3")
    )
   )
-
-(done-testing)

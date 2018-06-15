@@ -12,12 +12,13 @@
 ;; (placeholders-for '())             => ""
 ;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
 ;;
-(define/contract (placeholders-for lst [start-from 1])
-  (->* (list?) (exact-positive-integer?) string?)
+(define/contract (placeholders-for lst [start-from 1] #:for-update? [for-update? #f])
+  (->* (list?) (exact-positive-integer? #:for-update? boolean?) string?)
   (string-join
    (for/list ((i (in-naturals start-from))
-              (ignored lst))
-     (~a "$" i))
+              (key lst))
+     (cond [for-update? (format "~a=$~a" key i)]
+           [else        (format "$~a" i)]))
    ","))
 
 ;;--------------------------------------------------------------------------------
