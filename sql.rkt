@@ -3,14 +3,22 @@
 (provide (all-defined-out))
 
 
-;;(define/contract (placeholders-for lst [start-from 1])
+;;(define/contract (placeholders-for lst [start-from 1] #:for-update? [for-update? #f])
+;;  (->* (list?) (exact-positive-integer? #:for-update? boolean?) string?)
 ;;
 ;;    Create a string that can be used as placeholder values for a
-;;    group of values suitable for inclusion in a SELECT, INSERT,
-;;    etc.
+;;    group of values suitable for inclusion in a SELECT, INSERT, or
+;;    UPDATE statement.
+;;
 ;; (placeholders-for '(foo bar baz))  => "$1,$2,$3"
 ;; (placeholders-for '())             => ""
 ;; (placeholders-for '(foo bar) 2)    => "$2,$3"  ; start from 2, not 1
+;;
+;; (placeholders-for '(foo bar) 3 #:for-update? #t) => "foo=$3,bar=$4" ; sql UPDATE form
+;;
+;; NB: If for-update? is #f then it doesn't matter what's in the list
+;; you pass, only the length of the list.  If it's #t then you MUST
+;; pass the names of the columns.
 ;;
 (define/contract (placeholders-for lst [start-from 1] #:for-update? [for-update? #f])
   (->* (list?) (exact-positive-integer? #:for-update? boolean?) string?)
