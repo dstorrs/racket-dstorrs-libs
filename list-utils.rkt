@@ -468,29 +468,26 @@
 ;;
 ;;    #:key Function to use in order to generate the values that
 ;;    define what a run is.  By default this is 'identity'.  You can
-;;    pass a function of (-> any/c any/c boolean?) to use instead.
+;;    pass a function of (-> any/c any/c) to use instead.
 ;;
 ;;    #:op The function to use for determining if two elements are
-;;    contiguous.  By default this is (lambda (a b) (= (add1
-;;    (extract-value a) (extract-value b)))), where 'extract-value is
-;;    the function that was passed to #:key (or its default value).
+;;    contiguous.  By default this is:
 ;;
-;; Examples:
+;;      (lambda (a b) (= (add1 (extract-value a) (extract-value b))))
+;;
+;;    where 'extract-value is the function that was passed to #:key
+;;    (or its default value).  If that doesn't work for your use case,
+;;    you can pass a function of:
+;;
+;;      (-> any/c any/c boolean?) instead.
+;;
+;; Example:
 ;;
 ;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
 ;;                           #:key (curryr hash-ref 'age))
 ;;        =>  (list (list (hash 'age 17) (hash 'age 18))
 ;;                  (list (hash 'age 27)))
 ;;
-;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
-;;                           #:key (curryr hash-ref 'age))
-;;        => (list (list (hash 'age 17) (hash 'age 18))
-;;                 (list (hash 'age 27)))
-;;
-;;     (find-contiguous-runs (list (hash 'age 17) (hash 'age 18) (hash 'age 27))
-;;                           #:key (curryr hash-ref 'age))
-;;        => (list (list (hash 'age 17) (hash 'age 18))
-;;                 (list (hash 'age 27)))
 ;;
 (define/contract (find-contiguous-runs data
                                        #:key [extract-key identity]
@@ -537,9 +534,11 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (alist->hash alist)
-  (-> (listof pair?) (and/c hash? immutable?))
-  (apply hash (flatten alist)))
+; This is from before I knew that make-immutable-hash existed.  It
+; should be moved into a 'deprecated' submodule and eventually
+; eliminated.
+;
+(define alist->hash make-immutable-hash)
 
 ;;----------------------------------------------------------------------
 
