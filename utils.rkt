@@ -147,7 +147,7 @@
 
 (define/contract (!= . args)
   (->* () () #:rest (non-empty-listof number?) boolean?)
-  (not (andmap (curry equal? (first args)) args)))
+  (not (apply = args)))
 
 ;;----------------------------------------------------------------------
 
