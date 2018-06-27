@@ -401,32 +401,43 @@
 ;
 (define/contract (dir-and-filename fp #:as-str? [as-str? #f] #:relaxed? [relaxed? #f]
                                    #:is-dir? [force-dir? #f])
-  (->* (path-string?)
+  (->* ((or/c "" #f 'up 'same path-string?))
        (#:as-str? boolean?
         #:is-dir? boolean?
         #:relaxed? boolean?)
        (values (or/c "" 'up 'same path-string?) (or/c "" path-string?)))
 
-  (define-values (d f is-dir?) (split-path fp))
-
-  ;(define as-str? #t) (define is-dir? #t) (define force-dir? #f)
-  (define convert (compose (if as-str?  path-string->string identity)
-                           (if (or force-dir? is-dir?) path->directory-path identity)
-                           build-path)) ; this will handle 'up and 'same
-
-  (match d
-    ['relative (cond [relaxed? (values "" (convert f))]
-                     [else
-                      (raise-arguments-error  'dir-and-filename
-                                              "Cannot accept single-element relative paths unless you set #:relaxed? #t"
-                                              "path" fp)])]
-    [#f        (cond [relaxed? (values "" (convert "/"))]
-                     [else
-                      (raise-arguments-error  'dir-and-filename
-                                              "Cannot accept root path (/) unless you set #:relaxed? #t"
-                                              "path" fp)])]
+  ;; Unless we are running in relaxed mode, you need to provide a
+  ;; valid path-string value
+  (match (list relaxed? fp)
+    [(list #f (or "" #f 'up 'same))
+     (raise-argument-error 'dir-and-filename "path-string?" fp)]
+    ;
+    [(list #t (or "" #f)) (values "" "")]
+    [(list #t (or 'up 'same)) (values ""
+                                 ((if as-str? path->string identity)
+                                  (path->directory-path (build-path fp))))]
     [else
-     (values (convert d) (convert f))]))
+     (define-values (d f is-dir?) (split-path fp))
+
+     ;(define as-str? #t) (define is-dir? #t) (define force-dir? #f)
+     (define convert (compose (if as-str?  path-string->string identity)
+                              (if (or force-dir? is-dir?) path->directory-path identity)
+                              build-path)) ; this will handle 'up and 'same
+
+     (match d
+       ['relative (cond [relaxed? (values "" (convert f))]
+                        [else
+                         (raise-arguments-error  'dir-and-filename
+                                                 "Cannot accept single-element relative paths unless you set #:relaxed? #t"
+                                                 "path" fp)])]
+       [#f        (cond [relaxed? (values "" (convert "/"))]
+                        [else
+                         (raise-arguments-error  'dir-and-filename
+                                                 "Cannot accept root path (/) unless you set #:relaxed? #t"
+                                                 "path" fp)])]
+       [else
+        (values (convert d) (convert f))])]))
 
 ;;----------------------------------------------------------------------
 

@@ -15,7 +15,7 @@
          racket/runtime-path
          )
 
-(expect-n-tests 280)
+(expect-n-tests 293)
 
 (define-runtime-path thisdir ".")
 
@@ -191,6 +191,10 @@
            #px"single-element relative path"
            @~a{(dir-and-filename "foo") fails.  Set #:relaxed? #t to make it work})
 
+   (throws (thunk (dir-and-filename ""))
+           #px"path-string"
+           @~a{(dir-and-filename "") fails.  Set #:relaxed? #t to make it work})
+
    (throws (thunk (dir-and-filename "foo/"))
            #px"single-element relative path"
            @~a{(dir-and-filename "foo/") fails.  Set #:relaxed? #t to make it work})
@@ -204,9 +208,9 @@
      (is fname "bar" "dir-and-filename accepts the #:as-str? arg and returns fname as string"))
 
    ; test with #:relaxed? #t
-   (for ([next-path    '("/foo/bar" "bar"   "/"   "."   ".."   "../")]
-         [correct-dir  '("/foo/"    ""      ""    ""    ""     "")]
-         [correct-file '("bar"      "bar"   "/"   "./"  "../"  "../")]
+   (for ([next-path    '("/foo/bar" "bar"   "/"   "."   ".."   "../"  "" up    same)]
+         [correct-dir  '("/foo/"    ""      ""    ""    ""     ""     "" ""    "")]
+         [correct-file '("bar"      "bar"   "/"   "./"  "../"  "../"  "" "../" "./")]
          #:when #t
          [str?         '(#t #f)])
 
