@@ -15,7 +15,7 @@
          racket/runtime-path
          )
 
-(expect-n-tests 252)
+(expect-n-tests 280)
 
 (define-runtime-path thisdir ".")
 
@@ -29,66 +29,6 @@
          "'0foo' is not perl-false? but also not an exception" )
  )
 
-(when #t
-  (test-suite
-   "append-file"
-
-   ;;    Create two test files
-   (define source (make-temporary-file))
-   (define dest   (make-temporary-file))
-
-   (with-output-to-file
-     source
-     #:exists 'replace
-     (thunk
-      (display "67890")))
-
-   (with-output-to-file
-     dest
-     #:exists 'append
-     (thunk
-      (display "12345")))
-
-   (is (append-file source dest)
-       10
-       "got correct number of bytes after append")
-
-   (is (with-input-from-file
-         dest
-         (thunk
-          (port->string)))
-       "1234567890"
-       "got correct contents")
-
-   ; Now, let's test it with a large file.  Should be able to handle at least 10M
-   (with-output-to-file source
-     #:mode 'binary
-     #:exists 'replace
-     (thunk (display (make-string 1024 #\x))))
-
-   (with-output-to-file dest
-     #:mode 'binary
-     #:exists 'replace
-     (thunk (display (make-string 1024 #\x))))
-
-     (diag "testing that append-file doesn't blow up if given very large files.  This will take a few seconds.")
-   (define final-size
-     (call/ec
-      (lambda (break)
-        (for/last ([i 20])
-          (append-file source dest)
-          (append-file dest source)
-          (define current-size (file-size source))
-          (when (> current-size (* 100 1024 1024))
-            (break current-size))))))
-
-   (ok final-size (~a "successfully appended files up to 100M without dying from lack of RAM"
-                      ))
-
-   (delete-file source)
-   (delete-file dest)
-   )
-  )
 
 (test-suite
  "->string"
@@ -248,20 +188,40 @@
      (is fname (string->path "foo") "got correct filename for /foo"))
 
    (throws (thunk (dir-and-filename "foo"))
-           #rx"Cannot accept single-element relative paths"
-           "dir-and-filename throws if given a one-element relative path WITHOUT trailing slash ('foo')")
+           #px"single-element relative path"
+           @~a{(dir-and-filename "foo") fails.  Set #:relaxed? #t to make it work})
 
    (throws (thunk (dir-and-filename "foo/"))
-           #rx"Cannot accept single-element relative paths"
-           "dir-and-filename throws if given a one-element relative path WITH a trailing slash ('foo/')")
+           #px"single-element relative path"
+           @~a{(dir-and-filename "foo/") fails.  Set #:relaxed? #t to make it work})
 
    (throws (thunk (dir-and-filename "/"))
-           #rx"Cannot accept root path"
-           "dir-and-filename throws if given the root path")
+           #px"root path"
+           @~a{(dir-and-filename "/") fails.  Set #:relaxed? #t to make it work})
 
    (let-values ([(dir fname) (dir-and-filename "/foo/bar" #:as-str? #t)])
      (is dir "/foo/" "dir-and-filename accepts the #:as-str? arg and returns dir as string")
      (is fname "bar" "dir-and-filename accepts the #:as-str? arg and returns fname as string"))
+
+   ; test with #:relaxed? #t
+   (for ([next-path    '("/foo/bar" "bar"   "/"   "."   ".."   "../")]
+         [correct-dir  '("/foo/"    ""      ""    ""    ""     "")]
+         [correct-file '("bar"      "bar"   "/"   "./"  "../"  "../")]
+         #:when #t
+         [str?         '(#t #f)])
+
+     (define str (lambda (v)
+                   (if (equal? v "")
+                       ""
+                       ((if str? path-string->string path-string->path) v))))
+
+     (let-values ([(dir fname) (dir-and-filename next-path #:relaxed? #t #:as-str? str?)])
+       (is dir
+           (str correct-dir)
+           @~a{(dir-and-filename @(~v next-path) #:relaxed? #t #:as-str? @str?) gives correct dir})
+       (is fname
+           (str correct-file)
+           @~a{(dir-and-filename @(~v next-path) #:relaxed? #t #:as-str? @str?) gives correct filename})))
    )
   )
 
@@ -505,6 +465,14 @@
    (is (safe-build-path 'relative "foo")
        (bp "foo")
        "(safe-build-path 'relative \"foo\"")
+
+   (is (safe-build-path 'up "foo")
+       (bp "../foo")
+       @~a{(safe-build-path 'up "foo")})
+
+   (is (safe-build-path 'same "foo")
+       (bp "./foo")
+       @~a{(safe-build-path 'same "foo")})
 
    )
   )
@@ -876,7 +844,7 @@
 
    (struct fish (name) #:transparent)
    (struct mammal (name) #:transparent #:mutable)
-   
+
    (is (ensure-field-set (fish #f)
                          fish-name
                          (lambda (f val) (struct-copy fish f [name val]))
@@ -907,3 +875,69 @@
    ))
 
 ;;----------------------------------------------------------------------
+
+(when #t
+  (test-suite
+   "append-file"
+
+   ;;    Create two test files
+   (define source (make-temporary-file))
+   (define dest   (make-temporary-file))
+
+   (dynamic-wind
+     (thunk #t)
+     (thunk
+
+      (with-output-to-file
+        source
+        #:exists 'replace
+        (thunk
+         (display "67890")))
+
+      (with-output-to-file
+        dest
+        #:exists 'append
+        (thunk
+         (display "12345")))
+
+      (is (append-file source dest)
+          10
+          "got correct number of bytes after append")
+
+      (is (with-input-from-file
+            dest
+            (thunk
+             (port->string)))
+          "1234567890"
+          "got correct contents")
+
+      ; Now, let's test it with a large file.  Should be able to handle at least 10M
+      (with-output-to-file source
+        #:mode 'binary
+        #:exists 'replace
+        (thunk (display (make-string 1024 #\x))))
+
+      (with-output-to-file dest
+        #:mode 'binary
+        #:exists 'replace
+        (thunk (display (make-string 1024 #\x))))
+
+      (diag "testing that append-file doesn't blow up if given very large files.  This will take a few seconds.")
+
+      (define final-size
+        (call/ec
+         (lambda (break)
+           (for/last ([i 20])
+             (append-file source dest)
+             (append-file dest source)
+             (define current-size (file-size source))
+             (when (> current-size (* 100 1024 1024))
+               (break current-size))))))
+
+      (ok final-size (~a "successfully appended files up to 100M without dying from lack of RAM")))
+     ;
+     (thunk
+      (and (file-exists? source) (delete-file source))
+      (and (file-exists? dest) (delete-file dest))
+      (is-false (file-exists? source) "successfully deleted file #1 (of 2) from append-file tests")
+      (is-false (file-exists? dest) "successfully deleted file #2 (of 2) from append-file tests")))))

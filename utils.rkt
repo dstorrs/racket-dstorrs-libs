@@ -49,7 +49,7 @@
          make-unique-string
          safe-substring
          empty-string?
-         
+
          unwrap-val
          ensure-field-set
          )
@@ -94,7 +94,7 @@
 ;; *) symbol-string->string and symbol-string->symbol
 ;; *) thunk?  ; is it a procedure of no arguments?
 ;; *) true? : opposite of false? (useful for coercing to boolean)
-;; *) make-unique-string : returns a unique string derived from (gensym) 
+;; *) make-unique-string : returns a unique string derived from (gensym)
 ;; *) unwrap-val : call a thunk, force a promise, or return a val
 ;; *) with-temp-file : creates a temp file, ensures it will be deleted
 ;; WITH-TEMP-FILE IS NOT REENTRANT. ONCE YOU LEAVE THE FUNCTION,
@@ -376,22 +376,57 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (dir-and-filename fp #:as-str? [as-str #f])
-  (->* (path-string?) (#:as-str? boolean?) (values path-string? path-string?))
+; dir-and-filename
+;
+; A wrapper around split-path.  split-path return three elements,
+; where dir and filename are always paths.  dir-and-filename returns
+; only two (the directory and the filename) and gives you options on
+; how to present them.
+;
+; #:as-str? If #f (the default) then dir and filename are returned as
+; paths. If #t, they are strings. (Note: #:relaxed? #t means one
+; element might be "" even if the other is a path)
+;
+; #:relaxed? If #f (the default) then passing a single-element
+; relative path (e.g. "foo") or the root directory (e.g. "/") raises
+; an exception.  If #t then:
+;    "foo" => (values "" "foo")  ; the non-empty-string item will be a
+;    "/"   => (values "/" "")    ; path or string as per #:as-str?
+;
+;   IMPORTANT: EMPTY STRING IS NOT A VALID PATH.  If you attempt to
+;   use it with functions that manipulate path-string? items then you
+;   will get an exception.  #:relaxed? is useful if, e.g, you are
+;   going to be storing the directory in a database as a string.  Use
+;   safe-build-path to combine them without worrying about this.
+;
+(define/contract (dir-and-filename fp #:as-str? [as-str? #f] #:relaxed? [relaxed? #f]
+                                   #:is-dir? [force-dir? #f])
+  (->* (path-string?)
+       (#:as-str? boolean?
+        #:is-dir? boolean?
+        #:relaxed? boolean?)
+       (values (or/c "" 'up 'same path-string?) (or/c "" path-string?)))
 
-  (define-values (d f is-dir) (split-path fp))
-  (cond [(equal? d 'relative)
-         (raise-arguments-error  'dir-and-filename
-                                 "Cannot accept single-element relative paths"
-                                 "path" (path-string->string fp))]
-        [(false? d)
-         (raise-arguments-error  'dir-and-filename
-                                 "Cannot accept root path (/)"
-                                 "path" (path-string->string fp))]
-        [else
-         (define convert (compose (if as-str path-string->string identity)
-                                  (if is-dir path->directory-path identity)))
-         (values (convert d) (convert f))]))
+  (define-values (d f is-dir?) (split-path fp))
+
+  ;(define as-str? #t) (define is-dir? #t) (define force-dir? #f)
+  (define convert (compose (if as-str?  path-string->string identity)
+                           (if (or force-dir? is-dir?) path->directory-path identity)
+                           build-path)) ; this will handle 'up and 'same
+
+  (match d
+    ['relative (cond [relaxed? (values "" (convert f))]
+                     [else
+                      (raise-arguments-error  'dir-and-filename
+                                              "Cannot accept single-element relative paths unless you set #:relaxed? #t"
+                                              "path" fp)])]
+    [#f        (cond [relaxed? (values "" (convert "/"))]
+                     [else
+                      (raise-arguments-error  'dir-and-filename
+                                              "Cannot accept root path (/) unless you set #:relaxed? #t"
+                                              "path" fp)])]
+    [else
+     (values (convert d) (convert f))]))
 
 ;;----------------------------------------------------------------------
 
@@ -412,7 +447,7 @@
 
 (define/contract (empty-string? x)
   (-> any/c boolean?)
-  (and (string? x) (equal? x "")))
+  (equal? x ""))
 
 ;;----------------------------------------------------------------------
 
@@ -435,19 +470,37 @@
 
 ;;----------------------------------------------------------------------
 
+;  safe-build-path
+;
+; A wrapper around build-path.  This accepts the optional arguments
+; #:as-str? and #:as-str.  If either is set to #t (they default to #f)
+; then the final result will be a string, otherwise it's a path.  This
+; will filter out "", 'relative, and #f, so it's safe to feed in
+; whatever came back from dir-and-filename.
+;
+;   Examples (assumes Unix system conventions, but Windows will work as normal)
+;      (build-path "" "foo")                            ; EXCEPTION: "" is not a valid path
+;      (safe-build-path "" "foo")                       ; #<path:foo>
+;      (safe-build-path 'relative "foo" #:as-str? #t)   ; "foo"
+;      (safe-build-path 'up   "foo" #:as-str? #t)       ; "../foo"
+;      (safe-build-path 'same "foo" #:as-str? #t)       ; "./foo"
+;      (safe-build-path 'same "foo" "bar")              ; "./foo/bar"
+;
+; NB: Originally there was the '#:as-str' argument, before I was
+; familiar with Racket's naming conventions.  Once I was, I
+; started messing up the argument name all the time, so I added
+; the '#:as-str?' in order to maintain backwards compatibility
+; and still fit with the conventions.  Setting either one to #t
+; means "yes, make this a string"
+;
 (define/contract (safe-build-path #:as-str? [as-str? #f] ; these two are aliases
-                                  #:as-str [as-str #f] . args)
+                                  #:as-str  [as-str  #f]
+                                  . args)
+
   (->* ()
        (#:as-str boolean? #:as-str? boolean?)
-       #:rest (listof (or/c #f 'relative "" path-string?))
+       #:rest (listof (or/c #f "" 'up 'same 'relative path-string?))
        path-string?)
-
-  ;;    NB: Originally there was the '#:as-str' argument, before I was
-  ;;    familiar with Racket's naming conventions.  Once I was, I
-  ;;    started messing up the argument name all the time, so I added
-  ;;    the '#:as-str?' in order to maintain backwards compatibility
-  ;;    and still fit with the conventions.  Setting either one to #t
-  ;;    means "yes, make this a string"
 
   ((if (or as-str as-str?) path->string identity)
    (apply build-path (filter (negate (or/c "" #f 'relative)) args))))
