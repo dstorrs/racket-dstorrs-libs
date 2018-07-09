@@ -323,6 +323,7 @@
                                     #:dict-maker     [dict-maker (current-query-as-dict-dict-maker-function)] ; defined in list-utils
                                     #:transform-dict [transform-dict (current-query-as-dict-transform-dict-function)]
                                     #:transform-data [transform-data (current-query-as-dict-transform-data-function)]
+                                    #:post-process   [post-processor identity]
                                     .
                                     params
                                     )
@@ -330,12 +331,13 @@
        (
         #:wrapper  (-> connection? (-> any))
         #:trap-exns? boolean?
-        #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
-        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
+        #:dict-maker (-> (listof pair?) dict?)     ; takes an assoc list, returns a dict
+        #:transform-data (-> any/c any/c pair?)    ; transform the input of dict-maker
+        #:transform-dict (-> dict? dict?)          ; transform the output of dict-maker
+        #:post-process     (-> dict? any)          ; transform the final result to anything
         )
        #:rest (listof any/c)
-       dict?)
+       any)
 
   (define (v->d v)
     (vector->dict  ; defined in handy/list-utils
@@ -347,12 +349,13 @@
     )
   (try [
         (define vals (flatten params))
-        (v->d
-         (wrapper db
-                  (thunk
-                   (if (null? vals)
-                       (query-row db sql)
-                       (apply (curry query-row db sql) vals)))))
+        (post-processor
+         (v->d
+          (wrapper db
+                   (thunk
+                    (if (null? vals)
+                        (query-row db sql)
+                        (apply (curry query-row db sql) vals))))))
         ]
        [catch (match-anything
                (lambda (e)
