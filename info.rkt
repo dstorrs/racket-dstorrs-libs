@@ -1,7 +1,7 @@
 #lang info
 
 (define collection "handy")
-(define version "2.8")
+(define version "2.9")
 (define test-omit-paths '("test-more.rkt"))
 
 (define deps '("html-parsing"

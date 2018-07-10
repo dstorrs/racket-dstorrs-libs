@@ -369,51 +369,37 @@
 ; Same as query-rows-as-dicts, but expects that there will be zero or
 ; one rows.  one row so it returns a dict instead of a list of dicts.
 ; If there is no such row then it returns an empty dict.
-(define/contract (query-maybe-row-as-dict keys
-                                          db
-                                          sql
+(define/contract (query-maybe-row-as-dict keys db sql
                                           #:wrapper        [wrapper    (lambda (db thnk) (thnk))]
-                                          #:trap-exns?     [trap-exns? #t]
+                                          #:trap-exns?     [trap-exns? #f]
                                           #:dict-maker     [dict-maker (current-query-as-dict-dict-maker-function)] ; defined in list-utils
                                           #:transform-dict [transform-dict (current-query-as-dict-transform-dict-function)]
                                           #:transform-data [transform-data (current-query-as-dict-transform-data-function)]
+                                          #:post-process   [post-processor identity]
                                           .
-                                          params
-                                          )
-  (->* ((non-empty-listof any/c) connection? string?)
+                                          params)
+  (->* (list? connection? string?)
        (
         #:wrapper          (-> connection? (-> any) any)
         #:trap-exns?       boolean?
-        #:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
-        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
+        #:dict-maker       (-> (listof pair?) dict?)
+        #:transform-dict   (-> dict? dict?)
+        #:transform-data   (-> any/c any/c pair?)
+        #:post-process     (-> (listof dict?) any)
         )
-       #:rest (listof any/c)
-       dict?)
-
-  (define (v->d v)
-    (vector->dict  ; defined in handy/list-utils
-     keys
-     v
-     #:dict-maker     dict-maker
-     #:transform-data transform-data
-     #:transform-dict transform-dict)
-    )
-  (try [
-        (define vals (flatten params))
-        (define res (wrapper db
-                             (thunk
-                              (if (null? vals)
-                                  (query-maybe-row db sql)
-                                  (apply (curry query-maybe-row db sql) vals)))))
-        (cond [(perl-false? res) (dict-maker)] ; #f or '()
-              [else (v->d res)])
-        ]
-       [catch (match-anything
-               (lambda (e)
-                 (cond [trap-exns? (dict-maker)]
-                       [else ((compose1 raise refine-db-exn) e)])))]))
-
+       #:rest list?
+       any)
+  (define results (query-rows-as-dicts keys db sql
+                                       #:wrapper        wrapper    
+                                       #:trap-exns?     trap-exns?
+                                       #:dict-maker     dict-maker 
+                                       #:transform-dict transform-dict 
+                                       #:transform-data transform-data 
+                                       #:post-process   post-processor 
+                                       params))
+  (if (null? results)
+      #f
+      (first results)))
 
 ;;----------------------------------------------------------------------
 
