@@ -6,7 +6,7 @@
          "../test-more.rkt"
          )
 
-(expect-n-tests 240)
+(expect-n-tests 244)
 
 (ok 1 "test harness is working")
 
@@ -434,6 +434,9 @@
        '()
        "sort num works with null")
 
+   (is (sort-num '((4) (3) (9) (1)) #:key car #:cache-keys? #t)
+       '((1) (3) (4) (9))
+       "sort-num accepts #:key and #:cache-keys? arguments")
 
    (is (sort-str (list "foo" "baz" "glux" "aaaa"))
        (list "aaaa" "baz" "foo"  "glux" )
@@ -443,14 +446,23 @@
        '()
        "sort-str works with null")
 
+   (is (sort-str '(("4") ("3") ("9") ("1")) #:key car #:cache-keys? #t)
+       '(("1") ("3") ("4") ("9"))
+       "sort-str accepts #:key and #:cache-keys? arguments")
 
+   
    (is (sort-sym (list 'foo 'baz 'glux 'aaaa))
        (list 'aaaa 'baz 'foo  'glux)
        "sort-sym works with unsorted list")
 
-   (is (sort-str '())
+   (is (sort-sym '())
        '()
        "sort-sym works with null")
+
+   (is (sort-sym '((foo) (baz) (glux) (aaaa)) #:key car #:cache-keys? #t)
+       '((aaaa) (baz) (foo) (glux))
+       "sort-sym accepts #:key and #:cache-keys? arguments")
+
 
 
    (is (sort-smart (list 'foo 'baz 'glux 'aaaa))
@@ -465,6 +477,9 @@
        (list 0 3 4 9 15)
        "sort-smart works with unsorted list of nums")
 
+   (is (sort-smart '((foo) (baz) (glux) (aaaa)) #:key car #:cache-keys? #t)
+       '((aaaa) (baz) (foo) (glux))
+       "sort-smart accepts #:key and #:cache-keys? arguments")
 
    (define bad-lst  (list 7 8 'a "x"))
    (for ((f (list sort-num sort-str sort-sym sort-smart)))

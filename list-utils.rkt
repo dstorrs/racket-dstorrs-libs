@@ -202,18 +202,31 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (sort-num lst) (-> (listof number?) list?)  (sort lst <))
-(define/contract (sort-str lst) (-> (listof string?) list?)  (sort lst string<?))
-(define/contract (sort-sym lst) (-> (listof symbol?) list?)  (sort lst symbol<?))
-(define/contract (sort-smart lst)
-  (-> (listof any/c) list?)
+(define/contract (sort-num lst #:key [key identity] #:cache-keys? [cache? #f])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
+  (sort lst  < #:key key #:cache-keys? cache?))
+
+(define/contract (sort-str lst #:key [key identity] #:cache-keys? [cache? #f])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
+  (sort lst  string<? #:key key #:cache-keys? cache?))
+
+(define/contract (sort-sym lst #:key [key identity] #:cache-keys? [cache? #f])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
+  (sort lst  symbol<? #:key key #:cache-keys? cache?))
+
+
+(define/contract (sort-smart lst #:key [key identity] #:cache-keys? [cache? #f]) 
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
   (cond [(null? lst) '()]
-        [(number? (first lst)) (sort-num lst)]
-        [(string? (first lst)) (sort-str lst)]
-        [(symbol? (first lst)) (sort-sym lst)]
-        [else (raise-arguments-error 'sort-smart
-                                     "all elements of list must of same type (number, string, or symbol)"
+        [else
+         (define func (match (key (first lst))
+                        [(? symbol?) sort-sym]
+                        [(? string?) sort-str]
+                        [(? number?) sort-num]
+                        [_ (raise-arguments-error 'sort-smart
+                                     "all elements of list must of same type (number, string, or symbol) after 'key' function is applied"
                                      "args list" lst)]))
+         (func lst #:key key #:cache-keys? cache?)]))
 
 ;;----------------------------------------------------------------------
 
