@@ -6,6 +6,8 @@
          "../test-more.rkt"
          )
 
+(expect-n-tests 36)
+
 (void (ok 1 "test harness is working"))
 
 ;; Define a struct type
@@ -122,14 +124,12 @@
    (is-type y foo? "y is a foo")
 
    (isnt x y "x and y are not equal?")
-   (ok (verify-struct #:struct x 
+   (ok (verify-struct #:struct x
                       #:funcs (list foo-b foo-c)
                       #:expected '(2 3))
        "validates when given list of tests")
-   
+
    (ok (verify-struct #:struct x #:type foo?) "validates when given a type predicate")
    ))
 
 
-
-(done-testing) ;this should be the last line in the file
