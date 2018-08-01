@@ -200,8 +200,8 @@
          (define jta         (join-table-abbrev table1 join-to))  ; c2f
          (define t1-id-field (~a (singular table1) "_id"))        ; file_id
          (define t2-id-field (~a (singular join-to) "_id"))       ; collaboration_id
-         (define t1-id       (~a t1a "." t1-id-field))            ; f.file_id
-         (define t2-id       (~a t2a "." t2-id-field))            ; c.file_id
+         (define t1-id       (~a t1a ".id")); f.id  ; t1-id-field))            ; f.file_id
+         (define t2-id       (~a t2a ".id")); c.id  ; t2-id-field))            ; c.file_id
          (define t1-link     (~a jta "." t1-id-field))            ; c2f.file_id
          (define t2-link     (~a jta "." t2-id-field))            ; c2f.collaboration_id
          (define join-type   (if left? "LEFT JOIN" "JOIN"))
