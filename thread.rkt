@@ -30,6 +30,12 @@
 (define/contract (threaded thnk)
   (-> (-> any) any)
 
-  (define thread-label (~a (rand-val "thread") ": "))
-  (parameterize ((prefix-for-say (~a (prefix-for-say) " " thread-label)))
+  (define current-prefix (prefix-for-say))
+
+  (define thread-label 
+    (cond [(empty-string? current-prefix) (~a (rand-val "thread") ": ")]
+          [else (~a (rand-val "thread") " / " current-prefix)]))
+
+  (say __WHERE:__ "about to start thread with label: " thread-label)
+  (parameterize ([prefix-for-say thread-label])
     (thread (thunk (begin0 (thnk) (sleep 0)))))) ; the sleep 0 suggests other threads should run
