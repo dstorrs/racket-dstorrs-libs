@@ -41,6 +41,9 @@
          (struct-out exn:fail:db:num-rows)
          (struct-out exn:fail:db:num-rows:zero)
          (struct-out exn:fail:db:num-rows:many)
+         (struct-out exn:fail:db:constraint)
+         (struct-out exn:fail:db:constraint:unique)
+         (struct-out exn:fail:db:constraint:check)
 
          ;;   Parameters that allows you to customize how the various
          ;;   'query...-as-dict' functions work
@@ -89,6 +92,9 @@
 (struct exn:fail:db:num-rows:zero exn:fail:db:num-rows () #:transparent)
 (struct exn:fail:db:num-rows:many exn:fail:db:num-rows () #:transparent)
 
+(struct exn:fail:db:constraint exn:fail:db (name) #:transparent)
+(struct exn:fail:db:constraint:unique exn:fail:db:constraint () #:transparent)
+(struct exn:fail:db:constraint:check  exn:fail:db:constraint () #:transparent)
 
 ;;----------------------------------------------------------------------
 
@@ -123,11 +129,20 @@
 
   (define msg (exn-message e))
 
-  (define wrong-number-of-rows (pregexp
-                                @~a{returned wrong number of rows.+?expected:\s+(\d+).+?got:\s+(\d+)}
-                                ))
-
   (define num string->number) ;; for convenience
+
+
+  (define wrong-number-of-rows
+    (pregexp
+     @~a{returned wrong number of rows.+?expected:\s+(\d+).+?got:\s+(\d+)}
+     ))
+
+  (define unique-constraint
+    (pregexp @~a{duplicate key value violates \w+ constraint "(\w+)".+}))
+
+  (define check-constraint
+    (pregexp
+     @~a{^.+? new row for relation "\w+" violates check constraint "(\w+)".+}))
 
   (match msg
     [(regexp wrong-number-of-rows (list _ expected got))
@@ -136,6 +151,13 @@
                      exn:fail:db:num-rows:many
                      )
                  msg (num expected) (num got))]
+    ;
+    [(regexp unique-constraint (list _ constraint-name))
+     (create-exn exn:fail:db:constraint:unique msg constraint-name)]
+    ;
+    [(regexp check-constraint (list _ constraint-name))
+     (create-exn exn:fail:db:constraint:check msg constraint-name)]
+    ;
     [_ e])
   )
 
@@ -390,12 +412,12 @@
        #:rest list?
        any)
   (define results (query-rows-as-dicts keys db sql
-                                       #:wrapper        wrapper    
+                                       #:wrapper        wrapper
                                        #:trap-exns?     trap-exns?
-                                       #:dict-maker     dict-maker 
-                                       #:transform-dict transform-dict 
-                                       #:transform-data transform-data 
-                                       #:post-process   post-processor 
+                                       #:dict-maker     dict-maker
+                                       #:transform-dict transform-dict
+                                       #:transform-data transform-data
+                                       #:post-process   post-processor
                                        params))
   (if (null? results)
       #f
