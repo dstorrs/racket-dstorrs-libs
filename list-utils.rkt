@@ -1,8 +1,12 @@
 #lang racket
 
-(require (only-in handy/hash hash->keyword-apply))
+(require (only-in handy/hash hash->keyword-apply)
+         handy/deprecated/list-utils
+         )
+
 (provide (all-defined-out)
          (all-from-out handy/hash)
+         (all-from-out handy/deprecated/list-utils)
          (struct-out dict-disjunction))
 
 ;;    Parameters:
@@ -20,7 +24,7 @@
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
-;; *) L : alias for 'list'
+;; *) L : alias for 'list'  (NOTE: deprecated!)
 ;; *) list->values  ; because it's dumb that this doesn't exist
 ;; *) list-remf* filter all desired elements out of a list, by default #<void>
 ;; *) list/not-null? : is it a pair and not '()? NB: checks for pair,
@@ -76,8 +80,8 @@
                ;; Nope, it didn't.
                (cons key val)))))
 
+;;----------------------------------------------------------------------
 
-(define L list)
 (define/contract (safe-first l [default '()])
   (->* (list?) (any/c) any/c)
   (cond [(null? l) default]
@@ -88,10 +92,17 @@
   (cond [(null? l) default]
         [else (rest l)]))
 
+;;----------------------------------------------------------------------
 
-(define (atom? x) (not (pair? x)))
+(define/contract (atom? x)
+  (-> any/c boolean?)
+  (not (pair? x)))
 
-(define (autobox x) (if (list? x) x (list x)))
+;;----------------------------------------------------------------------
+
+(define/contract (autobox x)
+  (-> any/c list?)
+  (if (list? x) x (list x)))
 
 ;;----------------------------------------------------------------------
 
@@ -136,15 +147,20 @@
 ;; (list 'a 'b (when x 'c) 'd)        => either '(a b c d) or '(a b #<void> d)
 ;; (list-remf* 'a 'b (when x 'c) 'd)  => either '(a b c d) or '(a b d)
 ;; (list-remf* 'a "b" #:pred string?) => '(a)
-(define (list-remf* #:pred [pred void?] . l)
+(define/contract (list-remf* #:pred [pred void?] . l)
+  (->* () (#:pred (-> list? boolean?)) #:rest list? list?)
   (remf* pred l))
-
-(define (list/not-null? l) (and (not (atom? l)) (not (null? l))))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (remove-duplicates/rec lst
-                                        #:key [extract-key identity])
+(define/contract (list/not-null? l)
+  (-> any/c boolean?)
+  (and (not (atom? l)) (not (null? l))))
+
+;;----------------------------------------------------------------------
+
+;  
+(define/contract (remove-duplicates/rec lst #:key [extract-key identity])
   (->* (list?)
        (#:key  (-> any/c any/c))
        list?)
@@ -547,14 +563,6 @@
 
 ;;----------------------------------------------------------------------
 
-; This is from before I knew that make-immutable-hash existed.  It
-; should be moved into a 'deprecated' submodule and eventually
-; eliminated.
-;
-(define alist->hash make-immutable-hash)
-
-;;----------------------------------------------------------------------
-
 (define/contract (unique lst [same? equal?] #:key [key-maker identity])
   (->* (list?) ((-> any/c any/c boolean?) #:key (-> any/c any/c)) list?)
   (remove-nulls
@@ -577,15 +585,41 @@
 
 ;;----------------------------------------------------------------------
 
+;   multi-partition
+;
+; This is like group-by, but with some additional properties and
+; capabilities.  Specifically:
+;
+;    * Items will come back in the order you want them to, not in the
+;    order they happen to occur in the source.  This is useful if you
+;    have different kinds of elements in a list -- for example, given
+;    a function that might return a valid result or throw one of
+;    various kinds of exceptions, you can multi-partition the results
+;    such that all the valid ones are in partition #1 and each of the
+;    various kinds of exceptions are all in expected slots.
+;
+;    * You can separately post process:
+;
+;        * each element
+;
+;        * each partition
+;
+;        * all data 
+;
 ;    Example:
 ;
 ;  (multi-partition #:partitions 3 #:source '(1 2 3 4 5 6 7) #:filter (curryr modulo 3))
-;     Returns: (values '(3 6) '(1 4 7) '(2 5)) ; 3mod3 goes in partition 0, 4mod3 in partition 1, etc
+;
+;     Returns: (values '(3 6) '(1 4 7) '(2 5)) ; 3mod3 goes in
+;     partition 0, 4mod3 in partition 1, etc
+;
 ;
 ;  (multi-partition #:partitions 3 #:source '(1 2 3 4 5 6 7) #:filter (curryr modulo 3)
 ;                   #:post-process-element (lambda (idx elem) (add1 elem))
 ;                   #:post-process-partition (lambda (lst) (map (curry * 2) lst)))
-;     Returns: (values '(8 14) '(4 10 16) '(6 12)) ; each element +1 as list built, then later each item in list doubled
+;
+;     Returns: (values '(8 14) '(4 10 16) '(6 12)) ; each element +1
+;     as list built, then later each item in list doubled
 (define/contract (multi-partition #:partitions num-dests
                                   #:source source
                                   #:filter                 [chooser #f]
