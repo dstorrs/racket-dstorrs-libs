@@ -55,8 +55,11 @@
 ;;    database and you want keys to match field names.  The normal
 ;;    string representation of a vector or list isn't terribly useful
 ;;    (e.g. (vector 'a 'b) => "#(a b)"), so we change them to be the
-;;    concatenation of their elements with '-' as a
-;;    separator. (e.g. (vector 'a 'b) => "a-b")
+;;    concatenation of their elements.
+;;
+;;        e.g. (vector 'a 'b) => "ab"
+;;        e.g. (list 'a 'b)   => "ab"
+;;
 (define/contract (hash-keys->strings h
                                      #:dash->underscore? [dash->underscore? #f]
                                      #:underscore->dash? [underscore->dash? #f])

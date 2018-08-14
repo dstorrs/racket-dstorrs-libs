@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 86)
+(expect-n-tests 88)
 
 (when #t
   (test-suite
@@ -223,6 +223,14 @@
    (is-type (hash-keys->strings (hash "foo" 7 'bar 8))
             immutable?
             "hash-keys->strings preserved the (im)mutability of the hash")
+
+   (is (hash-keys->strings (hash '(a b c) 8))
+       (hash "abc" 8)
+       "list keys are concatenated")
+
+   (is (hash-keys->strings (hash (vector 'a 'b 'c) 8))
+       (hash "abc" 8)
+       "list keys are concatenated")
    )
   )
 
