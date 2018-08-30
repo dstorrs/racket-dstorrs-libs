@@ -9,6 +9,7 @@
 (provide gzip*
          gunzip*
          (struct-out exn:fail:gunzip)
+         (all-from-out file/gzip file/gunzip)
          )
 
 (struct exn:fail:gunzip exn:fail ())
