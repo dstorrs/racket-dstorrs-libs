@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 110)
+(expect-n-tests 112)
 
 (when #t
   (test-suite
@@ -27,7 +27,7 @@
    (define combine (lambda (v0 v1) v1))
    (define combine/key (lambda (k v0 v1) (add1 v1)))
 
-   
+
    (is (safe-hash-union (hash) (hash 'a 1))
        (hash 'a 1)
        "success:  (safe-hash-union (hash) (hash 'a 1)) works")
@@ -44,13 +44,13 @@
               "lived: (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine combine)")
        (hash 'a 1)
        "success:  (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine combine)")
-                     
+
    (is (lives (thunk (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine/key combine/key))
               "lived: (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
        (hash 'a 2)
        "success:  (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
-                     
-       
+
+
 
    (is (safe-hash-union (mutable-hash) (hash 'a 1))
        (mutable-hash 'a 1)
@@ -68,21 +68,21 @@
               "lived: (safe-hash-union (mutable-hash 'a 7) (mutable-hash 'a 1) #:combine combine)")
        (mutable-hash 'a 1)
        "success:  (safe-hash-union (mutable-hash 'a 7) (mutable-hash 'a 1) #:combine combine)")
-                     
+
    (is (lives (thunk (safe-hash-union (mutable-hash 'a 7) (hash 'a 1) #:combine/key combine/key))
               "lived: (safe-hash-union (mutable-hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
        (mutable-hash 'a 2)
        "success:  (safe-hash-union (mutable-hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
-       
-                     
+
+
    (is (lives (thunk (safe-hash-union (hash 'a 7) (mutable-hash 'a 1) #:combine/key combine/key))
               "lived: (safe-hash-union (hash 'a 7) (mutable-hash 'a 1) #:combine/key combine/key))")
        (hash 'a 2)
        "success:  (safe-hash-union (hash 'a 7) (mutable-hash 'a 1) #:combine/key combine/key))")
-       
+
    ))
 
-   
+
 (when #t
   (test-suite
    "safe-hash-remove"
@@ -403,8 +403,8 @@
      (is (hash-remap (hash 'x 1 'y 7) #:default (hash 'y 2))
          (hash 'x 1 'y 7)
          "#:default correctly did not disturb a key that was there")
-     (is (hash-remap (hash 'x 1 'y #f) #:default (hash 'y ~a) #:value-is-default? false?)
-         (hash 'x 1 'y "y")
+     (is (hash-remap (hash 'x 1 'y #f) #:default (hash 'z 7 'y ~a) #:value-is-default? false?)
+         (hash 'x 1 'y "y" 'z 7)
          "default can generate values and will overwrite something that matched the 'value-is-default?' predicate")
      (is (hash-remap (hash 'x 1 'y #f) #:default (hash 'y ~a) #:value-is-default? #f)
          (hash 'x 1 'y "y")
@@ -446,8 +446,46 @@
                'type   "fuji"         ; overwritten with generated value
                'seller 'bob           ; added
                'taste  "taste")       ; defaulted (NB: generated from key name)
-         "complete example worked"))
-   ))
+         "complete example worked")
+     ) ;let
+
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple 'taste #f)])
+     ; default order is:  remove -> overwrite -> add -> rename -> default
+     ; we're going to do  default -> add -> overwrite -> 'rename -> remove
+
+     (is  (hash-remap h
+                      #:action-order '(default add overwrite rename remove)
+                      #:default   (hash 'thump 'tamp 'group 'food)
+                      #:add       (hash 'foo 'bar 'baz 'jaz)
+                      #:overwrite (hash 'foo 'baz)
+                      #:rename    (hash 'foo 'quux)
+                      #:remove    '(baz))
+          (hash 'group 'fruit
+                'thump 'tamp
+                'quux 'baz
+                'color 'red
+                'type 'apple
+                'taste #f)
+          "success:  hash-remap with a specified action order"))
+
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple 'taste #f)])
+     (define result (hash-remap h
+                                #:action-order '(default add overwrite rename remove)
+                                #:default   (hash 'thump (lambda (key) 'tamp) 'group 'food)
+                                #:add       (hash 'foo 'bar 'baz 'jaz)
+                                #:overwrite (hash 'foo (lambda (hsh key val) 'baz))
+                                #:rename    (hash 'foo 'quux)
+                                #:remove    '(baz)))
+     (is result
+         (hash 'group 'fruit
+               'thump 'tamp
+               'quux  'baz
+               'color 'red
+               'type 'apple
+               'taste #f)
+         "success:  hash-remap with a specified action order and value generator for #:default")
+     );let
+   ));test-suite, when
 
 (when #t
   (test-suite
