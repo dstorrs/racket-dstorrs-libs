@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 88)
+(expect-n-tests 105)
 
 (when #t
   (test-suite
@@ -20,6 +20,69 @@
        "(hash-rename-key (hash 'x 1) 'x symbol->string) works")
    ))
 
+(when #t
+  (test-suite
+   "safe-hash-union"
+
+   (define combine (lambda (v0 v1) v1))
+   (define combine/key (lambda (k v0 v1) (add1 v1)))
+
+   
+   (is (safe-hash-union (hash) (hash 'a 1))
+       (hash 'a 1)
+       "success:  (safe-hash-union (hash) (hash 'a 1)) works")
+
+   (is (safe-hash-union (hash 'b 7) (hash 'a 1))
+       (hash 'a 1 'b 7)
+       "success:  (safe-hash-union (hash 'b 7) (hash 'a 1))")
+
+   (throws (thunk (safe-hash-union (hash 'a 7) (hash 'a 1)))
+           #rx"combine failed"
+           "throws: (safe-hash-union (hash 'a 7) (hash 'a 1))")
+
+   (is (lives (thunk (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine combine))
+              "lived: (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine combine)")
+       (hash 'a 1)
+       "success:  (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine combine)")
+                     
+   (is (lives (thunk (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine/key combine/key))
+              "lived: (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
+       (hash 'a 2)
+       "success:  (safe-hash-union (hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
+                     
+       
+
+   (is (safe-hash-union (mutable-hash) (hash 'a 1))
+       (mutable-hash 'a 1)
+       "success:  (safe-hash-union (mutable-hash) (hash 'a 1)) works")
+
+   (is (safe-hash-union (mutable-hash 'b 7) (mutable-hash 'a 1))
+       (mutable-hash 'a 1 'b 7)
+       "success:  (safe-hash-union (mutable-hash 'b 7) (hash 'a 1))")
+
+   (throws (thunk (safe-hash-union (mutable-hash 'a 7) (hash 'a 1)))
+           #rx"combine failed"
+           "throws: (safe-hash-union (mutable-hash 'a 7) (hash 'a 1))")
+
+   (is (lives (thunk (safe-hash-union (mutable-hash 'a 7) (mutable-hash 'a 1) #:combine combine))
+              "lived: (safe-hash-union (mutable-hash 'a 7) (mutable-hash 'a 1) #:combine combine)")
+       (mutable-hash 'a 1)
+       "success:  (safe-hash-union (mutable-hash 'a 7) (mutable-hash 'a 1) #:combine combine)")
+                     
+   (is (lives (thunk (safe-hash-union (mutable-hash 'a 7) (hash 'a 1) #:combine/key combine/key))
+              "lived: (safe-hash-union (mutable-hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
+       (mutable-hash 'a 2)
+       "success:  (safe-hash-union (mutable-hash 'a 7) (hash 'a 1) #:combine/key combine/key))")
+       
+                     
+   (is (lives (thunk (safe-hash-union (hash 'a 7) (mutable-hash 'a 1) #:combine/key combine/key))
+              "lived: (safe-hash-union (hash 'a 7) (mutable-hash 'a 1) #:combine/key combine/key))")
+       (hash 'a 2)
+       "success:  (safe-hash-union (hash 'a 7) (mutable-hash 'a 1) #:combine/key combine/key))")
+       
+   ))
+
+   
 (when #t
   (test-suite
    "safe-hash-remove"

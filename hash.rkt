@@ -16,6 +16,7 @@
 ;; *) hash-slice          : takes a hash and a list of keys, returns the matching values
 ;; *) safe-hash-remove    : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set       : does hash-set or hash-set! as needed. Returns the hash.
+;; *) safe-hash-union     : does hash-union or hash-union! as needed. Returns the hash.
 ;; *) sorted-hash-keys    : returns sorted list of keys from the hash
 
 (provide (all-from-out racket/hash)
@@ -37,6 +38,7 @@
 
          safe-hash-remove
          safe-hash-set
+         safe-hash-union
 
          sorted-hash-keys
          )
@@ -215,6 +217,39 @@
     (if is-imm
         (hash-remove hsh k)
         (begin (hash-remove! hsh k) h))))
+
+;;----------------------------------------------------------------------
+
+;; safe-hash-union
+;;
+;; Takes a list of hashes and an optional 
+(define/contract (safe-hash-union h0
+                                  #:combine [combine (lambda args
+                                                       (raise-arguments-error
+                                                        'safe-hash-union
+                                                        "combine failed"
+                                                        "args" args))]
+                                  #:combine/key [c/k #f]
+                                  . args)
+
+  (->* (hash?)
+       (#:combine procedure? #:combine/key procedure?)
+       #:rest (listof hash?)
+       hash?)
+
+  (define unifier (if (immutable? h0)
+                      hash-union
+                      hash-union!))
+  (define combine/key (if c/k c/k (lambda (k a b) (combine a b))))
+
+  (define result
+    (for/fold ([acc h0])
+              ([arg args])
+      (unifier acc arg #:combine combine #:combine/key combine/key)))
+
+  (if (void? result)
+      h0
+      result))
 
 ;;----------------------------------------------------------------------
 
