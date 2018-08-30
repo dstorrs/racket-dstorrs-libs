@@ -22,6 +22,7 @@
 
 (provide num-rows
          refine-db-exn
+         refine/raise
          query-rows-as-dicts
          query-row-as-dict
          query-maybe-row-as-dict
@@ -160,6 +161,10 @@
     ;
     [_ e])
   )
+
+;;----------------------------------------------------------------------
+
+(define refine/raise (compose1 raise refine-db-exn))
 
 ;;----------------------------------------------------------------------
 
@@ -382,7 +387,7 @@
        [catch (match-anything
                (lambda (e)
                  (cond [trap-exns? (dict-maker)]
-                       [else ((compose1 raise refine-db-exn) e)])))]))
+                       [else (refine/raise e)])))]))
 
 ;;----------------------------------------------------------------------
 
@@ -461,7 +466,7 @@
        any)
 
   (try [(wrapper db thnk)]
-       [catch (match-anything (lambda (e) (raise (refine-db-exn e))))]
+       [catch (match-anything refine/raise)]
        [finally
         ;(say "before disconnecting.  DB is connected?: " (connected? db))
         (disconnect db)
@@ -489,7 +494,7 @@
   (cond [disconnect? (ensure-disconnect db thnk #:wrapper wrapper)]
         [else
          (try [(wrapper db thnk)]
-              [catch (match-anything (compose1 raise refine-db-exn))])]))
+              [catch (match-anything refine/raise)])]))
 
 ;;    Better name for maybe-disconnect that doesn't need the keyword
 (define/contract (disconnect-if should-disconnect? db thnk
@@ -501,7 +506,7 @@
   (cond [should-disconnect? (ensure-disconnect db thnk #:wrapper wrapper)]
         [else
          (try [(wrapper db thnk)]
-              [catch (match-anything (compose1 raise refine-db-exn))])]))
+              [catch (match-anything refine/raise)])]))
 
 
 ;;----------------------------------------------------------------------
