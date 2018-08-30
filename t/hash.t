@@ -5,7 +5,7 @@
 (require handy/hash
          handy/test-more)
 
-(expect-n-tests 105)
+(expect-n-tests 110)
 
 (when #t
   (test-suite
@@ -447,4 +447,23 @@
                'seller 'bob           ; added
                'taste  "taste")       ; defaulted (NB: generated from key name)
          "complete example worked"))
+   ))
+
+(when #t
+  (test-suite
+   "hash-slice"
+
+   (is (hash-slice (hash 'a 1 'b 2 'c 8) '(a b))
+       '(1 2)
+       "success: (hash-slice (hash 'a 1 'b 2))")
+
+   (throws (thunk (hash-slice (hash 'a 1 'b 2 'c 8) '(a b d)))
+           #px"hash-ref"
+           "throws due to missing key:  (hash-slice (hash 'a 1 'b 2 'c 8) '(a b d)))")
+
+   (is (lives (thunk (hash-slice (hash 'a 1 'b 2 'c 8) '(a b d) #f))
+              "lives:  (hash-slice (hash 'a 1 'b 2 'c 8) '(a b d) #f)")
+       '(1 2 #f)
+       "success:  (hash-slice (hash 'a 1 'b 2 'c 8) '(a b d) #f))")
+
    ))

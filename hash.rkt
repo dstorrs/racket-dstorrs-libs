@@ -35,6 +35,7 @@
          hash-meld
          hash-remap
          hash-slice
+         hash-slice*
 
          safe-hash-remove
          safe-hash-set
@@ -154,11 +155,29 @@
 
 ;;----------------------------------------------------------------------
 
-;;    Takes a list of keys, returns the hash value for each of those keys
-(define/contract (hash-slice the-hash keys)
-  (-> hash? list? list?)
+;;    Takes a hash and list of keys, returns a list of the hash values
+;;    for those keys. Any keys that are not in the hash will be
+;;    returned as the default value (#f if not specified).
+(define/contract (hash-slice the-hash keys [default 'hash-slice-default])
+  (->* (hash? list?) (any/c) list?)
   (for/list ((k keys))
-    (hash-ref the-hash k)))
+    (if (equal? default 'hash-slice-default)
+        (hash-ref the-hash k)
+        (hash-ref the-hash k default))))
+
+;;----------------------------------------------------------------------
+
+;;    Takes a hash and list of keys, returns a new hash containing
+;;    only those keys and their values. Any keys that are not in the
+;;    hash will be returned as the default value (#f if not
+;;    specified).
+(define/contract (hash-slice* the-hash keys [default 'hash-slice*-default])
+  (->* (hash? list?) (any/c) hash?)
+  (for/hash ((k keys))
+    (values k
+            (if (equal? default 'hash-slice*-default)
+                (hash-ref the-hash k)
+                (hash-ref the-hash k default)))))
 
 ;;----------------------------------------------------------------------
 
