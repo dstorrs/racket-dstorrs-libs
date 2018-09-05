@@ -629,3 +629,33 @@
 (module+ test
   (require rackunit)
   (check-equal? 0 1))
+
+;;
+;;  Extend match to allow for matching optional values in hash tables.
+;;  Code provided by: Ryan Culpepper.
+
+;; (define not-found (gensym 'not-found))
+;;   (define (not-not-found? x) (not (eq? x not-found)))
+
+;;   (begin-for-syntax
+;;     (define-syntax-class kvpat
+;;       #:description "hash key-value pattern"
+;;       ;; Note: be careful to evaluate key expr only once!
+;;       (pattern [key:expr value-pattern]
+;;                #:with pattern
+;;                #'(app (lambda (h) (hash-ref h key not-found))
+;;                       (? not-not-found? value-pattern)))
+;;       (pattern [key:expr value-pattern default:expr]
+;;                #:with pattern
+;;                #'(app (lambda (h) (hash-ref h key (lambda () default)))
+;;                       value-pattern))))
+
+;;   (define-match-expander hash-table*
+;;     (syntax-parser
+;;       [(_ kv:kvpat ...)
+;;        #'(? hash? kv.pattern ...)]))
+
+;;   (match (hash 'a 1 'b 2)
+;;     [(hash-table* ['a a] ['c c 3])
+;;      (+ a c)])
+;;   ;; => 4
