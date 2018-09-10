@@ -6,7 +6,7 @@
          "../test-more.rkt"
          )
 
-(expect-n-tests 244)
+(expect-n-tests 254)
 
 (ok 1 "test harness is working")
 
@@ -69,17 +69,24 @@
 
 (when #t
   (test-suite
-   "safe-first and safe-rest"
+   "safe-first, safe-first*, and safe-rest"
 
-   (is (safe-first '(foo bar)) 'foo "safe-first '(foo bar) is 'foo")
-   (is (safe-first '()) '() "safe-first '() is '()")
-   (for ((args (list (cons 1 2) 'a 7)))
-     (throws (thunk (safe-first args))
-             #px"expected:\\s+list\\?"
-             (format "(safe-first ~a) throws because not valid list" args)))
-   (is (safe-first '() 7) 7 "safe-first will accept a default argument and return it on null list")
+   (for ([func (list safe-first safe-first*)])
+     (is (func '(foo bar)) 'foo (~a (object-name func) " '(foo bar) is 'foo"))
+     (is (func '()) '() (~a (object-name func) " '() is '()"))
+     (is (func '() 7) 7 "(safe-first '() 7) is 7")
+     (for ((args (list (cons 1 2) 'a 7)))
+       (throws (thunk (func args))
+               #px"expected:\\s+list\\?"
+               (format "(safe-first ~a) throws because not valid list" args)))
+     (is (func '() 7) 7 (~a (object-name func) " will accept a default argument and return it on null list"))
+     )
+   (is (safe-first '((8))) '(8) "(safe-first '((8))) is '(8)")
+   (is (safe-first* '((8))) 8  "(safe-first* '((8))) is 8")
 
-   (is (safe-rest '(foo bar)) '(bar) "safe-first '(foo bar) is '(bar)")
+
+   
+   (is (safe-rest '(foo bar)) '(bar) "safe-rest '(foo bar) is '(bar)")
    (is (safe-rest '()) '() "safe-rest '() is '()")
    (for ((args (list (cons 1 2) 'a 7)))
      (throws (thunk (safe-rest args))
@@ -450,7 +457,7 @@
        '(("1") ("3") ("4") ("9"))
        "sort-str accepts #:key and #:cache-keys? arguments")
 
-   
+
    (is (sort-sym (list 'foo 'baz 'glux 'aaaa))
        (list 'aaaa 'baz 'foo  'glux)
        "sort-sym works with unsorted list")

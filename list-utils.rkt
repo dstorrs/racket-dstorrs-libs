@@ -21,6 +21,7 @@
 ;; *) autobox : ensure that its argument is a list. If not, returns (list arg)
 ;; *) compose-fifo : like 'compose' but applies args from left to right, not right to left
 ;; *) disjunction : find the elements of one dict that are not in the other
+;; *) first*  : return the leftmost atom in a list
 ;; *) in-range-inc : inclusive ranges
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
@@ -33,6 +34,7 @@
 ;; *) multi-partition : like the standard partition, but accepts multiple destination lists
 ;; *) remove-nulls : filter '()s out of a list
 ;; *) safe-first, safe-rest : first and rest, but they return specified value when given '()
+;; *) safe-first* : like safe-first, but return the leftmost atom
 ;; *) slice :  return elements of a list from index x to index y, or as much as remains
 ;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
 ;; *) sort-smart : call sort-num, sort-str, or sort-sym depending on first element of list
@@ -91,6 +93,44 @@
   (->* (list?) (any/c) any/c)
   (cond [(null? l) default]
         [else (rest l)]))
+
+;;----------------------------------------------------------------------
+
+; first*
+;
+; When given a non-null list it returns the leftmost atom in the list.
+; Example: (first* '((8))) returns 8.
+;
+; When given a non-list or null list, it throws the normal exception
+; that 'first' would throw on such data.
+(define/contract (first* lst)
+  (-> list? any/c)
+
+  (cond [(or (not (list? lst)) (null? lst))  (first lst)] ; deliberately fail
+        [(list? (car lst)) (first* (car lst))]
+        [else (first lst)]))
+
+;;----------------------------------------------------------------------
+
+; (safe-first* lst default)
+;   (->* (list?) (any/c) any/c)
+; default = '()
+;
+; When given a non-null list it returns the leftmost atom in the list.
+; Example: (safe-first* '((8))) returns 8.
+;
+; When given a non-list, it throws the normal exception that 'first'
+; would throw on such data.
+;
+; When given a null list it returns the specified default value or '()
+; if none was supplied.
+(define/contract (safe-first* lst [default '()])
+  (->* (list?) (any/c) any/c)
+
+  (cond [(not (list? lst)) (first lst)] ; deliberately fail so as to throw standard exception
+        [(null? lst) default]
+        [(list? (car lst)) (safe-first* (car lst))]
+        [else (first lst)]))
 
 ;;----------------------------------------------------------------------
 
