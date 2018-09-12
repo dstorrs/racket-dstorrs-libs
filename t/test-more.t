@@ -2,7 +2,9 @@
 
 #lang racket
 (require "../test-more.rkt"
-         "../utils.rkt")
+         (only-in handy/utils say))
+
+(expect-n-tests 177)
 
 (define (inner-test thnk [should-pass #t])
   (define result #f)
@@ -304,7 +306,7 @@
  (delete-test-file)
  (not-ok (file-exists? filepath) "before creation, file does not exist")
 
- (lives (thunk (make-test-file filepath)) "make-test-file lived") 
+ (lives (thunk (make-test-file filepath)) "make-test-file lived")
 
  (delete-test-file)
 
@@ -329,7 +331,7 @@
  (let ((the-path "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe/foo"))
    (with-handlers ([void void]) ; ignore exceptions
      (delete-directory/files "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe"))
-   
+
    (ok (not (directory-exists? "/tmp/jasdlfhadkhkwhkdhfgjljlzdldjoe"))
        "about to run make-test-file with a directory that doesn't exist.  Fortunately, the directory really doesn't exist")
    (lives (thunk (make-test-file the-path)) "make-test-file with a path to a non-existent dir lives")
@@ -380,20 +382,24 @@
    (is-approx 1 -5 #:threshold 10 "1 is approx -5 if #:threshold is 10")
 
    (throws (thunk (is-approx '(a b c) '(d e f)))
-           #px"arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"
-           "throws when given non-numeric and no #:with arg")
+           #px"arguments to is-approx / isnt-approx must be numeric or else you must include either a #:key function that returns a numeric value or a #:diff-with that will handle the appropriate non-numeric data"
+           "throws when given non-numeric and no #:key arg")
 
-   (is-approx '(a b c) '(d e f) #:with length "(is-approx '(a b c) '(d e f) #:with length)")
-   (is-approx '(a b c) '(d e f g) #:with length "(is-approx '(a b c) '(d e f g) #:with length), since default threshold is 1")
-   (isnt-approx '(a b c) '(d e f g) #:with length #:threshold 0 "(isnt-approx '(a b c) '(d e f g) #:with length #:threshold 0)")
+   (is-approx   '(a b c) '(d e f)   #:key length "(is-approx '(a b c) '(d e f) #:key length)")
+   (is-approx   '(a b c) '(d e f g) #:key length "(is-approx '(a b c) '(d e f g) #:key length), since default threshold is 1")
+   (isnt-approx '(a b c) '(d e f g) #:key length #:threshold 0 "(isnt-approx '(a b c) '(d e f g) #:key length #:threshold 0)")
 
-   (is (is-approx '(a b c) '(d e f g h) #:threshold 10 #:with length
-                  "(is-approx '(a b c) '(d e f g h) #:threshold 10 #:with length)")
+   (is (is-approx '(a b c) '(d e f g h) #:threshold 10 #:key length
+                  "(is-approx '(a b c) '(d e f g h) #:threshold 10 #:key length)")
        2
-       "(is-approx '(a b c) '(d e f g) #:with length #:threshold 10) returns 2")
+       "(is-approx '(a b c) '(d e f g h) #:key length #:threshold 10) returns 2")
 
    (define now (current-seconds)) ; epoch time
    (is-approx  (and (sleep 1) (current-seconds)) now "(myfunc) took no more than 1 second")
+
+   (is-approx 7 5   #:threshold 3 #:abs-diff? #t "7 is approximately 5 when threshold is 3 and abs-diff? is #t. (7 - 5 = 2, which is between -3 and +3)")
+   (is-approx 5 7   #:threshold -3 #:abs-diff? #f "5 is approximately 7 when threshold is -3 and abs-diff? is #f (5 - 2 = -2), which is between -3 and 0)")
+   (isnt-approx 7 5 #:threshold -3 #:abs-diff? #f "7 is NOT approximately 5 when threshold is -3 and abs-diff? is #f (7 - 5 = +2, which is NOT between -3 and 0)")
 
    (let ([myfunc (thunk (make-list 7 'x))])
      (is-approx  (length (myfunc)) 8 "(myfunc) returned a list of about 8 elements"))
@@ -405,22 +411,53 @@
    (for ([num (in-range 3 7)])
      (let ([myfunc (thunk (make-list num 'x))])
        (is-approx  (length (myfunc))
-                   6
+                   3
                    #:threshold 3
                    #:abs-diff? #f
                    "(myfunc) => list of 3-6 elements")))
 
+   (for ([num (in-range 0 3)])
+     (isnt-approx num
+                  6
+                  #:threshold 3
+                  #:abs-diff? #f
+                  (~a num " is NOT within the expected range (6-9)")))
+
    (is-approx  (hash 'age 8)
                (hash 'age 9)
-               #:with (curryr hash-ref 'age)
+               #:key (curryr hash-ref 'age)
                "age is about 9")
 
    ;  The following is a silly example but it shows some of the versatility
+   (for ([str '(foobar Foobar glug Glug)])
+     (is-approx  ((thunk (symbol->string str)))
+                 "f"
+                 #:key (compose1 char->integer (curryr string-ref 0) string-downcase)
+                 #:abs-diff? #f
+                 (~a "(myfunc) returns " str "; it starts with either 'f', 'F', 'g', or 'G'")))
+
+   ;  The same test as above except showing that it doesn't accept
+   ;  things starting with 'e' or 'h' (case-insensitive)
+   (for ([str '(eomer Eomer hotel Hotel)])
+     (isnt-approx  ((thunk (symbol->string str)))
+                   "f"
+                   #:key (compose1 char->integer (curryr string-ref 0) string-downcase)
+                   #:abs-diff? #f
+                   (~a "(myfunc) returns " str "; it starts with something that is NOT 'f', 'F', 'g', or 'G'")))
+
+   ;  More complex examples:
    (is-approx  ((thunk "Foobar"))
                "f"
-               #:with (compose1 char->integer (curryr string-ref 0) string-downcase)
-               #:abs-diff? #f
+               #:key (compose1 char->integer (curryr string-ref 0) string-downcase)
                "(myfunc) returns a string that starts with 'f', 'F', 'g', or 'G'")
+
+   (is-approx  (hash 'username "tom")
+               (hash 'username "tomas")
+               #:key  (curryr hash-ref 'username)
+               #:abs-diff? #f
+               #:diff-with  (lambda (got expected) (regexp-match (regexp got) expected))
+               #:compare (lambda (diff threshold) (not (false? diff)))
+               "first username matched part of second username")
 
    )
   )
@@ -428,5 +465,3 @@
 ;;  @@TODO
 ;; https://docs.racket-lang.org/overeasy/index.html
 ;; - capture data from stdout and stderr, report on that
-
-(done-testing) ; this should be the last line in the file
