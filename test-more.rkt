@@ -1,8 +1,6 @@
 #lang racket
 
-(require racket
-         racket/splicing
-         "utils.rkt"
+(require handy/utils
          )
 
 (provide prefix-for-test-report ; parameter printed at start of each test
@@ -13,13 +11,13 @@
          is-false          ; Alias for not-ok
 
          is                ; A value is what it should be
-         isnt              ; ...or shouldn't be
+         isnt              ; ...or is not what it shouldn't be
 
          like              ; A value matches a regex
          unlike            ; A value does not match a regex
 
          lives             ; expression does not throw an exception
-         dies              ; expression does throw
+         dies              ; expression does throw an exception
          throws            ; throws an exception and that exn matches a predicate
 
          matches           ; value matches a predicate
@@ -43,14 +41,17 @@
 
          test-more-check   ; fundamental test procedure.  All others call this
 
-         inc-test-num!     ; tests start at 1.  Use this to change test number (but why?)
+
          current-test-num  ; return current test number
+
+         ;  You generally should not be using these, but you can if you want
+         inc-test-num!     ; tests start at 1.  Use this to change test number (but why?)
          next-test-num     ; return next test number and optionally modify it
          )
 
 
 ;;======================================================================
-;;    The racket testing module has a few problems:
+;;    The racket testing module has a few things I wish it did differently:
 ;;
 ;; 1) The test function names are verbose and redundant.  check-this, check-that, etc
 ;;
@@ -61,19 +62,14 @@
 ;; 3) The tests return nothing.  You can't do conditional tests like:
 ;;        (unless (is os 'Windows) (ok test-that-won't-pass-on-windows))
 ;;
+;;
 ;; This module addresses those problems.  It's named for, and largely a
 ;; clone of, the Test::More library on Perl's CPAN, although some
-;; features are not implemented.
+;; of the Perl version's features are not implemented.
 ;;
 ;; http://search.cpan.org/~exodist/Test-Simple-1.302120/lib/Test/More.pm
 ;; for more details on the original.
 ;;
-;; ----------------------------------------------------------------------
-;; NOTE: For testing purposes, some 'private' functions are exported.
-;; Their names all start with '_'; these functions should not be called
-;; unless you know what you're doing.
-;; ----------------------------------------------------------------------
-
 ;;    TODO:
 ;; - Add 'disable this test suite' keyword
 ;; - Add 'TODO this test suite' keyword
@@ -109,12 +105,20 @@
 ; If neither this nor done-testing are seen before end of file, a
 ; warning will be reported when the tests are run.
 ;
+; Typically, if you use this you would set it at top of file and then
+; not modify it.  One reason that you might change it pater would be
+; if you had some conditional tests that you determined should be
+; skipped.
+;
 (define expect-n-tests (make-parameter #f))
 
 ;----------------------------------------------------------------------
-; Internal helper functions to set or get the number of tests passed  and failed.
+; Set or get the number of tests passed  and failed.
 ;
-; Call as (tests-passed) to get the number, (tests-passed 2) to add 2 to the number and return it
+; Call as (tests-passed) to get the number, (tests-passed 2) to add 2
+; to the number and return it.  Don't change the test numbers unless
+; you know what you're doing.
+;
 (define (tests-passed [inc 0])
   (_tp (+ (_tp) inc))
   (_tp))
@@ -126,10 +130,6 @@
 ;----------------------------------------------------------------------
 
 ;  Track which test we're on. (i.e. test 1, 2, 3....)
-;  splicing-let allows us to share state between these functions and
-;  then treat the functions as though they were declared at top level
-;  without exposing the actual 'test-num' variable to the rest of the
-;  module.
 (define current-test-num (make-parameter 0))
 (define (inc-test-num! inc) (current-test-num (+ (current-test-num) inc)))
 (define (next-test-num #:inc [should-increment #t])
@@ -174,6 +174,17 @@
 ;                    #:report-expected-as [report-expected-as #f] ; show this as expected on fail
 ;                    #:report-got-as      [report-got-as #f]      ; show this as got on fail
 ;                    #:return             [return #f]             ; return value
+;
+; The 'got' value will be sent through handy/utils 'unwrap-val'
+; function before use, meaning that:
+;
+;    - If it's a procedure,   it will be executed with no arguments
+;    - If it's a promise,     it will be forced
+;    - If it's anything else, it will be used as is
+;
+; In the first two cases, whatever is returned will be the actual
+; value used.
+;
 (define/contract
   (test-more-check  #:got           got
                     #:expected      [expected #t]
@@ -194,7 +205,7 @@
         #:return any/c
         )
        any)
-  (let* ([success (op got expected)]
+  (let* ([success (op (unwrap-val got) expected)]
          [ok-str (if success "ok " "NOT ok ")]
          [expected-msg (~v (or report-expected-as expected))]
          [got-msg (~v (or report-got-as got))]
@@ -226,12 +237,8 @@
 ;    (ok #f)       ; fail.  returns #f
 ;    (ok 7 "foo")  ; success, returns 7, prints "ok <test-num> - foo"
 ;
-; Note the use of unwrap-val.  If pass in a thunk it will be called
-; and the return value is used as the value of 'got'.  If you pass a
-; promise it will be forced.  If you pass anything else, that's the
-; value of got.
 (define (ok val [msg ""])
-  (test-more-check #:got (unwrap-val val)
+  (test-more-check #:got val
                    #:msg msg
                    #:show-expected/got? #f
                    #:op (lambda (a b) (not (false? a)))
@@ -301,7 +308,7 @@
 ;
 (define (is val expected [msg ""] [op1 #f] #:op [op2 #f])
   (define op (or op1 op2 equal?))
-  (test-more-check #:got (unwrap-val val)
+  (test-more-check #:got val
                    #:expected expected
                    #:msg msg
                    #:op op
@@ -319,7 +326,7 @@
               [op1 #f]
               #:op [op2 #f])
   (define op (or op1 op2 (negate equal?)))
-  (test-more-check #:got (unwrap-val val)
+  (test-more-check #:got val
                    #:expected expected
                    #:msg msg
                    #:report-expected-as (~a "<anything but " (~v expected) ">")
@@ -332,7 +339,7 @@
 ; Checks that the value matches a regex. Returns the result of the regexp match
 (define/contract (like val regex [msg ""])
   (->* (any/c regexp?) (string?) any)
-  (define res (regexp-match regex (unwrap-val val)))
+  (define res (regexp-match regex val))
   (test-more-check #:got (true? res) ; force to boolean
                    #:return res
                    #:msg msg
@@ -348,7 +355,7 @@
   (->* (any/c regexp?)
        (string?)
        any/c)
-  (test-more-check #:got (unwrap-val val)
+  (test-more-check #:got val
                    #:expected #t
                    #:msg msg
                    #:report-expected-as (~a "<something NOT matching " regex ">")
@@ -378,7 +385,7 @@
 
 ;;----------------------------------------------------------------------
 
-; (define/contract (throws thnk pred [msg ""])
+; (define/contract (throws thnk pred [msg ""] #:strip-message? [strip-message? #t])
 ;
 ; Verify that a thunk DOES throw an exception and that the exception
 ; matches a specified predicate.
@@ -393,20 +400,20 @@
 ; one argument but it can be anything, not just an (exn?)
 ;
 ; NOTE: When providing a string as the value, it is matched against
-; the non-boilerplate part of the exception message (assuming there is
-; an exception).  That means that everything up to the first
+; the exception message (assuming there is
+; an exception).  If #:strip-message? is true then everything up to the first
 ; "expected: " is snipped off, as is everything after the last \n
 ;
-;    (define (get-msg e) (if (exn? e) (exn-message e) e))
-;    (let* ([str (regexp-replace #px"^.+?expected: " (get-msg the-exception) "")]
-;           [str (regexp-replace #px"(.+)\n.+$" str "\\1")])
-;        str)
-(define/contract (throws thnk pred [msg ""])
-  (->* ((-> any)
-        any/c
-        )
-       (string?)
+(define/contract (throws thnk pred [msg ""] #:strip-message? [strip-message? #t])
+  (->* ((-> any) any/c)
+       (string? #:strip-message? boolean?)
        any/c)
+
+  ;; (say "in throws")
+  ;; (say "thnk: " thnk)
+  ;; (say "pred: " (~v pred))
+  ;; (say "msg: " msg)
+  ;; (say "strip?: " strip-message?)
 
   ;;    'thnk' should generate an exception
   ;;    'msg'  is what test-more-check will report
@@ -419,13 +426,16 @@
   (define (remove-exn-boilerplate s)
     (let* ([str (regexp-replace #px"^.+?expected: " (get-msg s) "")]
            [str (regexp-replace #px"(.+)\n.+$" str "\\1")])
+      ;(say "remove boilerplate, string is: " str)
       str))
 
+  ;(say "run thunk")
   (define (accept-all e) #t)
   (define-values (e threw)
     (with-handlers ((exn:break? (lambda (e) (raise e))) ; if user hit ^C, don't eat it
                     (accept-all (lambda (e) (values e #t))))
       (values (thnk) #f)))
+  ;(say "after ran thunk")
 
   (define pred-needs-string (or (string? pred) (regexp? pred)))
   (define e-can-be-string   (or (string? e) (exn? e)))
@@ -433,12 +443,20 @@
     (raise-arguments-error 'throws
                            "predicate was (string or regexp) but thrown value was not (string or exn)"
                            "thrown value" e))
-
-  (cond [(false? threw)    (test-more-check #:got #f  #:msg (~a msg " [DID NOT THROW]")  #:return e)]
-        [(procedure? pred) (test-more-check #:msg msg #:got (and (pred e) #t) #:report-got-as e #:return e)]
-        [(string? pred)    (test-more-check #:msg msg #:got (equal? pred (remove-exn-boilerplate e)) #:report-got-as e  #:return e)]
-        [(regexp? pred)    (test-more-check #:msg msg #:got (regexp-match? pred (get-msg e)) #:report-got-as e  #:return e)]
-        [else              (test-more-check #:msg msg #:got e  #:expected pred #:return e)]
+  ;(say "after raise args")
+  (cond [(false? threw)    ;(say "false")
+         (test-more-check #:got #f  #:msg (~a msg " [DID NOT THROW]")  #:return e)]
+        [(procedure? pred) ;(say "proc")
+         (test-more-check #:msg msg #:got (and (pred e) #t) #:report-got-as e #:return e)]
+        [(string? pred)    ;(say "string")
+         (test-more-check #:msg msg
+                          #:got (equal? pred ((if strip-message? remove-exn-boilerplate get-msg) e))
+                          #:report-got-as e  #:return e)]
+        [(regexp? pred)    ;(say "regexp. msg is: " (~v (get-msg e)))
+         ;(say "pred is: " pred)
+         (test-more-check #:msg msg #:got (regexp-match? pred (get-msg e)) #:report-got-as e  #:return e)]
+        [else              ;(say "else")
+                           (test-more-check #:msg msg #:got e  #:expected pred #:return e)]
         )
   )
 
@@ -586,7 +604,7 @@
 ; detect.  This prefix is prepended to the current value of the
 ; prefix-for-say parameter, so this:
 ;
-;    (parameterize ([prefix-for-say "my awesome message"])
+;    (parameterize ([prefix-for-diag "my awesome message"])
 ;        (diag "foobar"))
 ;
 ; ...is the same as (displayln "\t#### my awesome messagefoobar")
@@ -600,28 +618,41 @@
 ;;----------------------------------------------------------------------
 
 ; (define/contract (is-approx got expected [msg ""]
-;                             #:threshold [threshold 1]
-;                             #:with [with identity]
-;                             #:op [op <=]
-;                             #:abs-diff? [abs-diff? #t])
+;                             #:threshold  [threshold 1]
+;                             #:key        [key identity]
+;                             #:compare    [compare #f] ; value based on threshold
+;                             #:abs-diff?  [abs-diff? #t])
+;   (->* (any/c any/c)
+;        (string?
+;         #:threshold any/c
+;         #:key (-> any/c any/c)              ; (key got)  (key expected)
+;         #:compare (-> any/c any/c any/c)    ; (compare diff threshold)
+;         #:diff-with (-> any/c any/c any/c)  ; (diff-with  got expected)
+;         #:abs-diff? boolean?)               ; use abs on diff before compare
+;        any/c)
 ;
-;    op          boolean comparator used to determine success.  Gets two arguments. Default: <=
-;    with        A function that will generate a numeric value from each of 'got', 'expected'
 ;    threshold   How close do they need to be?  Default is 1.
-;    abs-diff?   Use the absolute value of the difference?
+;    key         Function that generates a (usually numeric, but could be anything)
+;                     value from each of 'got', 'expected'
+;    compare     two arguments, returning anything. true return value means success
+;    abs-diff?   Use the absolute value of the difference?  Determines the acceptable ranges.
 ;
 ; Test that two values ('got' and 'expected') are approximately the
-; same within a certain threshold.  got and expected must either be
-; numeric or you must provide a 'with' function that generates an
-; exact numeric value when given one of the values.  We then check if
-; difference between those values is within the specified threshold.
-; More specifically, we check if this is true:
+; same within a certain threshold.
 ;
-;    (define diff (- (with expected) (with got)))
-;    (op (if abs-diff? (abs diff) diff) threshold)
+; 'got' and 'expected' can be anything, but will usually be numbers.
+; You may provide a 'key' function that generates a new value based on
+; the value of 'got' and 'expected'
 ;
-; op is usually going to be <= but you can specify something else if
-; you want.  (e.g. '>' to say "it must be MORE different than this")
+; If you don't provide a #:compare function, then it will assume that
+; the values are numeric and the default acceptable ranges will depend
+; on the value of threshold and abs-diff?:
+;
+;   abs-diff?   threshold   default value for compare (argument is diff or abs(diff))
+;    #t/#f         0          (= 0 diff)
+;    #t           != 0        (<= diff (abs threshold))
+;    #f           < 0         ((between/c threshold   0) diff)
+;    #f           > 0         ((between/c 0 threshold) diff)
 ;
 ; Examples:
 ;
@@ -631,101 +662,197 @@
 ; (for ([num (in-range 3 7)])
 ;   (let ([myfunc (thunk (make-list num 'x))])
 ;     (is-approx  (length (myfunc))
-;                 6
+;                 3
 ;                 #:threshold 3
 ;                 #:abs-diff? #f
 ;                 "(myfunc) => list of 3-6 elements")))
 ; (is-approx  (hash 'age 8)
 ;             (hash 'age 9)
-;             #:with (curryr hash-ref 'age)
+;             #:key (curryr hash-ref 'age)
 ;             "age is about 9")
 ;
-; ;  The following is a silly example but it shows some of the versatility
+; ;  More complex examples:
 ; (is-approx  ((thunk "Foobar"))
 ;             "f"
-;             #:with (compose1 char->integer (curryr string-ref 0) string-downcase)
+;             #:key (compose1 char->integer (curryr string-ref 0) string-downcase)
 ;             "(myfunc) returns a string that starts with 'f', 'F', 'g', or 'G'")
 ;
+; (is-approx  (hash 'username "bobby")
+;             (hash 'username "tom")
+;             #:threshold "tommy"
+;             #:key  (curryr hash-ref 'username)
+;             #:diff-with  (lambda (got expected) (substring got 0 (string-length expected)))
+;             #:compare (lambda (diff threshold) (regexp-match (regexp diff) threshold))
+;             "'bobby' has a Levenshtein distance <= 3 to 'tommy'")
+;
 (define/contract (is-approx got expected [msg ""]
-                            #:threshold [threshold 1]
-                            #:with [with identity]
-                            #:op [op <=]
+                            #:threshold  [threshold 1]
+                            #:key        [orig-key #f]
+                            #:compare    [comp #f]
+                            #:diff-with  [orig-diff-with #f]
                             #:abs-diff?  [abs-diff? #t]
                             )
   (->* (any/c any/c)
        (string?
-        #:threshold (and/c exact? (or/c zero? positive?))
-        #:with (-> any/c number?)
-        #:op (-> any/c any/c boolean?)
-        #:abs-diff? boolean?)
+        #:threshold any/c
+        #:key (-> any/c any/c)              ; (key got)  (key expected)
+        #:compare (-> any/c any/c any/c)    ; (compare diff threshold)
+        #:diff-with (-> any/c any/c any/c)  ; (diff-with  got expected)
+        #:abs-diff? boolean?)               ; use abs on diff before compare
        any/c)
-  (define with-name       (object-name with))
-  (define got-val         (unwrap-val got))
-  (define expected-val    (unwrap-val expected))
-  (define got-result      (with got-val))
-  (define expected-result (with expected-val))
 
-  ;; (say "with-name: " with-name)
-  ;; (say "got-val: "   got-val)
-  ;; (say "expected-val: " expected-val)
-  ;; (say "got-result: " got-result)
-  ;; (say "expected-result: " expected-result)
+  (define key             (or orig-key identity))
+  (define diff-with       (or orig-diff-with -))
+  (define key-name        (object-name key))
+  (define got-result      (key got))
+  (define expected-result (key expected))
 
-  (when (not (andmap number? (list got-result expected-result)))
+  (when (and (not orig-key)
+             (not orig-diff-with)
+             (not (andmap number? (list got-result expected-result))))
     (raise-arguments-error 'is-approx
-                           "arguments to is-approx / isnt-approx must be numeric or you must include a #:with function to return an exact numeric measurement from 'got' and 'expected'"
+                           "arguments to is-approx / isnt-approx must be numeric or else you must include either a #:key function that returns a numeric value or a #:diff-with that will handle the appropriate non-numeric data"
                            "got" got
-                           "expected" expected
-                           "with" with-name
-                           "(with <got>)" got-result
-                           "(with <expected>)" expected-result))
+                           "expected" expected))
 
-  (define diff (- expected-result got-result))
-  ;  (say "diff: " diff)
 
-  (test-more-check #:got (op (if abs-diff? (abs diff) diff) threshold)
-                   #:expected #t
-                   #:msg msg
-                   #:report-expected-as (format "(~a ~a) => ~a" with-name expected expected-result)
-                   #:report-got-as (format "(~a ~a) => ~a" with-name got got-result)
-                   #:return diff)
+  ; If you provided a compare function, use it.  If not, assume that
+  ; diff and threshold are numbers and do the following:
+  ;
+  ;   abs-diff?   threshold   default value for compare (argument is diff or abs(diff))
+  ;    #t/#f         0          (= 0 diff)
+  ;    #t           != 0        (<= diff (abs threshold))
+  ;    #f           < 0         ((between/c threshold   0) diff)
+  ;    #f           > 0         ((between/c 0 threshold) diff)
+  (define compare (cond [(procedure? comp)     comp]
+                        [else
+                         (match (list abs-diff? threshold)
+                           [(list _ 0)
+                           ;(say "zero")
+                            =]
+                           [(list #f _) #:when (negative? threshold)
+                           ;(say "negative threshold")
+                            (λ (diff threshold) ((between/c threshold 0) diff))]
+                           [(list #t _)
+                           ;(say "use abs")
+                            (λ (diff threshold) ((between/c 0 (abs threshold)) (abs diff)))]
+                           [(list #f thresh)
+                           ;(say "do not use abs")
+                            (λ (diff threshold) ((between/c 0 threshold) diff))])]))
+
+ ;(say "key-name: " key-name)
+ ;(say "got: "   got)
+ ;(say "expected: " expected)
+ ;(say "got-result: " got-result)
+ ;(say "expected-result: " expected-result)
+ ;(say "compare: " compare)
+
+  (define diff ((if abs-diff? abs identity) (diff-with got-result expected-result)))
+ ;(say "diff: " diff)
+ ;(say "compare result: " (compare diff threshold))
+
+  (test-more-check #:got                got-result
+                   #:expected           expected-result
+                   #:op                 (λ (got expected) (compare diff threshold))
+                   #:msg                msg
+                   #:report-expected-as (format "(~a ~a) => ~a" key-name expected expected-result)
+                   #:report-got-as      (format "(~a ~a) => ~a" key-name got got-result)
+                   #:return             diff)
 
   )
 
 ;;----------------------------------------------------------------------
 
 ; (define/contract (isnt-approx got expected [msg ""]
-;                               #:threshold [threshold 1]
-;                               #:with [with identity]
-;                               #:op [op >]
-;                               #:abs-diff?  [abs-diff? #t])
+;                             #:threshold  [threshold 1]
+;                             #:key        [key identity]
+;                             #:compare    [compare #f] ; value based on threshold
+;                             #:abs-diff?  [abs-diff? #t])
+;   (->* (any/c any/c)
+;        (string?
+;         #:threshold any/c
+;         #:key (-> any/c any/c)              ; (key got)  (key expected)
+;         #:compare (-> any/c any/c any/c)    ; (compare diff threshold)
+;         #:diff-with (-> any/c any/c any/c)  ; (diff-with  got expected)
+;         #:abs-diff? boolean?)               ; use abs on diff before compare
+;        any/c)
 ;
 ; Same as is-approx but tests that it's outside the threshold
 (define/contract (isnt-approx got expected [msg ""]
-                              #:threshold [threshold 1]
-                              #:with [with identity]
-                              #:op [op #f]
-                              #:abs-diff?  [abs-diff? #t]
+                              #:threshold    [threshold 1]
+                              #:key          [orig-key #f]
+                              #:compare      [comp #f]
+                              #:diff-with    [orig-diff-with #f]
+                              #:abs-diff?    [abs-diff? #t]
                               )
   (->* (any/c any/c)
-       (string? #:threshold (and/c exact? (or/c zero? positive?))
-                #:with (-> any/c exact?)
-                #:op   (-> any/c any/c any/c)
-                #:abs-diff? boolean?)
+       (string?
+        #:threshold any/c
+        #:key (-> any/c any/c)              ; (key got)  (key expected)
+        #:compare (-> any/c any/c any/c)    ; (compare diff threshold)
+        #:diff-with (-> any/c any/c any/c)  ; (diff-with  got expected)
+        #:abs-diff? boolean?)               ; use abs on diff before compare
        any/c)
 
-  (define comp
-    (cond [(procedure? op) op]
-          [abs-diff? >]
-          [else (lambda (n)
-                  (cond [(negative? n) (< n (* -1 threshold))]
-                        [else (> n threshold)]))]))
+  (define key             (or orig-key identity))
+  (define diff-with       (or orig-diff-with -))
+  (define key-name        (object-name key))
+  (define got-result      (key got))
+  (define expected-result (key expected))
 
-  (is-approx got expected msg
-             #:threshold threshold
-             #:with with
-             #:op comp
-             #:abs-diff? abs-diff?)
+  (when (and (not orig-key)
+             (not orig-diff-with)
+             (not (andmap number? (list got-result expected-result))))
+    (raise-arguments-error 'is-approx
+                           "arguments to is-approx / isnt-approx must be numeric or else you must include either a #:key function that returns a numeric value or a #:diff-with that will handle the appropriate non-numeric data"
+                           "got" got
+                           "expected" expected))
+
+  ; If you provided a compare function, use it.  If not, assume that
+  ; diff and threshold are numbers and do the following:
+  ;
+  ;   abs-diff?   threshold   default value for compare (argument is diff or abs(diff))
+  ;    #t/#f         0          (not (= 0 diff))
+  ;    #t           != 0        (not (<= diff (abs threshold)))
+  ;    #f           < 0         (not ((between/c threshold   0) diff))
+  ;    #f           > 0         (not ((between/c 0 threshold) diff))
+  (define compare (cond [(procedure? comp)     comp]
+                        [else
+                         (negate
+                          (match (list abs-diff? threshold)
+                            [(list _ 0)
+                            ;(say "zero")
+                             =]
+                            [(list #f _) #:when (negative? threshold)
+                            ;(say "negative threshold")
+                             (λ (diff threshold) ((between/c threshold 0) diff))]
+                            [(list #t _)
+                            ;(say "use abs")
+                             (λ (diff threshold) ((between/c 0 (abs threshold)) (abs diff)))]
+                            [(list #f thresh)
+                            ;(say "do not use abs")
+                             (λ (diff threshold) ((between/c 0 threshold) diff))]))]))
+
+ ;(say "key-name: " key-name)
+ ;(say "got: "   got)
+ ;(say "expected: " expected)
+ ;(say "got-result: " got-result)
+ ;(say "expected-result: " expected-result)
+ ;(say "compare: " compare)
+
+
+  (define diff ((if abs-diff? abs identity) (diff-with got-result expected-result)))
+ ;(say "diff: " diff)
+ ;(say "compare result: " (compare diff threshold))
+
+  (test-more-check #:got                got-result
+                   #:expected           expected-result
+                   #:op                 (λ (got expected) (compare diff threshold))
+                   #:msg                msg
+                   #:report-expected-as (format "(~a ~a) => ~a" key-name expected expected-result)
+                   #:report-got-as      (format "(~a ~a) => ~a" key-name got got-result)
+                   #:return             diff)
+
   )
 
 ;;----------------------------------------------------------------------
