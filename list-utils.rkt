@@ -14,6 +14,7 @@
 ;; *) current-transform-data-function
 ;; *) current-transform-data-function
 ;; *) make-transform-data-func
+;; *) make-transform-data-func*
 
 ;;    Functions:
 ;; *) alist->hash alist : turn an alist like '((a . 1) (b . 2)) into an immutable hash
@@ -81,6 +82,58 @@
                    (return (cons key (func val)))))
                ;; Nope, it didn't.
                (cons key val)))))
+
+;;----------------------------------------------------------------------
+
+;  This is similar to make-transform-data-func except that it matches
+;  all clauses in order.  Comparison using data returned from a
+;  Postgres DB.
+;
+;     ;   Nothing that comes back from a PG query is a list, so the
+;     ;   second clause will never match.
+;     (make-transform-data-func pg-array? pg-array->list
+;                               (curry equal? (list sql-null)) '())
+;
+;     ;   Here, the pg-arrays will be converted to lists and then the
+;     ;   lists will be checked to see if they consist of only a sql-null.
+;     ;   This would be a common case when using LEFT JOIN.
+;     (make-transform-data-func* pg-array? pg-array->list
+;                                (curry equal? (list sql-null)) '())
+(define/contract (make-transform-data-func* . args)
+  (->* ()
+       ()
+       #:rest (and/c (listof any/c) (compose even? length))
+       (-> any/c any/c pair?))
+
+  ;    Example:
+  ;
+  ;    (define cleaner (make-transform-data-func* pg-array? pg-array->list
+  ;                                               #t    'true
+  ;                                               void? #f
+  ;                                               (curry equal? (list sql-null)) '())))
+  ;
+  ;    (cleaner 'friends (pg-array "bob" "charlie")   => (cons 'friends '("bob" "charlie"))
+  ;    (cleaner 'true?   #t                           => (cons 'true? 'true)
+  ;    (cleaner 'nothing (void)                       => (cons 'nothing #f)
+  ;    (cleaner 'false?  #f                           => (cons 'false? #f)  ; unchanged
+  ;    (cleaner 'phones  (pg-array sql-null))         => (cons 'phones '()) ; two changes!
+  ;
+  (define pred/func-pairs
+    (step-by-n
+     (lambda (p f)
+       (define pred (if (procedure? p) p (curry equal? p))) ; e.g. pg-array?
+       (define func (if (procedure? f) f (lambda _ f)))     ; e.g. pg-array->list
+       (cons pred func))
+     args))
+  
+  (lambda (key orig-val)  ; e.g.  'phones  (pg-array sql-null)
+    (for/fold ([result (cons key orig-val)])
+              ([pred/func pred/func-pairs]) ; test against all predicate/func pairs in turn
+      (define val (cdr result))
+      (match pred/func
+        [(cons pred func)
+         (cond [(pred val) (cons key (func val))]
+               [else       result])]))))
 
 ;;----------------------------------------------------------------------
 
@@ -199,7 +252,7 @@
 
 ;;----------------------------------------------------------------------
 
-;  
+;
 (define/contract (remove-duplicates/rec lst #:key [extract-key identity])
   (->* (list?)
        (#:key  (-> any/c any/c))
@@ -271,7 +324,7 @@
   (sort lst  symbol<? #:key key #:cache-keys? cache?))
 
 
-(define/contract (sort-smart lst #:key [key identity] #:cache-keys? [cache? #f]) 
+(define/contract (sort-smart lst #:key [key identity] #:cache-keys? [cache? #f])
   (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
   (cond [(null? lst) '()]
         [else
@@ -280,8 +333,8 @@
                         [(? string?) sort-str]
                         [(? number?) sort-num]
                         [_ (raise-arguments-error 'sort-smart
-                                     "all elements of list must of same type (number, string, or symbol) after 'key' function is applied"
-                                     "args list" lst)]))
+                                                  "all elements of list must of same type (number, string, or symbol) after 'key' function is applied"
+                                                  "args list" lst)]))
          (func lst #:key key #:cache-keys? cache?)]))
 
 ;;----------------------------------------------------------------------
@@ -644,7 +697,7 @@
 ;
 ;        * each partition
 ;
-;        * all data 
+;        * all data
 ;
 ;    Example:
 ;

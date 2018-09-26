@@ -6,7 +6,7 @@
          "../test-more.rkt"
          )
 
-(expect-n-tests 254)
+(expect-n-tests 259)
 
 (ok 1 "test harness is working")
 
@@ -814,11 +814,22 @@
 
 (when #t
   (test-suite
-   "make-transform-data-func"
+   "make-transform-data-func and make-transform-data-func*"
 
    (let ([func (make-transform-data-func false? 7 integer? 'a string? string->symbol)])
      (is (func 'foo 'a) (cons 'foo 'a) "doesn't touch symbol vals")
      (is (func 8 #f) (cons 8 7)  "converts #f to 7")
      (is (func 'a 9) (cons 'a 'a) "converts ints to 'a")
      (is (func 'a "foo") (cons 'a 'foo) "converts strings to symbols"))
+
+
+   (let ([func (make-transform-data-func* false? 7.8
+                                          integer? 'a
+                                          hash? "bar"
+                                          string? (curry ~a "foo"))])
+     (is (func 'foo list)  (cons 'foo list) "doesn't touch procedures")
+     (is (func 'foo 'a) (cons 'foo 'a) "doesn't touch symbols")
+     (is (func 8 #f) (cons 8 7.8)  "converts #f to 7")
+     (is (func 'a 9) (cons 'a 'a) "converts ints to 'a")
+     (is (func 'a (hash)) (cons 'a "foobar") "converts hash to string, then prepends foo"))
    ))
