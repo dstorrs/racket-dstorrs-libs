@@ -2,7 +2,6 @@
 
 (provide (all-defined-out))
 
-
 ;;(define/contract (placeholders-for lst [start-from 1] #:for-update? [for-update? #f])
 ;;  (->* (list?) (exact-positive-integer? #:for-update? boolean?) string?)
 ;;
@@ -69,7 +68,6 @@
   (let ((vals (if (list? first-element)
                   data
                   (list data))))
-    ;;    (say "vals: " vals)
     (define-values (row-placeholders ignored)
       (for/fold ([lst '()]
                  [placeholder-num start-from])
@@ -137,9 +135,9 @@
 
 ;;--------------------------------------------------------------------------------
 
-;; (define/contract (many-to-many-join table1 join-to #:left? [left? #f])
+;; (many-to-many-join table1 join-to #:left? [left? #f] #:skip-first? [skip-first? #f])
 ;;   (->* (string? (or/c string? (non-empty-listof string?)))
-;;        (#:left? boolean?)
+;;        (#:left? boolean? #:skip-first? boolean)
 ;;        string?)
 ;;
 ;;  ASSUMPTIONS:
@@ -157,34 +155,56 @@
 ;; (many-to-many-join "collaborations" "files")
 ;; Return: "collaborations c JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
 ;;
+;;    ; Join two tables together with left joins
+;; (many-to-many-join "collaborations" "files" #:left? #t)
+;; Return: "collaborations c LEFT JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id LEFT JOIN files f ON c2f.file_id = f.id"
+;;
+;;    ; Join two tables together but don't mention the first one
+;;    ; (presumably because it was already joined earlier in the SQL
+;;    ; that you're building)
+;; (many-to-many-join "collaborations" "files" #:skip-first? #t)
+;; Return: "JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id JOIN files f ON c2f.file_id = f.id"
+;;
+;;    ; Combine the functionality of the above two
+;; (many-to-many-join "collaborations" "files" #:skip-first? #t #:left? #t)
+;; Return: "LEFT JOIN collaborations_to_files c2f ON c.id = c2f.collaboration_id LEFT JOIN files f ON c2f.file_id = f.id"
+;;
 ;;    ; Join three tables by way of a central table.
+;;    ; i.e.  users is m2m with endpoints and m2m with collaborations
+;;
 ;; (many-to-many-join "users" '("endpoints" "collaborations"))
 ;; Return: "users u JOIN endpoints_to_users e2u on e2u.user_id = u.id JOIN endpoints e ON e2u.endpoint_id = e.id JOIN collaborations_to_users c2u ON c2u.user_id = u.id JOIN collaborations c ON c2u.collaboration_id = c.id"
 ;;
 ;;   NOTE: You *must* join through a central table. Joining from one
 ;;   end of the chain does not work, since there is not a direct
-;;   connection between the tables on the ends.
+;;   connection between the tables on the ends.  In this example,
+;;   there is no collaborations_to_endpoints table.  The function has
+;;   no way of knowing that, so it will return the appropriate SQL
+;;   string, it's just that the string won't work in your DB.
 ;;
 ;; (many-to-many-join "endpoints" '("users" "collaborations")) ; RESULT INVALID
 ;; Return: "endpoints e JOIN endpoints_to_users e2u ON e2u.endpoint_id = e.id JOIN users u ON e2u.user_id = u.id JOIN collaborations_to_endpoints c2e ON c2e.endpoint_id = e.id JOIN collaborations c ON c2e.collaboration_id = c.id"
 ;;
 ;;    THE ABOVE SQL DOES NOT WORK if there is no collaborations_to_endpoints table
 ;;
-(define/contract (many-to-many-join table1 join-to #:left? [left? #f])
+(define/contract (many-to-many-join table1 join-to #:left? [left? #f] #:skip-first? [skip-first? #f])
   (->* (string? (or/c string? (non-empty-listof string?)))
-       (#:left? boolean?)
+       (#:left? boolean? #:skip-first? boolean?)
        string?)
 
   ;  NB: string-ref returns a char and we want a string, hence the ~a
-  (define t1a         (~a (string-ref table1 0)))          ; e.g. collaborations => c
+  (define t1a (~a (string-ref table1 0))) ; e.g. collaborations => c
 
   (cond [(list? join-to)
          (define lst (for/list ([to join-to])
-                       (many-to-many-join table1 to)))
-         (string-join (cons (car lst)
+                       (many-to-many-join table1 to #:left? left? #:skip-first? skip-first?)))
+         (define result 
+           (string-join (cons (car lst)
                             (map (lambda (s)
                                    (string-trim s @~a{@table1 @t1a }))
-                                 (cdr lst))))]
+                                 (cdr lst)))))
+         (cond [skip-first? (string-trim result @~a{@table1 @t1a })]
+               [else result])]
         [else
          (define (singular str)
            (define res (regexp-match #px"^(.+)s$" str))
@@ -206,7 +226,11 @@
          (define t2-link     (~a jta "." t2-id-field))            ; c2f.collaboration_id
          (define join-type   (if left? "LEFT JOIN" "JOIN"))
          
-         @~a{@table1 @t1a @join-type @join-table @jta ON @t1-id = @t1-link @join-type @join-to @t2a ON @t2-link = @t2-id}
+         (define start @~a{@table1 @t1a })
+         (~a (if skip-first?
+                 ""
+                 start) 
+             @~a{@join-type @join-table @jta ON @t1-id = @t1-link @join-type @join-to @t2a ON @t2-link = @t2-id})
          ]))
 
 ;;--------------------------------------------------------------------------------
