@@ -6,7 +6,7 @@
          "../test-more.rkt"
          )
 
-(expect-n-tests 259)
+(expect-n-tests 267)
 
 (ok 1 "test harness is working")
 
@@ -437,6 +437,10 @@
        (list 0 3 4 9 15)
        "sort num works with unsorted list of nums")
 
+   (is (sort-num (list 9 3 15 4 0) #:asc? #f)
+       (reverse (list 0 3 4 9 15))
+       "sort num works with unsorted list of nums and asc? #f")
+
    (is (sort-num '())
        '()
        "sort num works with null")
@@ -448,6 +452,10 @@
    (is (sort-str (list "foo" "baz" "glux" "aaaa"))
        (list "aaaa" "baz" "foo"  "glux" )
        "sort-str works with unsorted list")
+
+   (is (sort-str (list "foo" "baz" "glux" "aaaa") #:asc? #f)
+       (reverse (list "aaaa" "baz" "foo"  "glux" ))
+       "sort-str works with unsorted list and #:asc? #f")
 
    (is (sort-str '())
        '()
@@ -462,6 +470,10 @@
        (list 'aaaa 'baz 'foo  'glux)
        "sort-sym works with unsorted list")
 
+   (is (sort-sym (list 'foo 'baz 'glux 'aaaa) #:asc? #f)
+       (reverse (list 'aaaa 'baz 'foo  'glux))
+       "sort-sym works with unsorted list")
+
    (is (sort-sym '())
        '()
        "sort-sym works with null")
@@ -469,6 +481,18 @@
    (is (sort-sym '((foo) (baz) (glux) (aaaa)) #:key car #:cache-keys? #t)
        '((aaaa) (baz) (foo) (glux))
        "sort-sym accepts #:key and #:cache-keys? arguments")
+
+   (is (sort-bool '(#t #f #f #t))
+       '(#t #t #f #f)
+       "sort-bool works")
+
+   (is (sort-bool '(#t #f #f #t) #:asc? #f)
+       (reverse '(#t #t #f #f))
+       "sort-bool works with #:asc? #f")
+
+   (is (sort-bool '((#t) (#f) (#f) (#t)) #:key car)
+       '((#t) (#t) (#f) (#f))
+       "sort-bool accepts #:key")
 
 
 
@@ -488,6 +512,14 @@
        '((aaaa) (baz) (foo) (glux))
        "sort-smart accepts #:key and #:cache-keys? arguments")
 
+   (is (sort-smart  '(#t #f #f #t))
+       '(#t #t #f #f)
+       "sort-smart handles bools")
+
+   (is (sort-smart  '(#t #f #f #t) #:asc? #f)
+       '(#f #f #t #t)
+       "sort-smart handles bools and sorts reversed")
+   
    (define bad-lst  (list 7 8 'a "x"))
    (for ((f (list sort-num sort-str sort-sym sort-smart)))
      (throws (thunk (f bad-lst))

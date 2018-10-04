@@ -37,7 +37,7 @@
 ;; *) safe-first, safe-rest : first and rest, but they return specified value when given '()
 ;; *) safe-first* : like safe-first, but return the leftmost atom
 ;; *) slice :  return elements of a list from index x to index y, or as much as remains
-;; *) sort-num, sort-str, sort-sym : shorthand for (sort) with number<?, string<?, or symbol<?
+;; *) sort-num, sort-str, sort-sym, sort-bool : shorthand for sort with appropriate comparator
 ;; *) sort-smart : call sort-num, sort-str, or sort-sym depending on first element of list
 ;; *) step-by-n : repeatedly call a function on next N elements of a list
 ;; *) symbols->keywords  : takes a list of symbols, returns a sorted list of keywords
@@ -125,7 +125,7 @@
        (define func (if (procedure? f) f (lambda _ f)))     ; e.g. pg-array->list
        (cons pred func))
      args))
-  
+
   (lambda (key orig-val)  ; e.g.  'phones  (pg-array sql-null)
     (for/fold ([result (cons key orig-val)])
               ([pred/func pred/func-pairs]) ; test against all predicate/func pairs in turn
@@ -311,31 +311,42 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (sort-num lst #:key [key identity] #:cache-keys? [cache? #f])
-  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
-  (sort lst  < #:key key #:cache-keys? cache?))
+(define/contract (sort-num lst #:key [key identity] #:cache-keys? [cache? #f] #:asc? [asc? #t])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean? #:asc? boolean?) list?)
+  (define comparator (if asc? < >))
+  (sort lst comparator #:key key #:cache-keys? cache?))
 
-(define/contract (sort-str lst #:key [key identity] #:cache-keys? [cache? #f])
-  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
-  (sort lst  string<? #:key key #:cache-keys? cache?))
+(define/contract (sort-str lst #:key [key identity] #:cache-keys? [cache? #f] #:asc? [asc? #t])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean? #:asc? boolean?) list?)
+  (define comparator (if asc? string<?  (negate string<?)))
+  (sort lst comparator #:key key #:cache-keys? cache?))
 
-(define/contract (sort-sym lst #:key [key identity] #:cache-keys? [cache? #f])
-  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
-  (sort lst  symbol<? #:key key #:cache-keys? cache?))
+(define/contract (sort-sym lst #:key [key identity] #:cache-keys? [cache? #f] #:asc? [asc? #t])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean? #:asc? boolean?) list?)
+  (define comparator (if asc? symbol<?  (negate symbol<?)))
+  (sort lst comparator #:key key #:cache-keys? cache?))
 
+(define/contract (sort-bool lst #:key [key identity] #:cache-keys? [cache? #f] #:asc? [asc? #t])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean? #:asc? boolean?) list?)
+  (sort lst #:key key #:cache-keys? cache?
+        (if asc?
+            (lambda (x y) (not (false? x))) ; sort #t first
+            (lambda (x y) (false? x)))))
 
-(define/contract (sort-smart lst #:key [key identity] #:cache-keys? [cache? #f])
-  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean?) list?)
+(define/contract (sort-smart lst #:key [key identity] #:cache-keys? [cache? #f] #:asc? [asc? #t])
+  (->* (list?) (#:key (-> any/c any/c) #:cache-keys? boolean? #:asc? boolean?) list?)
   (cond [(null? lst) '()]
         [else
-         (define func (match (key (first lst))
-                        [(? symbol?) sort-sym]
-                        [(? string?) sort-str]
-                        [(? number?) sort-num]
-                        [_ (raise-arguments-error 'sort-smart
-                                                  "all elements of list must of same type (number, string, or symbol) after 'key' function is applied"
-                                                  "args list" lst)]))
-         (func lst #:key key #:cache-keys? cache?)]))
+         (define func
+           (match (key (first lst))
+             [(? symbol?) sort-sym]
+             [(? string?) sort-str]
+             [(? number?) sort-num]
+             [(? boolean?) sort-bool]
+             [_ (raise-arguments-error 'sort-smart
+                                       "all elements of list must be symbol, string, number, or bool"
+                                       "args list" lst)]))
+         (func lst #:key key #:cache-keys? cache? #:asc? asc?)]))
 
 ;;----------------------------------------------------------------------
 
