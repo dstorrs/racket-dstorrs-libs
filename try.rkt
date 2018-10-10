@@ -1,6 +1,8 @@
-#lang racket
+#lang racket/base
 
-(require (for-syntax syntax/parse))
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/function)
 
 ;;  PURPOSE: Racket's with-handlers has poor end weight; it puts the
 ;;  error conditions first, distracting from the actual point of the

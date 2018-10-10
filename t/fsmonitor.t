@@ -1,15 +1,11 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "../test-more.rkt"
-         "../utils.rkt"
-         "../fsmonitor.rkt"
-         db
+(require db
+         racket/file
          racket/runtime-path
-		 )
-
-
+         "../test-more.rkt")
 
 (define-runtime-path thisdir ".")
 (define-runtime-path testdir "./data-fsmonitor-test-data")

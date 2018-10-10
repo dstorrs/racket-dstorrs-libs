@@ -1,10 +1,13 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "../list-utils.rkt"
-         "../test-more.rkt"
-         )
+(require racket/bool
+         racket/format
+         racket/function
+         racket/list
+         "../list-utils.rkt"
+         "../test-more.rkt")
 
 (expect-n-tests 267)
 
@@ -85,7 +88,7 @@
    (is (safe-first* '((8))) 8  "(safe-first* '((8))) is 8")
 
 
-   
+
    (is (safe-rest '(foo bar)) '(bar) "safe-rest '(foo bar) is '(bar)")
    (is (safe-rest '()) '() "safe-rest '() is '()")
    (for ((args (list (cons 1 2) 'a 7)))
@@ -519,7 +522,7 @@
    (is (sort-smart  '(#t #f #f #t) #:asc? #f)
        '(#f #f #t #t)
        "sort-smart handles bools and sorts reversed")
-   
+
    (define bad-lst  (list 7 8 'a "x"))
    (for ((f (list sort-num sort-str sort-sym sort-smart)))
      (throws (thunk (f bad-lst))

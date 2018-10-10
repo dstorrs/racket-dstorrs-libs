@@ -1,11 +1,14 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require handy/utils
+(require handy/files/compression
          handy/test-more
-         handy/files/compression
-         )
+         handy/utils
+         racket/file
+         racket/format
+         racket/function)
+
 (expect-n-tests 39)
 
 (void (ok 1 "test harness working"))

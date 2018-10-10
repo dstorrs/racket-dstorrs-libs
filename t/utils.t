@@ -1,6 +1,6 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
 ;;   NOTE: There's a bunch of tests in here for the 'handy/hash'
 ;;   functions.  These tests are redundant with the ones in hash.t
@@ -10,10 +10,14 @@
 ;;   require just handy/hash if you don't want the other stuff from
 ;;   utils.
 
-(require "../utils.rkt"
-         "../test-more.rkt"
+(require racket/file
+         racket/format
+         racket/function
+         racket/port
+         racket/promise
          racket/runtime-path
-         )
+         "../test-more.rkt"
+         "../utils.rkt")
 
 (expect-n-tests 293)
 

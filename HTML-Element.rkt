@@ -1,17 +1,17 @@
-#lang racket
+#lang racket/base
 
-(require net/url
-         net/url-connect
-         openssl
-         rackunit
-         racket/pretty
-         "list-utils.rkt" ; for atom?
-         "web.rkt"        ; for web/call
-         "try.rkt"
-         html-parsing
+(require html-parsing
+         net/url
+         racket/contract/base
+         racket/contract/region
+         racket/format
+         racket/list
+         racket/string
          sxml
+         "list-utils.rkt"
+         "try.rkt"
          "utils.rkt"
-         )
+         "web.rkt")
 
 (provide (all-defined-out)
          (all-from-out sxml))

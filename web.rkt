@@ -1,8 +1,13 @@
-#lang racket
+#lang racket/base
 
-(require net/url
-         html-parsing
-         )
+(require html-parsing
+         net/url
+         racket/bool
+         racket/contract/base
+         racket/contract/region
+         racket/function
+         racket/port
+         racket/system)
 
 ;;----------------------------------------------------------------------
 ;;    Check if a url-ish thing refers to a local resource or one on

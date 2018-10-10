@@ -1,4 +1,11 @@
-#lang at-exp racket
+#lang at-exp racket/base
+
+(require racket/contract/base
+         racket/contract/region
+         racket/format
+         racket/function
+         racket/list
+         racket/string)
 
 (provide (all-defined-out))
 

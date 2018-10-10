@@ -1,10 +1,13 @@
-#lang racket
+#lang racket/base
 
-(require "utils.rkt")
+(require racket/contract/base
+         racket/contract/region
+         racket/format
+         racket/function
+         "utils.rkt")
 
 (provide execute-thunk
-         threaded
-         )
+         threaded)
 
 ;;======================================================================
 ;;    Functions for conveniently threading your code.
@@ -32,7 +35,7 @@
 
   (define current-prefix (prefix-for-say))
 
-  (define thread-label 
+  (define thread-label
     (cond [(empty-string? current-prefix) (~a (rand-val "thread") ": ")]
           [else (~a (rand-val "thread") " / " current-prefix)]))
 

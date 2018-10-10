@@ -1,12 +1,14 @@
 #!/usr/bin/env racket
 
-#lang racket
+#lang racket/base
 
 (require net/url
+         racket/function
+         racket/port
          racket/runtime-path
          "../HTML-Element.rkt"
-         "../web.rkt"
-         "../test-more.rkt")
+         "../test-more.rkt"
+         "../web.rkt")
 
 ;;    Constants for tests
 (define-runtime-path main-path  "data/20160802_Latest_EDGAR_Filings/main_page.html")

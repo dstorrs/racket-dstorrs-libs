@@ -1,18 +1,20 @@
-#lang racket
+#lang racket/base
 
 ;;    syntax->keyword and struct/kw were lifted from:
 ;;
 ;; http://www.greghendershott.com/2015/07/keyword-structs-revisited.html
 
-(require (for-syntax racket/syntax
+(require (for-syntax racket/base
+                     racket/syntax
                      syntax/parse)
-         "list-utils.rkt"
-         )
+         racket/contract/base
+         racket/contract/region
+         racket/function
+         "list-utils.rkt")
 
 (provide struct/kw
          hash->struct/kw
-         verify-struct
-         )
+         verify-struct)
 
 ;;; Example usage:
 ;;
