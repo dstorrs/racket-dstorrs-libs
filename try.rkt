@@ -214,11 +214,12 @@
            ))]
     ))
 
-
-
 (define-syntax (defatalize stx)
   (syntax-parse stx
     [(defatalize body0 body1 ...)
-     #'(try [body0 body1 ...][catch ((lambda (e) #t) identity)])]))
+     #'(with-handlers ([exn:break? raise]
+                       [(lambda (e) #t) identity])
+         body0
+         body1 ...)]))
 
 (provide  (all-defined-out))
