@@ -14,8 +14,22 @@
 
 (struct exn:fail:gunzip exn:fail ())
 
-;; (define/contract (gzip* in-file [out-file #f] #:remove-original? [remove-original? #f])
-;;    (->*  (path-string?) (path-string? #:remove-original? boolean?) path-string?)
+;; (define/contract (gzip* in-file
+;;                         [out-file #f]
+;;                         #:remove-original? [remove-original? #f]
+;;                         #:exists           [exists-flag 'error])
+;;   (->*  (path-string?)
+;;         (path-string?
+;;          #:remove-original? boolean?
+;;          #:exists (or/c 'error 'truncate))
+;;         path-string?)
+;;
+;; file/gzip offers the 'gzip' function to compress a file with the
+;; gzip algorithm, defaulting the output filepath if necessary.  gzip*
+;; wraps it and offers two additional value points:
+;;
+;;    1) gzip* will not by default overwrite an existing file
+;;    2) gzip* returns the output filepath
 ;;
 ;; Most of the time, when you want to compress a file you want to know
 ;; where it ended up.  That's fine if you're specifying the path but
@@ -24,16 +38,43 @@
 ;; true value then the source file will be deleted after the
 ;; compression.
 ;;
+;; If you specify the out-file, great.  If you don't then it defaults
+;; to in-file + ".gz".
+;;
+;; If the destination file exists then the behavior is determined by
+;; the value passed to #:exists.
+;;     'error     (DEFAULT) means that it will throw exn:fail:filesystem.
+;;     'truncate  means that it will overwrite the contents of the file
+;;
+;; As long as you use the default 'error flag, you can be confident that two separate threads will not 
 (define/contract (gzip* in-file
                         [out-file #f]
-                        #:remove-original? [remove-original? #f])
+                        #:remove-original? [remove-original? #f]
+                        #:exists           [exists-flag 'error])
   (->*  (path-string?)
         (path-string?
-         #:remove-original? boolean?)
+         #:remove-original? boolean?
+         #:exists (or/c 'error 'truncate))
         path-string?)
 
   (define out-filepath (or out-file (path-add-extension in-file ".gz" #".")))
+
+  ; create or truncate the file that we will compress to.  By default
+  ; the exists-flag is 'error, which means that if the already exists
+  ; then this will thrown exn:fail:filesystem.  This ensures that two
+  ; instances of gzip* cannot stomp each other via race condition.
+  ;
+  ; You can use #:exists 'truncate if you want to overwrite an
+  ; existing file, but that opens you up to race conditions if two
+  ; threads are attempting to gzip to the same file.
+  ;
+  (open-output-file out-filepath #:exists exists-flag)
+
+  ; If we get to here then we didn't blow up, so it's okay to do the
+  ; compression, which will overwrite the placeholder file that we
+  ; created via open-output-file
   (gzip in-file out-filepath)
+
   (and remove-original? (file-exists? out-filepath) (delete-file in-file))
   out-filepath)
 
@@ -81,7 +122,7 @@
            (lambda (file archive-supplied?)
              (define result (path-string->string (output-path-or-maker file archive-supplied?)))
              (set! out-filepath result)
-             result)]             
+             result)]
           [else
            (lambda (file archive-supplied?)
              (define result  (build-path out-dir file))
