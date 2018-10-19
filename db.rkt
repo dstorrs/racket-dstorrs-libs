@@ -526,3 +526,49 @@
   (ensure-disconnect db thnk #:wrapper call-with-transaction))
 
 ;;----------------------------------------------------------------------
+
+
+
+;; (define sqlite-introspection-sql-hash
+;;   (hash
+;;    ; List information on all tables in the DB.
+;;    ; Returns:  type | name | tbl_name | rootpage | sql |  (NB: sql is the CREATE statement)
+;;    'tables @~a{SELECT * FROM sqlite_master WHERE type = 'table'}
+;;    ;
+;;    ; List all fields in a given table
+;;    ; Returns: cid | name | type | notnull | dflt_value | pk |
+;;    ; (NB: primary key field(s) have 'pk' field set to 1, rest are set to 0)
+;;    'fields (list @~a{SELECT * FROM pragma_table_info($1)} 'param)
+;;    ;
+;;    ; List all indices in the DB
+;;    ; Returns: type | name | tbl_name | rootpage | sql.  sql is the CREATE statement
+;;    'indexes  @~a{SELECT * FROM sqlite_master WHERE type = 'index'}
+;;    ;
+;;    ; List all foreign keys in a specific table.
+;;    ; Returns: id | seq | table | from | to | on_update | on_delete | match
+;;    ; Example: '(#(0 0 "people" "people_id" #<sql-null> "NO ACTION" "NO ACTION" "NONE")))
+;;    'foreign-keys  (λ (table-name) (~a "PRAGMA foreign_key_list(" table-name ")"))
+;;    ;
+;;    ; List all indexed columns in the DB
+;;    ; Returns:  | indexed-columns |
+;;    ; Example:  '(#("employees.username") #("people.name")))
+;;    'indexed-columns
+;;    @~a{
+;;        SELECT DISTINCT m.name || '.' || ii.name AS 'indexed-columns'
+;;               FROM sqlite_master AS m,
+;;               pragma_index_list(m.name) AS il,
+;;               pragma_index_info(il.name) AS ii
+;;               WHERE m.type='table' ORDER BY 1
+;;               }
+;;    ))
+
+;; (define (sqlite-introspection-sql sql-statement-name [arg #f])
+;;   (define stmt (hash-ref  sqlite-introspection-sql-hash sql-statement-name))
+;;   (cond [(procedure? stmt) (stmt arg)]
+;;         [else stmt]))
+
+;; (define (sqlite-introspect conn sql-statement-name [arg #f])
+;;   (define stmt (sqlite-introspection-sql sql-statement-name arg))
+;;   (match stmt
+;;     [(list sql 'param) (apply (curry query-rows conn sql) (autobox arg))]
+;;     [_ (query-rows conn stmt)]))
