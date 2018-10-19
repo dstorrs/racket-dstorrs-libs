@@ -1,8 +1,17 @@
-#lang racket
+#lang racket/base
 
-(require (only-in handy/hash hash->keyword-apply)
-         handy/deprecated/list-utils
-         )
+(require handy/deprecated/list-utils
+         (only-in handy/hash
+                  hash->keyword-apply)
+         racket/bool
+         racket/contract/base
+         racket/contract/region
+         racket/dict
+         racket/function
+         racket/list
+         racket/match
+         racket/sequence
+         racket/stream)
 
 (provide (all-defined-out)
          (all-from-out handy/hash)

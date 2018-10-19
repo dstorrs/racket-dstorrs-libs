@@ -1,8 +1,10 @@
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "try.rkt"
-         "utils.rkt"
-         )
+(require racket/contract/base
+         racket/contract/region
+         racket/file
+         racket/format
+         "utils.rkt")
 
 (provide watch-dir-or-tree)
 

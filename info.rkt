@@ -8,7 +8,5 @@
                "base"
                "db-lib"
                "rackunit-lib"
-               "sxml"
-               ))
-(define build-deps '("at-exp-lib"
-                     ))
+               "sxml"))
+(define build-deps '("at-exp-lib"))

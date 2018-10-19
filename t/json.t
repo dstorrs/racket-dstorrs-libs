@@ -1,12 +1,12 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "../utils.rkt"
+(require racket/format
+         racket/function
+         racket/list
          "../json.rkt"
-         "../test-more.rkt"
-         json
-		 )
+         "../test-more.rkt")
 
 (ok #t "testing harness works")
 

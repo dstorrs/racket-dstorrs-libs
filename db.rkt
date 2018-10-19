@@ -1,13 +1,19 @@
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require db
-         "utils.rkt"
+(require (for-syntax racket/base)
+         db
+         racket/contract/base
+         racket/contract/region
+         racket/dict
+         racket/format
+         racket/function
+         racket/list
+         racket/match
+         "exceptions.rkt"
          "list-utils.rkt"
          "sql.rkt"
          "try.rkt"
-         "exceptions.rkt"
-         )
-
+         "utils.rkt")
 
 ;======================================================================
 ;  A collection of convenience functions for working with the DB.

@@ -1,7 +1,15 @@
-#lang racket
+#lang racket/base
 
-(require racket/hash) ; for hash-union
+(require racket/bool
+         racket/contract/base
+         racket/contract/region
+         racket/format
+         racket/function
+         racket/hash
+         racket/list
+         racket/match)
 
+ ; for hash-union
 ;; *) hash->keyword-apply : take a function and a hash.  Assume the
 ;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) hash-key-exists?    : alias for hash-has-key? because I always forget the name

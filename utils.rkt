@@ -1,6 +1,17 @@
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "hash.rkt")
+(require (for-syntax racket/base)
+         racket/bool
+         racket/contract/base
+         racket/contract/region
+         racket/file
+         racket/format
+         racket/function
+         racket/match
+         racket/path
+         racket/port
+         racket/promise
+         "hash.rkt")
 
 (provide (all-from-out "hash.rkt")
          prefix-for-say

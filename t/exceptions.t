@@ -1,12 +1,12 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "../utils.rkt"
-         "../try.rkt"
-         "../test-more.rkt"
+(require racket/contract/base
+         racket/format
+         racket/function
          "../exceptions.rkt"
-         )
+         "../test-more.rkt")
 
 (ok #t "test harness is working")
 
@@ -15,17 +15,17 @@
 
  (lives (thunk (exn:fail:insufficient-space/kw
                 #:requested 7
-                #:available 8 
+                #:available 8
                 #:request-source 'foo))
         "happy path of exn:fail:insufficient-space/kw lives")
  (define exn
    (lives (thunk (exn:fail:insufficient-space/kw
                   #:msg "overruled!"
                   #:requested 7
-                  #:available 8 
+                  #:available 8
                   #:request-source 'foo))
           "happy path of exn:fail:insufficient-space/kw lives"))
- (like (exn-message exn) #px"overruled!" "successfully overruled message") 
+ (like (exn-message exn) #px"overruled!" "successfully overruled message")
  )
 
 (when #t
@@ -42,9 +42,9 @@
           @~a{Lives: (verify-arg "next-piece" 'apple (or/c 'apple 'pear) 'check-fruit-type)}
           )
 
-   (throws (thunk 
+   (throws (thunk
             (verify-arg "requested-space" 'bob exact-positive-integer? 'has-sufficient-space))
-           @pregexp{has-sufficient-space:\s+'requested-space' must be exact-positive-integer\?\s+requested-space:\s+'bob}   
+           @pregexp{has-sufficient-space:\s+'requested-space' must be exact-positive-integer\?\s+requested-space:\s+'bob}
            @~a{throws expected message: (verify-arg "requested-space" 'bob exact-positive-integer? 'has-sufficient-space)})
    ;; )
 

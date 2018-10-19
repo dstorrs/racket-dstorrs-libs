@@ -1,14 +1,16 @@
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require (for-syntax syntax/parse))
+(require (for-syntax racket/base)
+         racket/contract/base
+         racket/contract/region
+         racket/format)
 
 (provide (struct-out exn:fail:insufficient-space)
          exn:fail:insufficient-space/c
          exn:fail:insufficient-space/kw
          create-exn
          create/raise-exn
-         verify-arg
-         )
+         verify-arg)
 
 ;;======================================================================
 ;;  Functions for easy creation and management of exceptions, as well

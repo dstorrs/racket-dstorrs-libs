@@ -1,7 +1,15 @@
-#lang racket
+#lang racket/base
 
-(require handy/utils
-         )
+(require (for-syntax racket/base)
+         handy/utils
+         racket/bool
+         racket/contract/base
+         racket/contract/region
+         racket/file
+         racket/format
+         racket/function
+         racket/match
+         racket/string)
 
 (provide prefix-for-test-report ; parameter printed at start of each test
          prefix-for-diag        ; parameter printed at front of each (diag ...) message

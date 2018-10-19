@@ -1,8 +1,15 @@
 #!/usr/bin/env racket
 
-#lang racket
-(require "../test-more.rkt"
-         (only-in handy/utils say))
+#lang racket/base
+(require (only-in handy/utils
+                  say)
+         racket/bool
+         racket/file
+         racket/format
+         racket/function
+         racket/list
+         racket/port
+         "../test-more.rkt")
 
 (expect-n-tests 177)
 

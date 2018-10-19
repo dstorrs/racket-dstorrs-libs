@@ -1,16 +1,17 @@
-#lang racket
+#lang racket/base
 
-(require file/gzip
+(require (for-syntax racket/base)
          file/gunzip
-         handy/utils
+         file/gzip
          handy/try
-         )
+         handy/utils
+         racket/contract/base
+         racket/contract/region)
 
 (provide gzip*
          gunzip*
          (struct-out exn:fail:gunzip)
-         (all-from-out file/gzip file/gunzip)
-         )
+         (all-from-out file/gzip file/gunzip))
 
 (struct exn:fail:gunzip exn:fail ())
 

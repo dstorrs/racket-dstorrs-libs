@@ -1,12 +1,15 @@
-#lang racket
+#lang racket/base
 
-(require json
-         "try.rkt"
-         )
+(require (for-syntax racket/base)
+         json
+         racket/contract/base
+         racket/contract/region
+         racket/function
+         racket/string
+         "try.rkt")
 
 (provide valid-json?
-         (all-from-out json)
-         )
+         (all-from-out json))
 
 ;;======================================================================
 ;;    See the Racket-standard 'json' module for more.

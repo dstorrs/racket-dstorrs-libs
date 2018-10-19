@@ -1,9 +1,12 @@
 #!/usr/bin/env racket
 
-#lang racket
+#lang racket/base
 
 (require handy/hash
-         handy/test-more)
+         handy/test-more
+         racket/bool
+         racket/format
+         racket/function)
 
 (expect-n-tests 112)
 

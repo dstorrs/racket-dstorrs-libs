@@ -1,8 +1,9 @@
 #!/usr/bin/env racket
 
-#lang racket
+#lang racket/base
 
-(require "../test-more.rkt"
+(require racket/function
+         "../test-more.rkt"
          "../try.rkt")
 
 (expect-n-tests 22)
@@ -121,6 +122,3 @@
           "defatalized a (raise-argument-error)")
    )
   )
-
-
-

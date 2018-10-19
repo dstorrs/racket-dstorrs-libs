@@ -1,10 +1,12 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket
+#lang at-exp racket/base
 
-(require "../struct.rkt"
-         "../test-more.rkt"
-         )
+(require racket/format
+         racket/function
+         racket/match
+         "../struct.rkt"
+         "../test-more.rkt")
 
 (expect-n-tests 36)
 
@@ -131,5 +133,3 @@
 
    (ok (verify-struct #:struct x #:type foo?) "validates when given a type predicate")
    ))
-
-

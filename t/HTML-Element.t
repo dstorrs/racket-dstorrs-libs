@@ -1,15 +1,13 @@
 #!/usr/bin/env racket
 
-#lang racket
+#lang racket/base
 
-(require "../HTML-Element.rkt"
-         "../test-more.rkt"
-         html-parsing
+(require html-parsing
+         racket/list
          racket/runtime-path
          sxml
-         "../list-utils.rkt"
-         )
-
+         "../HTML-Element.rkt"
+         "../test-more.rkt")
 
 (define-runtime-path thisdir ".")
 (define test-file (build-path thisdir "some_HTML-Element_test_data.html"))
@@ -100,7 +98,7 @@
    (ok (xexp? (html->xexp "")) "xexp? identifies something empty element")
    ))
 
-   
+
 (when #t
   (test-suite
    "attr-hash: make attribute hashes from elements and attribute lists"
