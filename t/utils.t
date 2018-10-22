@@ -23,7 +23,7 @@
 
 (define-runtime-path thisdir ".")
 
-(ok #t "testing harness works")
+(void (ok #t "testing harness works"))
 
 (test-suite
  "perl-false?"
