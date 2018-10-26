@@ -186,22 +186,20 @@
 (define/contract (append-file source dest)
   (-> path-string? path-string? natural-number/c)
 
+  (when (not (file-exists? source))
+    (raise-arguments-error "source file must exist and does not"
+                           "source" source
+                           "dest" dest))
+  
   ;;    Append file, return number of bytes in file afterwards so that
   ;;    we could verify the append if so desired.
   (with-output-to-file dest   #:mode 'binary #:exists 'append
     (thunk
-     (define size (file-size source))
-
      (with-input-from-file source #:mode 'binary
        (thunk
-        (let loop ()
-          (define data (read-bytes 1))
-          (when (not (eof-object? data))
-            (display data)
-            (loop)))))))
+        (copy-port (current-input-port) (current-output-port))))))
 
-  (file-size dest)
-  )
+  (file-size dest))
 
 ;;----------------------------------------------------------------------
 
