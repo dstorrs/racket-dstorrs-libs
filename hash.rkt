@@ -9,7 +9,7 @@
          racket/list
          racket/match)
 
- ; for hash-union
+; for hash-union
 ;; *) hash->keyword-apply : take a function and a hash.  Assume the
 ;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) hash-key-exists?    : alias for hash-has-key? because I always forget the name
@@ -52,7 +52,7 @@
          sorted-hash-keys
          )
 
-
+;(require handy/utils) ; only needed for say, which is only for debugging
 
 ;;----------------------------------------------------------------------
 
@@ -518,6 +518,7 @@
          ;;      "\n\t remap-hash:    " remap-hash
          ;;      "\n\t default-hash:  " default-hash)
 
+         ;(say "zot")
          (define result
            (for/fold ([result h])
                      ([action action-order])
@@ -534,23 +535,38 @@
                 ;;    will be the new value.  The procedure must have
                 ;;    the signature:
                 ;;
-                ;;        (-> hash? any/c any/c any/c)  ; hash, key, orig-val, return one value
+                ;;        (-> hash? any/c any/c any/c)  ; hash, key, orig-val, return 1 value
+                ;;    or
+                ;;        (-> any/c any/c)  ; orig-val, return 1 value
+                ;;    or
+                ;;        (-> any/c)  ; orig-val, return 1 value
                 ;;
                 ;;    If you actually want to pass in a procedure (e.g. if you're
                 ;;    building a jumptable) then you'll have to wrap it like so:
                 ;;
                 ;;        (lambda (hsh key val)  ; the 'generate a value' procedure
                 ;;            (lambda ...))      ; the procedure it generates
-                ;;
+                ;;   or
+                ;;        (lambda (val)          ; the 'generate a value' procedure
+                ;;            (lambda ...))      ; the procedure it generates
+                ;;   or
+                ;;        (lambda ()             ; the 'generate a value' procedure
+                ;;            (lambda ...))      ; the procedure it generates
                 (safe-hash-union result
                                  overwrite-hash
                                  #:combine/key (lambda (key orig-val overwrite-val)
-                                                 (cond [(procedure? overwrite-val)
-                                                        ;(say "proc: " overwrite-val)
-                                                        (overwrite-val result
-                                                                       key
-                                                                       orig-val)]
-                                                       [else overwrite-val])))]
+                                                 ;(say  "(key orig-val overwrite-val): "  key ", " orig-val ", " overwrite-val)
+                                                 (match (and (procedure? overwrite-val)
+                                                             (procedure-arity overwrite-val))
+                                                   [#f overwrite-val]
+                                                   [0  (overwrite-val)]
+                                                   [1  (overwrite-val orig-val)]
+                                                   [3  (overwrite-val result
+                                                                      key
+                                                                      orig-val)]
+                                                   [else (raise-arguments-error 'hash-remap
+                                                                                "In the #:overwrite key, all value-generating procedures must have arity of exactly 0, 1, or 3"
+                                                                                "procedure" overwrite-val)])))]
                ;
                ['add
 
@@ -572,7 +588,7 @@
                 ;;    Rename keys
                 (for/fold ([h result])
                           ([(key val) remap-hash])
-                  ;;(say "renaming in hash with key/val: " h "," key "," val)
+                  ;;;(say "renaming in hash with key/val: " h "," key "," val)
                   (hash-rename-key h key val))]
                ;
                ['default
@@ -581,8 +597,8 @@
                  ;;   default AND in the hash will be set IFF their
                  ;;   value matches the value-is-default? predicate
 
-                 ;(say "renamed hash: " renamed-hash)
-                 ;(say "default hash: " default-hash)
+                 ;;(say "renamed hash: " renamed-hash)
+                 ;;(say "default hash: " default-hash)
 
                  ;
                  ; If your default value is a procedure then it will
@@ -602,20 +618,20 @@
 
                  (for/fold ([defaulted-result result])
                            ([(key default-val) default-hash])
-                   ;(say "key/val/final val: " key ", " default-val ", " (make-value key default-val))
+                   ;;(say "key/val/final val: " key ", " default-val ", " (make-value key default-val))
                    (cond [(not (hash-has-key? defaulted-result key))
-                          ;(say "not has")
+                          ;;(say "not has")
                           (safe-hash-set defaulted-result key (make-value key default-val))]
                          ;
                          [(value-is-default? (hash-ref defaulted-result key))
-                          ;(say "val is def")
+                          ;;(say "val is def")
                           (safe-hash-set defaulted-result key (make-value key default-val))]
                          ;
                          [else
-                          ;(say "else")
+                          ;;(say "else")
                           defaulted-result]))])))
 
-         ;(say "about to post")
+         ;;(say "about to post")
 
          ;; postprocess the hash and return
          (post-process  result)]))

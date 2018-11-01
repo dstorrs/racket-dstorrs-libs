@@ -2,13 +2,13 @@
 
 #lang racket/base
 
-(require handy/hash
-         handy/test-more
+(require "../hash.rkt"
+         "../test-more.rkt"
          racket/bool
          racket/format
          racket/function)
 
-(expect-n-tests 112)
+(expect-n-tests 114)
 
 (when #t
   (test-suite
@@ -364,7 +364,15 @@
 
      (is  (hash-remap h #:overwrite (hash 'group (lambda (hsh key val) "group")))
           (hash 'group "group" 'color 'red 'type 'apple)
-          "overwrite successful when generating values"))
+          "overwrite successful when generating values with a 3-arity func")
+
+     (is  (hash-remap h #:overwrite (hash 'group (lambda (val) (~a "super-" val "!"))))
+          (hash 'group "super-fruit!" 'color 'red 'type 'apple)
+          "overwrite successful when generating values with a 1-arity func")
+
+     (is  (hash-remap h #:overwrite (hash 'group (thunk (~a "super-thunk" "!"))))
+          (hash 'group "super-thunk!" 'color 'red 'type 'apple)
+          "overwrite successful when generating values with a 0-arity func"))
 
 
    ;;
