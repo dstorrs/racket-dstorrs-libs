@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
-         handy/utils
+         "utils.rkt"
          racket/bool
          racket/contract/base
          racket/contract/region
