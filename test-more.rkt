@@ -57,6 +57,7 @@
          next-test-num     ; return next test number and optionally modify it
          )
 
+(define prefix-for-diag (make-parameter "### "))
 
 ;;======================================================================
 ;;    The racket testing module has a few things I wish it did differently:
@@ -464,7 +465,7 @@
          ;(say "pred is: " pred)
          (test-more-check #:msg msg #:got (regexp-match? pred (get-msg e)) #:report-got-as e  #:return e)]
         [else              ;(say "else")
-                           (test-more-check #:msg msg #:got e  #:expected pred #:return e)]
+         (test-more-check #:msg msg #:got e  #:expected pred #:return e)]
         )
   )
 
@@ -511,13 +512,16 @@
 (define-syntax (test-suite stx)
   (syntax-case stx ()
     [(_ msg body body1 ...)
-     #'(begin (diag "START test-suite: " msg)
-              (lives (thunk body body1 ...  (void)) ; discard return values
-                     "test-suite completed without throwing uncaught exception")
-              (say "")
-              (say "Total tests passed so far: " (tests-passed))
-              (say "Total tests failed so far: " (tests-failed))
-              (diag "END test-suite: " msg))]))
+     #'(begin
+         (parameterize ([prefix-for-diag "######## "])
+           (diag "START test-suite: " msg))
+         (lives (thunk body body1 ...  (void)) ; discard return values
+                "test-suite completed without throwing uncaught exception")
+         (say "")
+         (say "Total tests passed so far: " (tests-passed))
+         (say "Total tests failed so far: " (tests-failed))
+         (parameterize ([prefix-for-diag "######## "])
+           (diag "END test-suite: " msg)))]))
 
 ;;----------------------------------------------------------------------
 
@@ -617,7 +621,6 @@
 ;
 ; ...is the same as (displayln "\t#### my awesome messagefoobar")
 ;
-(define prefix-for-diag (make-parameter "######## "))
 (define/contract (diag . args)
   (->* () () #:rest (listof any/c) any)
   (parameterize ([prefix-for-say (~a (prefix-for-diag)  (prefix-for-say))])
@@ -736,28 +739,28 @@
                         [else
                          (match (list abs-diff? threshold)
                            [(list _ 0)
-                           ;(say "zero")
+                            ;(say "zero")
                             =]
                            [(list #f _) #:when (negative? threshold)
-                           ;(say "negative threshold")
+                            ;(say "negative threshold")
                             (λ (diff threshold) ((between/c threshold 0) diff))]
                            [(list #t _)
-                           ;(say "use abs")
+                            ;(say "use abs")
                             (λ (diff threshold) ((between/c 0 (abs threshold)) (abs diff)))]
                            [(list #f thresh)
-                           ;(say "do not use abs")
+                            ;(say "do not use abs")
                             (λ (diff threshold) ((between/c 0 threshold) diff))])]))
 
- ;(say "key-name: " key-name)
- ;(say "got: "   got)
- ;(say "expected: " expected)
- ;(say "got-result: " got-result)
- ;(say "expected-result: " expected-result)
- ;(say "compare: " compare)
+  ;(say "key-name: " key-name)
+  ;(say "got: "   got)
+  ;(say "expected: " expected)
+  ;(say "got-result: " got-result)
+  ;(say "expected-result: " expected-result)
+  ;(say "compare: " compare)
 
   (define diff ((if abs-diff? abs identity) (diff-with got-result expected-result)))
- ;(say "diff: " diff)
- ;(say "compare result: " (compare diff threshold))
+  ;(say "diff: " diff)
+  ;(say "compare result: " (compare diff threshold))
 
   (test-more-check #:got                got-result
                    #:expected           expected-result
@@ -829,29 +832,29 @@
                          (negate
                           (match (list abs-diff? threshold)
                             [(list _ 0)
-                            ;(say "zero")
+                             ;(say "zero")
                              =]
                             [(list #f _) #:when (negative? threshold)
-                            ;(say "negative threshold")
+                             ;(say "negative threshold")
                              (λ (diff threshold) ((between/c threshold 0) diff))]
                             [(list #t _)
-                            ;(say "use abs")
+                             ;(say "use abs")
                              (λ (diff threshold) ((between/c 0 (abs threshold)) (abs diff)))]
                             [(list #f thresh)
-                            ;(say "do not use abs")
+                             ;(say "do not use abs")
                              (λ (diff threshold) ((between/c 0 threshold) diff))]))]))
 
- ;(say "key-name: " key-name)
- ;(say "got: "   got)
- ;(say "expected: " expected)
- ;(say "got-result: " got-result)
- ;(say "expected-result: " expected-result)
- ;(say "compare: " compare)
+  ;(say "key-name: " key-name)
+  ;(say "got: "   got)
+  ;(say "expected: " expected)
+  ;(say "got-result: " got-result)
+  ;(say "expected-result: " expected-result)
+  ;(say "compare: " compare)
 
 
   (define diff ((if abs-diff? abs identity) (diff-with got-result expected-result)))
- ;(say "diff: " diff)
- ;(say "compare result: " (compare diff threshold))
+  ;(say "diff: " diff)
+  ;(say "compare result: " (compare diff threshold))
 
   (test-more-check #:got                got-result
                    #:expected           expected-result
