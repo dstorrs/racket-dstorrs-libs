@@ -8,7 +8,7 @@
          racket/format
          racket/function)
 
-(expect-n-tests 114)
+(expect-n-tests 124)
 
 (when #t
   (test-suite
@@ -515,4 +515,56 @@
        '(1 2 #f)
        "success:  (hash-slice (hash 'a 1 'b 2 'c 8) '(a b d) #f))")
 
+   ))
+
+(when #t
+  (test-suite
+   "hash-aggregate"
+
+   (is (hash-aggregate 'id (hash 'id 1) (hash 'id 7) (hash 'id 9))
+       (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
+       "can aggregate multiple hashes via rest argument")
+   
+   (is (hash-aggregate 'id (hash 'id 1))
+       (hash 1 (hash 'id 1))
+       "can aggregate one hash via rest argument")
+   
+   (is (hash-aggregate 'id (list  (hash 'id 1) (hash 'id 7) (hash 'id 9)))
+       (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
+       "can aggregate multiple hashes via list")
+
+   (is (hash-aggregate 'id (list  (hash 'id 1)))
+       (hash 1 (hash 'id 1))
+       "can aggregate one hash via list")   
+
+   (is (hash-aggregate 'id '())
+       (hash)
+       "can aggregate a null list, getting back an empty hash")
+   
+   (throws (thunk (hash-aggregate 'id (hash 'x 1) (hash 'x 3)))
+           exn:fail:contract?
+           "cannot aggregate when the key is not present and no default was supplied")
+   
+   (is (hash-aggregate 'id #:default #f (list  (hash 'x 1) (hash 'id 7) (hash 'id 9)))
+       (hash #f (hash 'x 1)  7 (hash 'id 7) 9 (hash 'id 9))
+       "can aggregate multiple hashes via list where one defaults")
+
+   (is (hash-aggregate 'id (list  (hash 'id 1 'foo 9)
+                                  (hash 'id 1)
+                                  (hash 'id 7)
+                                  (hash 'id 9)))
+       (hash 1 (list  (hash 'id 1) (hash 'id 1 'foo 9))
+             7 (hash 'id 7)
+             9 (hash 'id 9))
+       "can aggregate multiple hashes via list where two items share an index value")
+
+   (is (hash-aggregate 'id #:default #f (list  (hash 'x 1 'foo 9)
+                                               (hash 'x 1)
+                                               (hash 'id 7)
+                                               (hash 'id 9)))
+       (hash #f (list  (hash 'x 1)
+                       (hash 'x 1 'foo 9))
+             7 (hash 'id 7)
+             9 (hash 'id 9))
+       "can aggregate multiple hashes via list where two items share an index value and that value is the default")
    ))

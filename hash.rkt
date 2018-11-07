@@ -10,6 +10,7 @@
          racket/match)
 
 ; for hash-union
+;; *) hash-aggregate      : list of hashes -> single hash that maps a key to the hashes
 ;; *) hash->keyword-apply : take a function and a hash.  Assume the
 ;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) hash-key-exists?    : alias for hash-has-key? because I always forget the name
@@ -29,6 +30,8 @@
 
 (provide (all-from-out racket/hash)
 
+         hash-aggregate
+         
          hash->keyword-apply
          hash-key-exists?
 
@@ -57,6 +60,33 @@
 ;;----------------------------------------------------------------------
 
 (define hash-key-exists? hash-has-key?) ; alias because I always forget the name
+
+;;----------------------------------------------------------------------
+
+(define/contract (hash-aggregate #:default [default 'no-default-provided]
+                                 key
+                                 . hshs)
+  (->* (any/c)
+       (#:default any/c)
+       #:rest (or/c  (listof hash?)
+                     (list/c (listof hash?)))
+       hash?)
+
+  (define hashes (flatten hshs)) ; allow passing individual hashes or a list of hashes
+  
+  (define accessor (if (equal? default 'no-default-provided)
+                       hash-ref
+                       (curryr hash-ref default)))
+  (for/fold ([result (hash)])
+            ([h hashes])              ; e.g. (hash 'id 7)
+    (define key-val (accessor h key)) ; e.g. 7
+    (define result-val (hash-ref result key-val #f))
+    (cond [(false? result-val) (hash-set result key-val h)] ; hash not previously indexed
+          [else (hash-set result
+                          key-val
+                          (if (list? result-val)
+                              (cons h result-val)
+                              (list h result-val)))])))
 
 ;;----------------------------------------------------------------------
 
