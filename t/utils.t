@@ -19,7 +19,7 @@
          "../test-more.rkt"
          "../utils.rkt")
 
-(expect-n-tests 293)
+(expect-n-tests 296)
 
 (define-runtime-path thisdir ".")
 
@@ -852,14 +852,36 @@
 
    (struct fish (name) #:transparent)
    (struct mammal (name) #:transparent #:mutable)
+   (define set-fish-name (lambda (f val) (struct-copy fish f [name val])))
 
    (is (ensure-field-set (fish #f)
                          fish-name
-                         (lambda (f val) (struct-copy fish f [name val]))
+                         set-fish-name
                          (thunk 17))
        (fish 17)
-       "successfully set immutable struct field")
+       "successfully set immutable struct field via thunk")
 
+   (is (ensure-field-set (fish #f)
+                         fish-name
+                         set-fish-name
+                         (lambda (f) 17))
+       (fish 17)
+       "successfully set immutable struct field via one-arg proc")
+
+   (is (ensure-field-set (fish #f)
+                         fish-name
+                         set-fish-name
+                         (lambda _ 17))
+       (fish 17)
+       "successfully set immutable struct field via variadic proc")
+
+   (is (ensure-field-set (hash 'id 1 'first-name 'bob)
+                         (curryr hash-ref 'last-name #f)
+                         (lambda (h v) (hash-set h 'last-name v))
+                         (lambda (h) (hash-ref (hash 1 'thompson)
+                                               (hash-ref h 'id))))
+       (hash 'id 1 'first-name 'bob 'last-name 'thompson)
+       "can set a hash value based on a lookup using that hash's values")
 
    (define bob (mammal #f))
    (is (mammal-name bob) #f "to start, bob is named #f")

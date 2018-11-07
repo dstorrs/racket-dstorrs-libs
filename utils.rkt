@@ -190,7 +190,7 @@
     (raise-arguments-error "source file must exist and does not"
                            "source" source
                            "dest" dest))
-  
+
   ;;    Append file, return number of bytes in file afterwards so that
   ;;    we could verify the append if so desired.
   (with-output-to-file dest   #:mode 'binary #:exists 'append
@@ -424,8 +424,8 @@
     ;
     [(list #t (or "" #f)) (values "" "")]
     [(list #t (or 'up 'same)) (values ""
-                                 ((if as-str? path->string identity)
-                                  (path->directory-path (build-path fp))))]
+                                      ((if as-str? path->string identity)
+                                       (path->directory-path (build-path fp))))]
     [else
      (define-values (d f is-dir?) (split-path fp))
 
@@ -573,22 +573,45 @@
 
 ;;----------------------------------------------------------------------
 
+; Takes a value that is expected to be an aggregator (hash, vector,
+; struct, object, etc), checks one field of that value, and sets the
+; field if it is not set.
+;
+; thing:    The value to be checked.  e.g. (hash 'id 1 'first-name "bob")
+; getter:   Function to use to retrieve the value. e.g. (curryr hash-ref 'last-name)
+; make-val: Generator for the new value.
+; [optional] val-for-unset. The value to use as 'this field is not set'. Default: #f
+; [optional] #:uses-mutation?  Set this to true if the setter is a mutating function
+;
+; make-val can be:
+;   a thunk                               (called with no params)
+;   a procedure of at least one argument  (called with the 'thing')
+;   a non-procedure value                 (used directly)
+;
 (define/contract (ensure-field-set thing getter setter make-val [val-for-unset #f]
                                    #:uses-mutation? [uses-mutation? #f])
   (->* (any/c
         (-> any/c any/c)         ; getter
         (-> any/c any/c any/c)   ; setter
-        thunk?)
+        any/c)                   ; make-val
        ;
        (any/c ; the value that means this field was not set, typically #f
         #:uses-mutation? boolean?)
        ;
        any/c)
 
+  (define make-val-type (cond [(procedure? make-val) (procedure-arity make-val)]
+                              [else 'raw-value]))
+
   (cond [(not-equal? val-for-unset (getter thing)) thing] ; field was set
-        [else (let ([new-val (setter thing (make-val))])
-                (if uses-mutation?
-                    thing        ; mutation funcs often return (void), so can't trust new-val
-                    new-val))]))
+        [else
+         (let* ([val (match make-val-type
+                       ['raw-value make-val]     ; not procedure
+                       [0 (make-val)]            ; thunk
+                       [else (make-val thing)])] ; procedure of 1+ args
+                [result (setter thing val)])
+           (if uses-mutation?
+               thing ; mutation funcs often return (void), so can't trust new-val
+               result))]))
 
 ;;----------------------------------------------------------------------
