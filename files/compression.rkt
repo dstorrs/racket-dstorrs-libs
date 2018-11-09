@@ -3,10 +3,14 @@
 (require (for-syntax racket/base)
          file/gunzip
          file/gzip
-         handy/try
-         handy/utils
+         "../try.rkt"
+         "../utils.rkt"
          racket/contract/base
-         racket/contract/region)
+         racket/contract/region
+         racket/format
+         racket/match
+         racket/path
+         )
 
 (provide gzip*
          gunzip*
@@ -47,7 +51,7 @@
 ;;     'error     (DEFAULT) means that it will throw exn:fail:filesystem.
 ;;     'truncate  means that it will overwrite the contents of the file
 ;;
-;; As long as you use the default 'error flag, you can be confident that two separate threads will not 
+;; As long as you use the default 'error flag, you can be confident that two separate threads will not
 (define/contract (gzip* in-file
                         [out-file #f]
                         #:remove-original? [remove-original? #f]
@@ -103,32 +107,46 @@
 ;; NOTE THAT BY DEFAULT THE ZIP FILE IS REMOVED AFTER DECOMPRESSION,
 ;; although only if the output file was created.
 ;;
-(define/contract (gunzip* in-file [output-path-or-maker #f] #:remove-zip? [remove-zip? #t])
+(define/contract (gunzip* in-file [output-info #f] #:remove-zip? [remove-zip? #t])
   (->*  (path-string?)
         ; you can specify the output path or a func to produce it
-        ((or/c path-string? (-> path-string? boolean? path-string?))
-         #:remove-zip? boolean?)
+        (#:remove-zip? boolean?
+         (or/c path-string?
+               'up
+               'same
+               (non-empty-listof (or/c 'up 'same path-string?))
+               (-> path-string? boolean? path-string?)))
         path-string?)
 
+  (define out-filepath output-info)
 
-  (define-values (out-dir ignore1 ignore2) (split-path in-file))
-  (define out-filepath (cond [(path-string? output-path-or-maker)
-                              output-path-or-maker]
-                             [else
-                              #f]))
+  ; gunzip returns void and the filepath will be generated based on
+  ; information we can't get from outside the call, so we'll need to
+  ; use mutation
+  (define (wrap proc)
+    (lambda (filename from-archive?)
+      (define result (proc filename from-archive?))
+      (set! out-filepath result)
+      result))
+ 
   (define path-maker
-    (cond [(path-string? output-path-or-maker)
-           (lambda (x y) output-path-or-maker)]
-          [(procedure? output-path-or-maker)
-           (lambda (file archive-supplied?)
-             (define result (path-string->string (output-path-or-maker file archive-supplied?)))
-             (set! out-filepath result)
-             result)]
-          [else
-           (lambda (file archive-supplied?)
-             (define result  (build-path out-dir file))
-             (set! out-filepath result)
-             result)]))
+    (match output-info
+      [#f               (wrap (lambda (filename from-archive?)
+                                (path-replace-extension in-file "")))]
+      [(? procedure?)   (wrap output-info)]
+      [(? path-string?) (wrap
+                         (lambda (filename from-archive?)
+                           ; if it's syntactically a directory, append the filename
+                           ; else, ignore the filename and use what the caller specified
+                           (cond [(file-name-from-path output-info) ; it claims to be a file
+                                  output-info]
+                                 [else (build-path output-info filename)])))]
+      ['up              (wrap (lambda (filename from-archive?) (build-path 'up filename)))]
+      ['same            (wrap (lambda (filename from-archive?) (build-path 'same filename)))]
+      [_                (wrap (lambda (filename from-archive?)
+                                (build-path
+                                 (apply build-path (map build-path output-info))
+                                 filename)))]))
 
   ;;  gunzip the file.  If the file is not a gzip or is corrupted then
   ;;  the default gunzip will raise an 'exn:fail'.  If that happens,
@@ -136,13 +154,14 @@
   ;;  For any other kind of exception, re-raise it as is
   ;;
   (try [(gunzip in-file path-maker)]
-       [catch (exn:fail? (lambda (e)
-                           (define msg (exn-message e))
-                           (raise (cond [(regexp-match #px"^gnu-unzip:" msg)
-                                         (exn:fail:gunzip msg (exn-continuation-marks e))]
-                                        [(regexp-match #px"^inflate: unexpected end-of-file" msg)
-                                         (exn:fail:gunzip msg (exn-continuation-marks e))]
-                                        [else e]))))])
-
+       [catch (exn:fail?
+               (lambda (e)
+                 (define msg (exn-message e))
+                 (raise (cond [(regexp-match #px"^gnu-unzip:" msg)
+                               (exn:fail:gunzip msg (exn-continuation-marks e))]
+                              [(regexp-match #px"^inflate: unexpected end-of-file" msg)
+                               (exn:fail:gunzip msg (exn-continuation-marks e))]
+                              [else e]))))])
+  
   (and remove-zip? (file-exists? out-filepath) (delete-file-if-exists in-file))
-  out-filepath)
+  (simplify-path out-filepath))

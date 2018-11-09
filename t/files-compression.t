@@ -1,15 +1,19 @@
 #!/usr/bin/env racket
 
-#lang at-exp racket/base
+#lang at-exp racket
 
-(require handy/files/compression
-         handy/test-more
-         handy/utils
+(require "../files/compression.rkt"
+         "../test-more.rkt"
+         "../utils.rkt"
          racket/file
          racket/format
-         racket/function)
+         racket/function
+         racket/runtime-path
+         )
 
-(expect-n-tests 39)
+(define-runtime-path thisdir ".")
+
+(expect-n-tests 81)
 
 (void (ok 1 "test harness working"))
 
@@ -84,91 +88,160 @@
   (test-suite
    "gunzip*"
 
-   (with-temp-file #:path (make-test-file)
-     (lambda (inpath)
-       (define in-filepath (string->path inpath))
-       (define expected-contents (file->string in-filepath))
+   (define (do-tests the-path)
+     (with-temp-file #:path the-path
+       (lambda (inpath)
+         (define in-filepath (simplify-path (string->path inpath)))
+         (define expected-contents (file->string in-filepath))
 
-       (define (setup)
-         (define compressed-filepath (gzip* in-filepath #:remove-original? #t))
-         (is-false (file-exists? in-filepath) "compressed and removed the original file")
-         compressed-filepath)
+         (define (setup)
+           (define compressed-filepath (gzip* in-filepath #:remove-original? #t))
+           (is-false (file-exists? in-filepath) "compressed and removed the original file")
+           compressed-filepath)
 
-       (define (uncompressed-correctly? label target-path zip-path should-remove?)
-         (cond [(ok (file-exists? target-path) @~a{@|label|: after compression, original exists})
-                (is (file->string target-path)
-                    expected-contents
-                    @~a{@|label|: file was uncompressed correctly})
+         (define (uncompressed-correctly? label target-path zip-path should-remove?)
+           (cond [(ok (file-exists? target-path) @~a{@|label|: after compression, original exists})
+                  (is (file->string target-path)
+                      expected-contents
+                      @~a{@|label|: file was uncompressed correctly})
 
-                (cond [should-remove? (is-false (file-exists? zip-path)
-                                                @~a{in block '@|label|': zip was correctly removed})]
-                      [else  (ok (file-exists? zip-path)
-                                 @~a{in block '@|label|': zip was correctly NOT removed})])]
-               [else (say "...original file not present, skipping other tests in this block")])
-         (delete-file-if-exists zip-path)
-         (unless (equal? in-filepath target-path)
-           (rename-file-or-directory target-path in-filepath)))
+                  (cond [should-remove? (is-false (file-exists? zip-path)
+                                                  @~a{in block '@|label|': zip was correctly removed})]
+                        [else
+                         (ok (file-exists? zip-path)
+                             @~a{in block '@|label|': zip was correctly NOT removed})])]
+                 [else (say "...original file not present, skipping other tests in this block")])
+           (delete-file-if-exists zip-path)
+           (unless (equal? in-filepath target-path)
+             (rename-file-or-directory target-path in-filepath)))
 
+         ;;    Uncompress the file back to its original path without
+         ;;    specifying anything other than the source.  The zip
+         ;;    file should be removed by default
+         (diag "compress files to the default filepath")
+         (let ([compressed-filepath (setup)])
+           (is (gunzip* compressed-filepath)
+               in-filepath
+               "(gunzip* compressed-filepath) returns in-filepath")
+           (uncompressed-correctly? "no target specified" in-filepath compressed-filepath #t))
 
-       ;;    Uncompress the file back to its original path without
-       ;;    specifying anything other than the source.  The zip
-       ;;    file should be removed by default
-       (diag "compress files to the default filepath")
-       (let ([compressed-filepath (setup)])
-         (is (gunzip* compressed-filepath)
-             in-filepath
-             "(gunzip* compressed-filepath) returns in-filepath")
-         (uncompressed-correctly? "no target specified" in-filepath compressed-filepath #t))
-
-       ;;    Uncompress the file to a specified path with target
-       ;;    specified as path-string.  The zip file should be removed
-       ;;    by default
-       (diag "compress files to a target specified by path-string")
-       (let ([compressed-filepath (setup)]
-             [target-filepath (make-temporary-file)])
-         (is (gunzip* compressed-filepath target-filepath)
-             target-filepath
-             "(gunzip* compressed-filepath target-filepath) returns correct target")
-         (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #t))
-
-
-
-       ;;    Uncompress the file to a specified path with target
-       ;;    specified by generator.  The zip file should be removed
-       ;;    by default
-       (diag "compress files to a target specified by generator")
-       (let ([compressed-filepath (setup)]
-             [target-filepath (path-string->string (make-temporary-file))])
-         (is (gunzip* compressed-filepath (lambda (x y) target-filepath))
-             target-filepath
-             "(gunzip* compressed-filepath <generator>) returns correct target")
-         (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #t))
+         ;;    Uncompress the file to a specified path with target
+         ;;    specified as path-string.  The zip file should be removed
+         ;;    by default
+         (diag "compress files to a target specified by path-string")
+         (let ([compressed-filepath (setup)]
+               [target-filepath (make-temporary-file)])
+           (is (gunzip* compressed-filepath target-filepath)
+               target-filepath
+               "(gunzip* compressed-filepath target-filepath) returns correct target")
+           (uncompressed-correctly? "target specified as path"
+                                    target-filepath
+                                    compressed-filepath
+                                    #t))
 
 
+         ;;    Uncompress the file to a specified path with target
+         ;;    specified as 'same.  The zip file should be removed
+         ;;    by default
+         (diag "compress files to a target specified 'same")
+         (let* ([compressed-filepath (setup)]
+                [target-filepath (simplify-path
+                                  (build-path 'same
+                                              (path-replace-extension
+                                               (file-name-from-path compressed-filepath)
+                                               ""
+                                               )))])
+           (is (gunzip* compressed-filepath 'same)
+               target-filepath
+               "(gunzip* compressed-filepath 'same) returns correct target")
+           (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #t))
 
-       ;;    Uncompress the file to a specified path with target
-       ;;    specified by filepath. Do NOT remove the zip
-       (let ([compressed-filepath (setup)]
-             [target-filepath (make-temporary-file)])
-         (is (gunzip* compressed-filepath target-filepath #:remove-zip? #f)
-             target-filepath
-             "(gunzip* compressed-filepath target) returns correct target")
-         (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #f)
-         (delete-file-if-exists compressed-filepath)
-         )
+
+         ;;    Uncompress the file to a specified path with target
+         ;;    using a mix of 'same, 'up, etc.  The zip file should be
+         ;;    removed by default
+         (diag "compress files to a target using a mix of 'same and 'up")
+         (let* ([compressed-filepath (setup)]
+                [target-filepath (simplify-path
+                                  (build-path
+                                   thisdir
+                                   'same
+                                   "data"
+                                   'up
+                                   "data"
+                                   "bar"
+                                   'same
+                                   'up
+                                   'up
+                                   (path-replace-extension
+                                    (file-name-from-path compressed-filepath)
+                                    ""
+                                    )))])
+           (is (gunzip* compressed-filepath (list thisdir
+                                                  'same
+                                                  "data"
+                                                  'up
+                                                  "data"
+                                                  "bar"
+                                                  'same
+                                                  'up
+                                                  'up
+                                                  'same))
+               target-filepath
+               "(gunzip* compressed-filepath 'same) returns correct target")
+           (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #t))
 
 
-       ;;  Verify that if you try to unzip something that is not a zip
-       ;;  file then you will get an exn:fail:gunzip back instead of
-       ;;  an exn:fail.  Any other error will come back undisturbed
-       (with-temp-file
-         (lambda (the-path)
-           (throws (thunk (gunzip* the-path))
-                   exn:fail:gunzip?
-                   "trying to unzip something that is not a zip file will thrown an exn:fail:gunzip, not an exn:fail")
-           (delete-file-if-exists the-path)
-           (throws (thunk (gunzip* the-path))
-                   exn:fail:filesystem?
-                   "trying to unzip something that doesn't exist is an exn:fail:filesystem?, not an exn:fail:gunzip")))
 
-           ))))
+         ;;    Uncompress the file to a specified path with target
+         ;;    specified by generator.  The zip file should be removed
+         ;;    by default
+         (diag "compress files to a target specified by generator")
+         (let ([compressed-filepath (setup)]
+               [target-filepath (simplify-path (path-string->string (make-temporary-file)))])
+           (is (gunzip* compressed-filepath (lambda (x y) target-filepath))
+               target-filepath
+               "(gunzip* compressed-filepath <generator>) returns correct target")
+           (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #t))
+
+
+
+         ;;    Uncompress the file to a specified path with target
+         ;;    specified by filepath. Do NOT remove the zip
+         (let ([compressed-filepath (setup)]
+               [target-filepath (make-temporary-file)])
+           (is (gunzip* compressed-filepath target-filepath #:remove-zip? #f)
+               target-filepath
+               "(gunzip* compressed-filepath target) returns correct target")
+           (uncompressed-correctly? "target specified as path"  target-filepath compressed-filepath #f)
+           (delete-file-if-exists compressed-filepath)
+           )
+
+
+         ;;  Verify that if you try to unzip something that is not a zip
+         ;;  file then you will get an exn:fail:gunzip back instead of
+         ;;  an exn:fail.  Any other error will come back undisturbed
+         (with-temp-file
+           (lambda (the-path)
+             (throws (thunk (gunzip* the-path))
+                     exn:fail:gunzip?
+                     "trying to unzip something that is not a zip file will thrown an exn:fail:gunzip, not an exn:fail")
+             (delete-file-if-exists the-path)
+             (throws (thunk (gunzip* the-path))
+                     exn:fail:filesystem?
+                     "trying to unzip something that doesn't exist is an exn:fail:filesystem?, not an exn:fail:gunzip")))
+
+         )))
+
+
+   ; The normal case, where the filepath will be complete (possibly
+   ; relative, but specifies both directory and filename).  In this
+   ; case it uses a temporary file written to Racket's scratchdir
+   (let ([tf (make-test-file)])
+     (do-tests tf))
+
+   ; Run the tests again, this time with a filepath that does not
+   ; specify a directory.  It should assume '.'
+   (let ([tf (make-temporary-file "test-file~a" #f ".") ])
+     (do-tests (make-test-file tf)))
+   ))
