@@ -7,7 +7,7 @@
          "../sql.rkt"
          "../test-more.rkt")
 
-(expect-n-tests 34)
+(expect-n-tests 39)
 
 (void (ok #t "test harness is working"))
 
