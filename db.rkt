@@ -13,7 +13,7 @@
          "list-utils.rkt"
          "sql.rkt"
          "try.rkt"
-         "utils.rkt")
+         (except-in "utils.rkt" hash->keyword-apply)) ; already required from list-utils.rkt
 
 ;======================================================================
 ;  A collection of convenience functions for working with the DB.

@@ -10,7 +10,7 @@
          sxml
          "list-utils.rkt"
          "try.rkt"
-         "utils.rkt"
+         (except-in  "utils.rkt" hash->keyword-apply) ; already required from list-utils.rkt
          "web.rkt")
 
 (provide (all-defined-out)
