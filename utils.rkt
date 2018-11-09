@@ -471,12 +471,52 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (ensure-directory-exists dir)
-  (-> path-string? boolean?)
-  (or (directory-exists? dir)
-      (and (make-directory* dir) #f) ; make-directory* returns void, which is true, but we need to continue
+;  Check that a directory exists and create it if it doesn't.  Will
+;  create intervening subdirectories as needed.  Uses make-directory*
+;  but does more.
+;
+; When you call this, you're often going to have a path to a file
+; that you're about to create and you want to make sure the
+; directory exists.  You probably got that directory from
+; split-path, or something like it.  This causes a few issues:
+;
+;    (split-path "/")  ; directory will be #f
+;    (split-path ".")  ; directory will be 'relative, filename is 'same
+;    (split-path "..") ; directory will be 'relative, filename is 'up
+;
+; In the first case, we can keep from blowing up by restoring the #f
+; to "/", although I'm unsure what this will do on Windows.
+; (Granted, I also don't care super much, since most Racket
+; development is probably taking place on a *nix environment, if
+; you're working on Windows you've got bigger issues, and doing it
+; this way lets me make things easier for at least some users.)
+;
+; Other issue: 'up and 'same are not valid path-string? values, so
+; we'll want to restore those as well.
+;
+; Finally, we can't handle the case where we get 'relative since we
+; don't know what the 'filename' portion was.
+;
+(define/contract (ensure-directory-exists d)
+  (-> (or/c #f 'up 'same 'relative path-string?) boolean?)
+
+  (when (equal? d 'relative)
+    (raise-arguments-error 'ensure-directory-exists
+                           "'relative is not a valid path and cannot be converted to one.  If you used (split-path) to extract your directory value, consider (path-only) instead"
+                           "directory" d))
+
+  (define dir
+    (path-only
+     (path->directory-path
+      (build-path (if (false? d) ;
+                      "/"
+                      d)))))
+
+  (or (and (make-directory* dir) #f) ; make-directory* returns void, which is true, but we need to continue
       (directory-exists? dir)
-      (raise (exn:fail:filesystem (~a "directory does not exist and could not be created: " dir) (current-continuation-marks)))))
+      (raise (exn:fail:filesystem (~a "directory does not exist and could not be created: "
+                                      dir)
+                                  (current-continuation-marks)))))
 
 ;;----------------------------------------------------------------------
 
@@ -556,7 +596,7 @@
   (dynamic-wind
     (thunk
      (define-values (dir filename ignore) (split-path the-path))
-     (make-directory* dir)
+     (ensure-directory-exists dir)
 
      ; Note the race condition here.  Nothing to do about it.
      (when (not (file-exists? the-path))
