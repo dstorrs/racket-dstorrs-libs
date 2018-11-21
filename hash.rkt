@@ -414,15 +414,17 @@
 ;;
 ;;    If the new value is a procedure then it will be invoked and its
 ;;    result will be the new value.  The procedure must have the
-;;    signature:
+;;    one of the following signatures:
 ;;
+;;        (-> any/c)                    ; takes no arguments. Returns one value.
+;;        (-> any/c any/c)              ; takes orig-value. Returns one value.
 ;;        (-> hash? any/c any/c any/c)  ; takes a hash, key, orig-val.  Returns one value
 ;;
 ;;    If you actually want to pass in a procedure (e.g. if you're
 ;;    building a jumptable) then you'll have to wrap it like so:
 ;;
-;;        (lambda (hsh key val orig-val)  ; the 'generate a value' procedure
-;;            (lambda ...))               ; the procedure it generates
+;;        (thunk          ; the 'generate a value' procedure
+;;          (lambda ...)) ; the procedure it generates
 ;;
 ;;    If you ask to overwrite keys that are not there, they will be added.
 ;;
