@@ -187,7 +187,8 @@
   (-> path-string? path-string? natural-number/c)
 
   (when (not (file-exists? source))
-    (raise-arguments-error "source file must exist and does not"
+    (raise-arguments-error 'append-file
+                           "source file must exist and does not"
                            "source" source
                            "dest" dest))
 
