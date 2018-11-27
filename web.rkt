@@ -9,7 +9,13 @@
          racket/port
          racket/system)
 
-(provide (all-defined-out))
+(provide is-local?         ; given a url-ish thing, determine if it's a local resource
+         to-url            ; convert to a url
+         ->absolute-url    ; generate an absolute url from base and component
+         web/call          ; get a page from the internet with a lot of processing options
+         fetch-with-curl   ; shell out to curl in order to fetch HTTPS pages on OSX (ARGH!)
+         get-page          ; more readable but less flexible wrapper around web/call
+         )
 
 ;;----------------------------------------------------------------------
 ;;    Check if a url-ish thing refers to a local resource or one on
