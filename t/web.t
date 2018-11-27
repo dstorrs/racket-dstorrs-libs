@@ -10,6 +10,8 @@
          "../test-more.rkt"
          "../web.rkt")
 
+(expect-n-tests 28)
+
 ;;    Constants for tests
 (define-runtime-path main-path  "data/20160802_Latest_EDGAR_Filings/main_page.html")
 (define standard-url "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=13f&owner=include&count=100&action=getcurrent")
@@ -28,6 +30,16 @@
  (ok (url? (to-url main-path)) "to-url accepts paths")
  (ok (url? (to-url (path->string main-path))) "to-url accepts strings")
  (ok (url? (to-url (string->url (path->string main-path)))) "to-url accepts urls")
+
+ (like (url->string (to-url main-path))
+       #px"^file://"
+       "to-url accepts a path and returns a file:// url"
+       )
+
+ (like (url->string (to-url #:treat-string-as-path? #t (path->string main-path)))
+       #px"^file://"
+       "(to-url #:treat-string-as-path? #t (path->string main-path)) returns a file:// url"
+       )
  )
 
 (test-suite
@@ -48,7 +60,6 @@
  (like (get-page main-path #:as-text #t)
        title-regex
        "(get-page main-path #:as-text #t)")
-
  (for ((f (list identity path->string to-url))
        (t '(path string url)))
    (like (get-page (f main-path) #:as-text #t)
@@ -74,6 +85,10 @@
                 (and (list? res) (not (null? res))))
               "web/call got the page from the net as xexp"))
         "web/call lived")
+
+ (ok (let ((res (web/call main-path)))
+       (and (list? res) (not (null? res))))
+     "web/call got the page from the disk as xexp")
  )
 
-(done-testing) ; this should be the last line in the file
+
