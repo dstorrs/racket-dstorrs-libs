@@ -9,6 +9,8 @@
          racket/port
          racket/system)
 
+(provide (all-defined-out))
+
 ;;----------------------------------------------------------------------
 ;;    Check if a url-ish thing refers to a local resource or one on
 ;;    the net.
@@ -91,4 +93,3 @@
         (curry web/call #:as-text #t))
     source)))
 
-(provide (all-defined-out))

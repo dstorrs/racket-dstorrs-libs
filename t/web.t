@@ -19,16 +19,19 @@
 
 
 (test-suite
- "all tests"
+ "to-url"
  (ok 1 "test harness is working")
 
  (ok (path? main-path) "main-path is a path, not a string")
  (ok (string? (path->string main-path)) "(path->string main-path) is a string")
  (ok (url? (string->url (path->string main-path))) "(string->url path->string main-path) is a url")
  (ok (url? (to-url main-path)) "to-url accepts paths")
- (ok (url? (to-url main-path)) "to-url accepts strings")
- (ok (url? (to-url main-path)) "to-url accepts urls")
+ (ok (url? (to-url (path->string main-path))) "to-url accepts strings")
+ (ok (url? (to-url (string->url (path->string main-path)))) "to-url accepts urls")
+ )
 
+(test-suite
+ "is-local?"
  (for ((p `("sec.t"
             "file://./sec.t"
             ,(string->path "sec.t")
@@ -38,7 +41,10 @@
  (for ((p `( "http://www.google.com"
              ,(string->url "http://www.google.com"))))
    (not-ok (is-local? p) (format "(is-local? ~a) is #f" p)))
+ )
 
+(test-suite
+ "get-page"
  (like (get-page main-path #:as-text #t)
        title-regex
        "(get-page main-path #:as-text #t)")
@@ -58,8 +64,11 @@
           (like (get-page second-url #:as-text #t)
                 title-regex
                 "got the page from the web using second url"))
-        "web/call lived")
+        "get-page lived")
+ )
 
+(test-suite
+ "web/call"
  (lives (lambda ()
           (ok (let ((res (web/call standard-url)))
                 (and (list? res) (not (null? res))))
