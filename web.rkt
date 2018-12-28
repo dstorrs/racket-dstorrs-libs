@@ -50,13 +50,9 @@
        [_           path->url])
      val))
 
-  (cond [(url-scheme converted)  ; if it has a scheme, change nothing
-         converted]
-        [(and (string? val) string-is-path?)
-         (path->url (url->path converted))         
-         ]
-        [else
-         converted]))
+  (cond [(url-scheme converted) converted]   ; if it has a scheme, change nothing
+        [(and (string? val) string-is-path?) (path->url (url->path converted))]
+        [else converted]))
 
 ;;----------------------------------------------------------------------
 
