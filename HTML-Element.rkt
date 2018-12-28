@@ -184,10 +184,11 @@
 ;;    must match exactly.  If it is a regexp or pregexp then the match
 ;;    must succeed.
 (define (look-down some-content
-                   [action list]             ;; Default: list all matches
-                   #:match [:match-func #f]  ;; Default: match everything
-                   #:tag   [:tag #f]         ;; Ditto
-                   #:attr  [:attr #f]        ;; Ditto
+                   [action list]                  ;; default: list all matches
+                   #:match       [:match-func #f] ;; default: match everything
+                   #:tag         [:tag #f]        ;; ditto
+                   #:attr        [:attr #f]       ;; ditto
+                   #:first-only? [first-only? #f] ;; only return the first item found
                    )
   (define (match-all x) #t)
   (define :tag? (if :tag (ntype?? :tag) match-all))
@@ -225,18 +226,22 @@
          (look-down c action #:match searched-for? #:attr :attr))))
   ;;
   ;; NOTE: Body of 'look-down' starts here
-  (cond
-    [(empty?        some-content)  (begin
-                                     ;;(displayln (format  "### empty some-content"))
-                                     empty)]
-    [(attr-list?    some-content)  (begin
-                                     ;;(displayln (format  "### is attr list"))
-                                     empty)]
-    [(searched-for? some-content)  (begin
-                                     ;;(displayln (format  "### cond searched-for some-content"))
-                                     (autobox (action some-content)))]
-    [else                          (begin ;;(displayln (format "### else"))
-                                     (apply append (map ld some-content)))]))
+  (define result
+    (cond
+      [(empty?        some-content)  (begin
+                                       ;;(displayln (format  "### empty some-content"))
+                                       empty)]
+      [(attr-list?    some-content)  (begin
+                                       ;;(displayln (format  "### is attr list"))
+                                       empty)]
+      [(searched-for? some-content)  (begin
+                                       ;;(displayln (format  "### cond searched-for some-content"))
+                                       (autobox (action some-content)))]
+      [else                          (begin ;;(displayln (format "### else"))
+                                       (apply append (map ld some-content)))]))
+  (cond [(null? result) result]
+        [first-only?    (first result)]
+        [else           result]))
 
 
 ;;----------------------------------------------------------------------
