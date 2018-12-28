@@ -1,6 +1,10 @@
 #lang racket/base
 
-(require html-parsing
+(require (only-in "exceptions.rkt"
+                  exn:fail:filesystem:errno:file-not-found?
+                  refine-filesystem-exn)
+         "try.rkt"
+         html-parsing
          net/url
          racket/bool
          racket/contract/base
@@ -10,7 +14,8 @@
          racket/port
          racket/system)
 
-(provide urlish/c          ; path, string, or url struct
+(provide (all-from-out "exceptions.rkt")
+         urlish/c                    ; path, string, or url struct
          is-local?         ; given a url-ish thing, determine if it's a local resource
          to-url            ; convert to a url
          url-as-string     ; convert a urlish/c into a string 
@@ -106,25 +111,43 @@
 
 ;;--------------------------------------------------------------------------------
 ;;    Get a page from the internet (via web/call) or from a
-;;    file. 'post-proc' will be run across the results.
+;;    file. 'post-proc' (default: html->xexp) will be run across the
+;;    results.
+;;
+;;    If you're getting from a filepath (either as a path or a string)
+;;    and the file doesn't exist then an
+;;    exn:fail:filesystem:errno:file-not-found will be raised. (This
+;;    exception is defined in handy/exceptions.rkt) If you'd rather
+;;    that it simply return #f, pass #:must-exist? #f.  (Example:
+;;    You're checking an on-disk cache and only going to the web if
+;;    it's not in the cache)
 (define/contract (get-page source
                            #:source-string-as-path? [string-as-path? #f]
                            #:post-proc [post-proc html->xexp]
-                           #:as-text   [as-text #f]) ; easier to remember than '#:post-proc identity'
+                           #:as-text   [as-text? #f] ; same as '#:post-proc identity'
+                           #:must-exist? [must-exist? #t]
+                           ) 
   (->* (urlish/c)
        (#:source-string-as-path? boolean?
         #:post-proc (-> string? any/c)
-        #:as-text boolean?)
-       (or/c string? list?))
+        #:as-text boolean?
+        #:must-exist? boolean?
+        )
+       any)
   (define target-url (to-url source #:treat-string-as-path? string-as-path?))
   (define content
     (cond [(not (is-local? target-url)) (web/call target-url #:as-text #t)]
           [else
-           (with-input-from-file
-             (url->path target-url)
-             (thunk (port->string)))]))
+           (try [(with-input-from-file
+                   (url->path target-url)
+                   (thunk (port->string)))]
+                [catch (exn:fail:filesystem?
+                        (lambda (e)
+                          (define refined (refine-filesystem-exn e))
+                          (cond [must-exist? (raise refined)]
+                                [(exn:fail:filesystem:errno:file-not-found? refined) #f]
+                                [else (raise refined)])))])]))
 
-  (if as-text
-      content
-      (post-proc content)))
+  (cond [(or as-text? (false? content)) content]
+        [else (post-proc content)]))
 
