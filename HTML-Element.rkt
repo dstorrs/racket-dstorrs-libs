@@ -68,8 +68,7 @@
 ;;
 (define (has-attr? html-expr key [val #f])
   (define h (attr-hash html-expr))
-  (define v (and (hash-has-key? h key)
-                 (hash-ref h key)))
+  (define v (hash-ref h key #f))
   (if val
       (and (regexp-match
             (pregexp (string-append "\\b" val "\\b"))
