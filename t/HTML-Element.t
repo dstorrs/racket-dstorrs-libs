@@ -9,6 +9,7 @@
          "../HTML-Element.rkt"
          "../test-more.rkt")
 
+(expect-n-tests 35)
 (define-runtime-path thisdir ".")
 (define test-file (build-path thisdir "some_HTML-Element_test_data.html"))
 
@@ -110,6 +111,10 @@
    (is (attr-hash hi-paragraph)
        (hash 'class "hi hello aloha" 'style "border: 1px solid red;")
        "got a hash full of attributes from the 'hi-paragraph' data")
+   (is (attr-hash '(@ (class "footer")))
+       (hash 'class "footer")
+       "can handle being given just the attribute list"
+       )
    )
   )
 
@@ -256,4 +261,3 @@
    )
   )
 
-(done-testing)

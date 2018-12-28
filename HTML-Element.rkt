@@ -5,7 +5,9 @@
          racket/contract/base
          racket/contract/region
          racket/format
+         (only-in racket/function negate)
          racket/list
+         racket/match
          racket/string
          sxml
          "list-utils.rkt"
@@ -80,26 +82,33 @@
 
 ;;--------------------------------------------------
 ;;    (attr-hash el) -> immutable hash
-;;    el : xexp
+;;    el : list representing a tag. (anything else will return empty hash) 
 ;;
-;;    Given an xexp it pulls the attributes (if any) out and converts
+;;    Given a list representing it pulls the attributes (if any) out and converts
 ;;    them to a hash of attribute-name => attribute-value.  If there
 ;;    are no attributes, returns an empty hash.
 ;;
-;;    Example:  (div (@ (class "footer")) "This is the footer")
+;;    It expects to be given a proper xexp (that is, a tag, then the
+;;    attributes, then the content), but if given only the attributes
+;;    it will still work.
+;
+;;    Example:  '(div (@ (class "footer")) "This is the footer")
+;;    returns:  #hash((class . "footer"))
+;;
+;;    Example:  '(@ (class "footer"))
 ;;    returns:  #hash((class . "footer"))
 ;;
 (define (attr-hash el)
-  ;;(displayln (format "### In attr-hash, el is: ~a" el))
-  (define (attr-hash-helper l)
-    (cond [(atom? l)  (hash)]
-          [(null? l)  (hash)]
-          [(atom? (car l))  (hash)]
-          [(< (length (car l)) 2)  (hash)]
-          [else (hash-set (attr-hash-helper (cdr l))
-                          (first (car l))
-                          (string-trim (second (car l))))]))
-  (attr-hash-helper (sxml:attr-list el)))
+  (match el
+    [(list '@ (list keys vals) ...)  (for/hash ([k keys][v vals])
+                                       (values k
+                                               (match v
+                                                 [(? string?) (string-trim v)]
+                                                 [_ v])))]
+    [(list tag)  (hash)]
+    [(list tag (and attrs (list '@ (list k v) ...)) _ ...)  (attr-hash attrs)]
+    [_ (hash)]
+    ))
 
 
 ;;--------------------------------------------------
