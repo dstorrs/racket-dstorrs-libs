@@ -38,7 +38,7 @@
 ;;  -- a path to an HTML file, a URL to a web page, or some actual
 ;;  HTML.
 ;;
-(define (html-element-from src)
+(define/contract (html-element-from src)
   (-> (or/c url? path? input-port? string? xexp?) xexp?)
 
   (define is-url  #px"^https?://")
