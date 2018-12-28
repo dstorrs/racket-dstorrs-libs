@@ -3,9 +3,13 @@
 (require (for-syntax racket/base)
          racket/contract/base
          racket/contract/region
-         racket/format)
+         racket/format
+         racket/match)
 
 (provide (struct-out exn:fail:insufficient-space)
+         (struct-out exn:fail:filesystem:errno:file-not-found)
+         refine-filesystem-exn
+         raise/refine-filesystem-exn
          exn:fail:insufficient-space/c
          exn:fail:insufficient-space/kw
          create-exn
@@ -16,6 +20,27 @@
 ;;  Functions for easy creation and management of exceptions, as well
 ;;  as some type definitions.
 ;;======================================================================
+
+(struct exn:fail:filesystem:errno:file-not-found exn:fail:filesystem:errno ())
+
+(define/contract (refine-filesystem-exn e)
+  (-> exn:fail:filesystem? exn:fail:filesystem?)
+  (cond [(not (exn:fail:filesystem:errno? e)) e]
+        [else   (define msg (exn-message e))
+                (define cm  (exn-continuation-marks e))
+                (define errno  (exn:fail:filesystem:errno-errno e))
+                (match msg
+                  [(pregexp "No such file ")
+                   (exn:fail:filesystem:errno:file-not-found msg cm errno)]
+                  [_ e])]))
+
+;;----------------------------------------------------------------------
+
+(define/contract (raise/refine-filesystem-exn e)
+  (-> exn:fail:filesystem? any) ; 'any' because we're going to raise, not return
+  (raise (refine-filesystem-exn e)))
+
+;;----------------------------------------------------------------------
 
 ; Contract for the exn:fail:insufficient-space exception (defined below)
 (define/contract (exn:fail:insufficient-space/c msg ccm req avail source type)
