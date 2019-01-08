@@ -5,10 +5,13 @@
 (require "../hash.rkt"
          "../test-more.rkt"
          racket/bool
+         racket/contract
          racket/format
-         racket/function)
+         racket/function
+         racket/match
+         )
 
-(expect-n-tests 124)
+(expect-n-tests 125)
 
 (when #t
   (test-suite
@@ -496,6 +499,32 @@
                'taste #f)
          "success:  hash-remap with a specified action order and value generator for #:default")
      );let
+
+   (let ()
+     (define source (hash 'group 'fruit       'color 'red    'type #f))
+     (define correct (hash 'group  "group"     ; removed via #:remove, then added via #:default
+                           'color  'green      ; overwritten with specified value
+                           'type   "fuji"      ; overwritten with generated value
+                           'grower "Tom"       ; added via overwrite with generated value
+                           'seller "Bob"       ; added as 'vendor, then renamed, then defaulted
+                           'taste  "taste"))
+     (is
+      (hash-remap source
+                  #:remove                '(group)
+                  #:overwrite             (hash 'color 'green
+                                                'type (lambda (k) "fuji")
+                                                'grower (lambda (hsh key val)
+                                                          (match val
+                                                            [#f (hash-ref hsh 'seller "Tom")]
+                                                            [(? (negate string?)) (~a val)]
+                                                            [_ val])))
+
+                  #:add                   (hash 'vendor #f)
+                  #:rename                (hash 'vendor 'seller)
+                  #:default               (hash 'group "group" 'taste ~a 'seller "Bob")
+                  #:value-is-default?     (or/c #f 'foo))
+      correct
+      "did a complete example, including 'overwriting' non-existing keys with a procedural value"))
    ));test-suite, when
 
 (when #t
@@ -524,27 +553,27 @@
    (is (hash-aggregate 'id (hash 'id 1) (hash 'id 7) (hash 'id 9))
        (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via rest argument")
-   
+
    (is (hash-aggregate 'id (hash 'id 1))
        (hash 1 (hash 'id 1))
        "can aggregate one hash via rest argument")
-   
+
    (is (hash-aggregate 'id (list  (hash 'id 1) (hash 'id 7) (hash 'id 9)))
        (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via list")
 
    (is (hash-aggregate 'id (list  (hash 'id 1)))
        (hash 1 (hash 'id 1))
-       "can aggregate one hash via list")   
+       "can aggregate one hash via list")
 
    (is (hash-aggregate 'id '())
        (hash)
        "can aggregate a null list, getting back an empty hash")
-   
+
    (throws (thunk (hash-aggregate 'id (hash 'x 1) (hash 'x 3)))
            exn:fail:contract?
            "cannot aggregate when the key is not present and no default was supplied")
-   
+
    (is (hash-aggregate 'id #:default #f (list  (hash 'x 1) (hash 'id 7) (hash 'id 9)))
        (hash #f (hash 'x 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via list where one defaults")

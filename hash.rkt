@@ -31,7 +31,7 @@
 (provide (all-from-out racket/hash)
 
          hash-aggregate
-         
+
          hash->keyword-apply
          hash-key-exists?
 
@@ -55,7 +55,6 @@
          sorted-hash-keys
          )
 
-;(require handy/utils) ; only needed for say, which is only for debugging
 
 ;;----------------------------------------------------------------------
 
@@ -73,7 +72,7 @@
        hash?)
 
   (define hashes (flatten hshs)) ; allow passing individual hashes or a list of hashes
-  
+
   (define accessor (if (equal? default 'no-default-provided)
                        hash-ref
                        (curryr hash-ref default)))
@@ -426,7 +425,10 @@
 ;;        (thunk          ; the 'generate a value' procedure
 ;;          (lambda ...)) ; the procedure it generates
 ;;
-;;    If you ask to overwrite keys that are not there, they will be added.
+;;    If you ask to overwrite keys that are not there, they will be
+;;    added.  If the value to overwrite them with is a procedure then
+;;    the procedure will receive #f as the value for the previously
+;;    nonexistent key.
 ;;
 ;;
 ;;  ADD additional keys
@@ -469,17 +471,25 @@
 ;;
 ;;
 ;; COMPLETE EXAMPLE
-;;    (define h (hash 'group 'fruit       'color 'red    'type #f)
-;;    (hash-remap h  #:remove             '(group)
-;;                   #:overwrite          (hash 'color 'green   'type (lambda (k) "fuji"))
-;;                   #:add                (hash 'vendor #f)
-;;                   #:rename             (hash 'vendor 'seller)
-;;                   #:default            (hash 'group "group" 'taste ~a 'seller "Bob")
-;;                   #:value-is-default?  (or/c #f sql-null)) ; assumes (require db)
+;; (define h (hash 'group 'fruit       'color 'red    'type #f))
+;; (hash-remap h  #:remove             '(group)
+;;                #:overwrite          (hash 'color 'green
+;;                                           'type (lambda (k) "fuji")
+;;                                           'grower (lambda (hsh key val)
+;;                                                     (match val
+;;                                                       [#f (hash-ref hsh 'seller "Tom")]
+;;                                                       [(? (negate string?)) (~a val)]
+;;                                                       [_ val])))
+;;
+;;                #:add                (hash 'vendor #f)
+;;                #:rename             (hash 'vendor 'seller)
+;;                #:default            (hash 'group "group" 'taste ~a 'seller "Bob")
+;;                #:value-is-default?  (or/c #f sql-null?)) ; assumes (require db)
 ;;
 ;;     => (hash 'group  "group"     ; removed via #:remove, then added via #:default
 ;;              'color  'green      ; overwritten with specified value
 ;;              'type   "fuji"      ; overwritten with generated value
+;;              'grower "Tom"       ; added via overwrite with generated value
 ;;              'seller "Bob"       ; added as 'vendor, then renamed, then defaulted
 ;;              'taste  "taste")    ; defaulted with generated value
 ;;
@@ -584,7 +594,27 @@
                 ;;   or
                 ;;        (lambda ()             ; the 'generate a value' procedure
                 ;;            (lambda ...))      ; the procedure it generates
-                (safe-hash-union result
+                ;;
+                ;; 'overwrite will add keys that are not in the source
+                ;; hash.  In these cases, we want to make sure that
+                ;; procedural generators are still called, so let's
+                ;; make sure that the 'original' hash has all the keys
+                ;; that are in the overwrite-hash.
+
+
+                ; hash-meld merges a list of hashes, with later
+                ; entries overwriting earlier ones.  It does this
+                ; using either mutation or functional update based on
+                ; whether the first hash in the list is mutable or
+                ; not.  We want to be sure that we don't destroy the
+                ; procedures in the overwrite-hash, so we'll make it
+                ; immutable then convert back if necessary.
+                (define is-immutable? (immutable? result))
+                (define enhanced
+                  ((if is-immutable? identity hash->mutable)
+                   (for/hash ([k (append (hash-keys overwrite-hash) (hash-keys result))])
+                     (values k (hash-ref result k #f)))))
+                (safe-hash-union enhanced
                                  overwrite-hash
                                  #:combine/key (lambda (key orig-val overwrite-val)
                                                  ;(say  "(key orig-val overwrite-val): "  key ", " orig-val ", " overwrite-val)
@@ -684,37 +714,36 @@
 
 (module+ test
   (require rackunit)
-  ;NOTE:  At some point I could capture the test-more output and do an check-equal? against a gold master to validate it via rackunit so that the package server can figure out that things are working.
+  ;    This is just here so that the package server will acknowledge that
+  ;    I have tests.  They are built with test-more, not rackunit, but the
+  ;    package server can't understand test-more so I'm stubbing.
+  ;
+  ;    NOTE: At some point I could capture the test-more output and do an
+  ;    check-equal? against a gold master to validate it via rackunit so
+  ;    that the package server can figure out that things are working.
   (check-equal? 0 0))
 
 ;;
 ;;  Extend match to allow for matching optional values in hash tables.
-;;  Code provided by: Ryan Culpepper.
-
-
+;;  Code provided by: Ryan Culpepper.   NOT CURRENTLY WORKING.
 ;; TODO:
 ;; (define not-found (gensym 'not-found))
-;;   (define (not-not-found? x) (not (eq? x not-found)))
+;; (define (not-not-found? x) (not (eq? x not-found)))
 
-;;   (begin-for-syntax
-;;     (define-syntax-class kvpat
-;;       #:description "hash key-value pattern"
-;;       ;; Note: be careful to evaluate key expr only once!
-;;       (pattern [key:expr value-pattern]
-;;                #:with pattern
-;;                #'(app (lambda (h) (hash-ref h key not-found))
-;;                       (? not-not-found? value-pattern)))
-;;       (pattern [key:expr value-pattern default:expr]
-;;                #:with pattern
-;;                #'(app (lambda (h) (hash-ref h key (lambda () default)))
-;;                       value-pattern))))
+;; (begin-for-syntax
+;;   (define-syntax-class kvpat
+;;     #:description "hash key-value pattern"
+;;     ;; Note: be careful to evaluate key expr only once!
+;;     (pattern [key:expr value-pattern]
+;;              #:with pattern
+;;              #'(app (lambda (h) (hash-ref h key not-found))
+;;                     (? not-not-found? value-pattern)))
+;;     (pattern [key:expr value-pattern default:expr]
+;;              #:with pattern
+;;              #'(app (lambda (h) (hash-ref h key (lambda () default)))
+;;                     value-pattern))))
 
-;;   (define-match-expander hash-table*
-;;     (syntax-parser
-;;       [(_ kv:kvpat ...)
-;;        #'(? hash? kv.pattern ...)]))
-
-;;   (match (hash 'a 1 'b 2)
-;;     [(hash-table* ['a a] ['c c 3])
-;;      (+ a c)])
-;;   ;; => 4
+;; (define-match-expander hash-table*
+;;   (syntax-parser
+;;     [(_ kv:kvpat ...)
+;;      #'(? hash? kv.pattern ...)]))
