@@ -172,6 +172,7 @@
 ;;    autoboxed to ensure it returns a list
 ;;
 ;;    action        ->  optional, function to call on matched values.  Defaults to 'list'
+;;    #:first-only? ->  optional, boolean. #t means only return the first item instead of list
 ;;    #:match       ->  optional, function returning boolean
 ;;    #:tag         ->  optional, a symbol representing an HTML tag
 ;;    #:attr        ->  optional, quoted-value   : attribute that must be present (e.g. 'class)
