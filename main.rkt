@@ -7,14 +7,14 @@
          "fsmonitor.rkt"
          "hash.rkt"
          "json.rkt"
-         "list-utils.rkt"
+         (except-in "list-utils.rkt" hash->keyword-apply)
          "net.rkt"
          "sql.rkt"
          "struct.rkt"
          "test-more.rkt"
          "thread.rkt"
          "try.rkt"
-         (except-in "utils.rkt" hash->keyword-apply); already required from list-utils.rkt
+         (except-in "utils.rkt" hash->keyword-apply); already required from hash.rkt
          "web.rkt")
 
 (expect-n-tests 0)
