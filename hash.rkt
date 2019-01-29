@@ -7,7 +7,9 @@
          racket/function
          racket/hash
          racket/list
-         racket/match)
+         racket/match
+         (only-in "struct.rkt" hash->struct/kw)
+         )
 
 ; for hash-union
 ;; *) hash-aggregate      : list of hashes -> single hash that maps a key to the hashes
@@ -23,12 +25,15 @@
 ;; *) hash-remap          : munge a hash by (remove, overwrite, add, rename, default) keys
 ;; *) hash-rename-key     : change, e.g., key 'name to be 'first-name
 ;; *) hash-slice          : takes a hash and a list of keys, returns the matching values
+;; *) hash-slice*         : ibid, but it returns a new hash of those keys and their values
 ;; *) safe-hash-remove    : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set       : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) safe-hash-union     : does hash-union or hash-union! as needed. Returns the hash.
 ;; *) sorted-hash-keys    : returns sorted list of keys from the hash
 
 (provide (all-from-out racket/hash)
+
+         (all-from-out "struct.rkt") ; hash->struct/kw
 
          hash-aggregate
 
