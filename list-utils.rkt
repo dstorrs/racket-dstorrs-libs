@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require handy/deprecated/list-utils
-         (only-in handy/hash
+(require "deprecated/list-utils.rkt"
+         (only-in "hash.rkt"
                   hash->keyword-apply)
          racket/bool
          racket/contract/base
@@ -14,8 +14,8 @@
          racket/stream)
 
 (provide (all-defined-out)
-         (all-from-out handy/hash)
-         (all-from-out handy/deprecated/list-utils)
+         hash->keyword-apply
+         (all-from-out "deprecated/list-utils.rkt")
          (struct-out dict-disjunction))
 
 ;;    Parameters:

@@ -1,7 +1,7 @@
 #!/usr/bin/env racket
 
 #lang racket/base
-(require (only-in handy/utils
+(require (only-in "../utils.rkt"
                   say)
          racket/bool
          racket/file
