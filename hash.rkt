@@ -8,7 +8,6 @@
          racket/hash
          racket/list
          racket/match
-         (only-in "struct.rkt" hash->struct/kw)
          )
 
 ; for hash-union
@@ -32,8 +31,6 @@
 ;; *) sorted-hash-keys    : returns sorted list of keys from the hash
 
 (provide (all-from-out racket/hash)
-
-         (all-from-out "struct.rkt") ; hash->struct/kw
 
          hash-aggregate
 

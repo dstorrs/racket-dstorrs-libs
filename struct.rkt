@@ -10,7 +10,7 @@
          racket/contract/base
          racket/contract/region
          racket/function
-         "list-utils.rkt")
+         )
 
 (provide struct/kw
          hash->struct/kw
@@ -105,7 +105,7 @@
 
   (define sorted-keys (sort (hash-keys mapping) symbol<?))
   (keyword-apply struct-ctor
-                 (symbols->keywords sorted-keys)
+                 (map (compose string->keyword symbol->string) (sort sorted-keys symbol<?))
                  (map (curry hash-ref mapping) sorted-keys)
                  '()))
 
