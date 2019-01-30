@@ -95,7 +95,11 @@
 (define/contract (hash->struct/kw struct-ctor h [restricted-keys #f] #:remap-keys [remapped-keys (hash)])
   (->* (procedure? (hash/c symbol? any/c))
        ((non-empty-listof any/c) #:remap-keys (hash/c symbol? symbol?))
-       struct?)
+       any)
+  ; NB: The range contract used to be 'struct?', but that doesn't
+  ; guarantee that the value is a structure, it guarantees that it is
+  ; a structure AND THAT STRUCTURE IS VISIBLE TO THE CURRENT
+  ; INSPECTOR, which is too strict.
 
   (define keys-used (if restricted-keys restricted-keys (hash-keys h)))
   (define mapping
