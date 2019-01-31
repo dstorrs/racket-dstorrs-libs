@@ -64,8 +64,36 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-aggregate #:default [default 'no-default-provided]
-                                 key
+; hash-aggregate
+;
+; Essentially everts a list of hashes into a hash that maps keys of
+; those hashes to the individual hashes.  For example:
+;
+; >  (hash-aggregate 'filepath (hash 'filepath "/foo" 'size 10)
+;                              (hash 'filepath "/bar" 'size 20))
+; (hash "/foo" (hash 'filepath "/foo" 'size 10)
+;       "/bar" (hash 'filepath "/bar" 'size 20))
+;
+; If multiple hashes share the same value for that key then they will be in a list
+;
+; >  (hash-aggregate 'filepath (hash 'filepath "/foo" 'size 10)
+;                              (hash 'filepath "/bar" 'size 30)
+;                              (hash 'filepath "/foo" 'size 20))
+;
+; (hash "/foo" (list  (hash 'filepath "/foo" 'size 10) (hash 'filepath "/foo" 'size 20))
+;       "/bar" (hash 'filepath "/bar" 'size 30))
+;
+; You can pass a function of one argument as the key.
+;
+; >  (define key (compose1 add1 (curryr hash-ref 'size)))
+; >  (hash-aggregate key (hash 'filepath "/foo" 'size 10)
+;                        (hash 'filepath "/bar" 'size 30)
+;                        (hash 'filepath "/foo" 'size 20))
+; (hash 11  (hash 'filepath "/foo" 'size 10)
+;       31 (hash 'filepath "/bar" 'size 30)
+;       21 (hash 'filepath "/foo" 'size 20))
+(define/contract (hash-aggregate key
+                                 #:default [default 'no-default-specified]
                                  . hshs)
   (->* (any/c)
        (#:default any/c)
@@ -75,19 +103,28 @@
 
   (define hashes (flatten hshs)) ; allow passing individual hashes or a list of hashes
 
-  (define accessor (if (equal? default 'no-default-provided)
-                       hash-ref
-                       (curryr hash-ref default)))
   (for/fold ([result (hash)])
             ([h hashes])              ; e.g. (hash 'id 7)
-    (define key-val (accessor h key)) ; e.g. 7
-    (define result-val (hash-ref result key-val #f))
-    (cond [(false? result-val) (hash-set result key-val h)] ; hash not previously indexed
-          [else (hash-set result
-                          key-val
-                          (if (list? result-val)
-                              (cons h result-val)
-                              (list h result-val)))])))
+
+    ; Key might have been specified or it might be the result of a
+    ; procedure call
+    (define key-in-result
+      (cond [(procedure? key) (key h)]
+            [(equal? default 'no-default-specified)
+             (hash-ref h key)] ; will die if there's a hash without that key
+            [else (hash-ref h key default)]))
+    (cond
+      [(not (hash-has-key? result key-in-result))
+       ; If result does not have this key, add it directly
+       (safe-hash-set result key-in-result h)]
+      [else
+       (define current-val-in-result (hash-ref result key-in-result))
+       (cond [(list? current-val-in-result)
+              (safe-hash-set result key-in-result (cons h current-val-in-result))
+              ]
+             [else ; it is there but it's not a list
+              (safe-hash-set result key-in-result (list h current-val-in-result))
+              ])])))
 
 ;;----------------------------------------------------------------------
 

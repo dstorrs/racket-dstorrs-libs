@@ -11,7 +11,7 @@
          racket/match
          )
 
-(expect-n-tests 125)
+(expect-n-tests 127)
 
 (when #t
   (test-suite
@@ -550,7 +550,10 @@
   (test-suite
    "hash-aggregate"
 
-   (is (hash-aggregate 'id (hash 'id 1) (hash 'id 7) (hash 'id 9))
+   (is (hash-aggregate 'id
+                       (hash 'id 1)
+                       (hash 'id 7)
+                       (hash 'id 9))
        (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via rest argument")
 
@@ -578,22 +581,68 @@
        (hash #f (hash 'x 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via list where one defaults")
 
-   (is (hash-aggregate 'id (list  (hash 'id 1 'foo 9)
-                                  (hash 'id 1)
-                                  (hash 'id 7)
-                                  (hash 'id 9)))
-       (hash 1 (list  (hash 'id 1) (hash 'id 1 'foo 9))
-             7 (hash 'id 7)
-             9 (hash 'id 9))
-       "can aggregate multiple hashes via list where two items share an index value")
+   
+   (let ([result (hash-aggregate 'id (list  (hash 'id 1 'foo 9)
+                                            (hash 'id 1)
+                                            (hash 'id 7)
+                                            (hash 'id 9)))])
 
-   (is (hash-aggregate 'id #:default #f (list  (hash 'x 1 'foo 9)
-                                               (hash 'x 1)
-                                               (hash 'id 7)
-                                               (hash 'id 9)))
-       (hash #f (list  (hash 'x 1)
-                       (hash 'x 1 'foo 9))
-             7 (hash 'id 7)
-             9 (hash 'id 9))
-       "can aggregate multiple hashes via list where two items share an index value and that value is the default")
+     (ok (match result
+           [(hash-table (1 (list-no-order (hash-table ('id 1) ('foo 9))
+                                          (hash-table ('id 1))))
+                        (7 (hash-table ('id 7)))
+                        (9 (hash-table ('id 9))))
+            #t
+            ]
+           [_ #f])
+         "can aggregate a list of hashes where two hashes share the same key"))
+
+
+   
+   (let ([result (hash-aggregate 'id (list  (hash 'id 1 'foo 9)
+                                            (hash 'id 1)
+                                            (hash 'id 7)
+                                            (hash 'id 9)))])
+     (ok (match result
+           [(hash-table (1 (list-no-order (hash-table ('id 1) ('foo 9))
+                                          (hash-table ('id 1))))
+                        (7 (hash-table ('id 7)))
+                        (9 (hash-table ('id 9))))
+            #t
+            ]
+           [_ #f])
+         "can aggregate multiple hashes via list where two items share an index value"))
+
+   
+   (let ([result (hash-aggregate 'id #:default #f (list  (hash 'x 1 'foo 9)
+                                                         (hash 'x 1)
+                                                         (hash 'id 7)
+                                                         (hash 'id 9)))])
+     (ok (match result
+           [(hash-table (#f (list-no-order  (hash-table ('x 1))
+                                            (hash-table ('x 1) ('foo 9))))
+                        (7 (hash-table ('id 7)))
+                        (9 (hash-table ('id 9))))
+            #t]
+           [_ #f])
+         "can aggregate multiple hashes via list where two items share an index value and that value is the default"))
+
+
+   (let ([result (hash-aggregate (lambda (h)
+                                   (define val (hash-ref h 'id #f))
+                                   (match val
+                                     [#f #f]
+                                     [else (add1 val)]))
+                                 (list  (hash 'x 1 'foo 9)
+                                        (hash 'x 1)
+                                        (hash 'id 7)
+                                        (hash 'id 9)))])
+     (ok (match result
+           [(hash-table (#f (list-no-order  (hash-table ('x 1))
+                                            (hash-table ('x 1) ('foo 9))))
+                        (8 (hash-table ('id 7)))
+                        (10 (hash-table ('id 9))))
+            #t]
+           [_ #f])
+         "can aggregate multiple hashes via list where two items share an index value that was determined by a procedure and that value is the default"))
    ))
