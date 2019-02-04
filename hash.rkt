@@ -106,8 +106,8 @@
 ;
 ; > (struct person (age) #:transparent)
 ; > (hash-aggregate person-age (list (person 0) (person 1) (person 2)))
-; (hash 0 (person 0) 
-;       1 (person 1) 
+; (hash 0 (person 0)
+;       1 (person 1)
 ;       2 (person 2))
 (define/contract (hash-aggregate key
                                  #:default [default 'no-default-specified]
@@ -728,21 +728,29 @@
                  ;
                  ; #:default (hash 'foo (lambda (key) (lambda ...)))
                  ;
-                 (define make-value (lambda (key default-val)
-                                      (if (procedure? default-val)
-                                          (default-val key)
-                                          default-val)))
+                 (define make-value
+                   (lambda (key hsh default-val)
+                     (cond [(not (procedure? default-val)) default-val]
+                           [(let ([proc-arity (procedure-arity default-val)])
+                              (and (number? proc-arity)
+                                   (= 2 proc-arity)))
+                            (default-val key hsh)]
+                           [else (default-val key)])))
 
                  (for/fold ([defaulted-result result])
                            ([(key default-val) default-hash])
-                   ;;(say "key/val/final val: " key ", " default-val ", " (make-value key default-val))
+                   ;;(say "key/val/final val: " key ", " default-val ", " (make-value key defaulted-result default-val))
                    (cond [(not (hash-has-key? defaulted-result key))
                           ;;(say "not has")
-                          (safe-hash-set defaulted-result key (make-value key default-val))]
+                          (safe-hash-set defaulted-result
+                                         key
+                                         (make-value key defaulted-result default-val))]
                          ;
                          [(value-is-default? (hash-ref defaulted-result key))
                           ;;(say "val is def")
-                          (safe-hash-set defaulted-result key (make-value key default-val))]
+                          (safe-hash-set defaulted-result key (make-value key
+                                                                          defaulted-result
+                                                                          default-val))]
                          ;
                          [else
                           ;;(say "else")

@@ -12,7 +12,7 @@
          racket/match
          )
 
-(expect-n-tests 129)
+(expect-n-tests 130)
 
 (when #t
   (test-suite
@@ -403,13 +403,16 @@
          "rename worked"))
 
    ;;
-   ;;  DEFAULT values for keys that aren't there but don't touch ones that are
+   ;;  DEFAULT values for keys that aren't there but don't touch ones
+   ;;  that are unless they match the 'is-default' value
    ;;
-   ;;      As with the #:overwrite parameter, you can have your default
-   ;;      values generated if you want, although the procedure only
-   ;;      takes one argument (the key that will be set).  Again, if you
-   ;;      actually want to have the value be a procedure then you'll
-   ;;      need to wrap it.
+   ;;      As with the #:overwrite parameter, you can have your
+   ;;      default values generated if you want. Your generator
+   ;;      procedure can take either one argument (the key) or two
+   ;;      arguments (the key and the hash). It must have arity of 2
+   ;;      to get key and hash; any other arity will only get key.
+   ;;      Again, if you actually want to have the value be a
+   ;;      procedure then you'll need to wrap it.
    ;;
    (let ()
      (is (hash-remap (hash 'x 1) #:default (hash 'y 2))
@@ -432,7 +435,12 @@
                'y #f  ; untouched because not the default value
                'z "z" ; set and generated
                'a 7)  ; added
-         "default with a specified default val: only touched things in the 'default' hash that had the specified value.  Generated and added keys when necessary"))
+         "default with a specified default val: only touched things in the 'default' hash that had the specified value.  Generated and added keys when necessary")
+
+     (is (hash-remap (hash 'x 1) #:default (hash 'y (lambda (key hsh) (list key  (add1 (hash-ref hsh 'x))))))
+         (hash 'x 1 'y '(y 2))
+         "#:default correctly added a key that wasn't there and generated the value based on a procedure of two args (key and hash)")
+     )
 
    (let ()
      (is (hash-remap (hash 'x 1)  #:post hash-keys->strings)
