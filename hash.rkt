@@ -66,15 +66,24 @@
 
 ; hash-aggregate
 ;
-; Essentially everts a list of hashes into a hash that maps keys of
-; those hashes to the individual hashes.  For example:
+; Takes a list of items and aggregates them into a hash where the
+; values are the original itemsand the keys are some element of the
+; items.  Typically used to evert a list of hashes (and includes
+; special convenience functionality for that case) but could be used
+; on anything.
 ;
 ; >  (hash-aggregate 'filepath (hash 'filepath "/foo" 'size 10)
 ;                              (hash 'filepath "/bar" 'size 20))
-; (hash "/foo" (hash 'filepath "/foo" 'size 10)
-;       "/bar" (hash 'filepath "/bar" 'size 20))
+;   (hash "/foo" (hash 'filepath "/foo" 'size 10)
+;         "/bar" (hash 'filepath "/bar" 'size 20))
 ;
-; If multiple hashes share the same value for that key then they will be in a list
+; Note the convenience here -- if a non-procedure value
+; (e.g. 'filepath) is passed as the key value then it is assumed that
+; the items being aggregated will be hashes and that the key value
+; should be determined by way of (curry hash-ref key-value)
+;
+; If multiple hashes share the same value for that key then they will
+; be in a list.
 ;
 ; >  (hash-aggregate 'filepath (hash 'filepath "/foo" 'size 10)
 ;                              (hash 'filepath "/bar" 'size 30)
@@ -92,13 +101,20 @@
 ; (hash 11  (hash 'filepath "/foo" 'size 10)
 ;       31 (hash 'filepath "/bar" 'size 30)
 ;       21 (hash 'filepath "/foo" 'size 20))
+;
+; And, of course, you can do the same thing with non-hash data.
+;
+; > (struct person (age) #:transparent)
+; > (hash-aggregate person-age (list (person 0) (person 1) (person 2)))
+; (hash 0 (person 0) 
+;       1 (person 1) 
+;       2 (person 2))
 (define/contract (hash-aggregate key
                                  #:default [default 'no-default-specified]
                                  . hshs)
   (->* (any/c)
        (#:default any/c)
-       #:rest (or/c  (listof hash?)
-                     (list/c (listof hash?)))
+       #:rest (listof any/c)
        hash?)
 
   (define hashes (flatten hshs)) ; allow passing individual hashes or a list of hashes

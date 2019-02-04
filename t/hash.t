@@ -8,10 +8,11 @@
          racket/contract
          racket/format
          racket/function
+         racket/list
          racket/match
          )
 
-(expect-n-tests 127)
+(expect-n-tests 129)
 
 (when #t
   (test-suite
@@ -645,4 +646,39 @@
             #t]
            [_ #f])
          "can aggregate multiple hashes via list where two items share an index value that was determined by a procedure and that value is the default"))
+
+   (let ()
+     (struct person (age) #:transparent)
+     (define people (for/list ([i 10]) (person i)))
+     
+     (let ([result (hash-aggregate person-age people)])
+       (ok (match result
+             [(hash-table (0 (person 0))
+                          (1 (person 1))
+                          (2 (person 2))
+                          (3 (person 3))
+                          (4 (person 4))
+                          (5 (person 5))
+                          (6 (person 6))
+                          (7 (person 7))
+                          (8 (person 8))
+                          (9 (person 9)))
+              #t]
+             [else #f])
+           "hash-aggregate worked with structs")))
+
+   (let ()
+     (struct person (age) #:transparent)
+     (define people (flatten (for/list ([i 5]) (list  (person i) (person i)))))
+     
+     (let ([result (hash-aggregate person-age people)])
+       (ok (match result
+             [(hash-table (0 (list (person 0) (person 0)))
+                          (1 (list (person 1) (person 1)))
+                          (2 (list (person 2) (person 2)))
+                          (3 (list (person 3) (person 3)))
+                          (4 (list (person 4) (person 4))))
+              #t]
+             [else #f])
+           "hash-aggregate worked with structs where multiple values shared keys")))   
    ))
