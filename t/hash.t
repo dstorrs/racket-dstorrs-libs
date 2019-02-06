@@ -12,7 +12,7 @@
          racket/match
          )
 
-(expect-n-tests 130)
+(expect-n-tests 142)
 
 (when #t
   (test-suite
@@ -590,7 +590,7 @@
        (hash #f (hash 'x 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via list where one defaults")
 
-   
+
    (let ([result (hash-aggregate 'id (list  (hash 'id 1 'foo 9)
                                             (hash 'id 1)
                                             (hash 'id 7)
@@ -607,7 +607,7 @@
          "can aggregate a list of hashes where two hashes share the same key"))
 
 
-   
+
    (let ([result (hash-aggregate 'id (list  (hash 'id 1 'foo 9)
                                             (hash 'id 1)
                                             (hash 'id 7)
@@ -622,7 +622,7 @@
            [_ #f])
          "can aggregate multiple hashes via list where two items share an index value"))
 
-   
+
    (let ([result (hash-aggregate 'id #:default #f (list  (hash 'x 1 'foo 9)
                                                          (hash 'x 1)
                                                          (hash 'id 7)
@@ -658,7 +658,7 @@
    (let ()
      (struct person (age) #:transparent)
      (define people (for/list ([i 10]) (person i)))
-     
+
      (let ([result (hash-aggregate person-age people)])
        (ok (match result
              [(hash-table (0 (person 0))
@@ -678,7 +678,7 @@
    (let ()
      (struct person (age) #:transparent)
      (define people (flatten (for/list ([i 5]) (list  (person i) (person i)))))
-     
+
      (let ([result (hash-aggregate person-age people)])
        (ok (match result
              [(hash-table (0 (list (person 0) (person 0)))
@@ -688,5 +688,137 @@
                           (4 (list (person 4) (person 4))))
               #t]
              [else #f])
-           "hash-aggregate worked with structs where multiple values shared keys")))   
+           "hash-aggregate worked with structs where multiple values shared keys")))
+
+   ;; Now run all the hash-aggregate** tests
+   (is (hash-aggregate* 'id
+                       (hash 'id 1)
+                       (hash 'id 7)
+                       (hash 'id 9))
+       (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
+       "can aggregate multiple hashes via rest argument")
+
+   (is (hash-aggregate* 'id (hash 'id 1))
+       (hash 1 (hash 'id 1))
+       "can aggregate one hash via rest argument")
+
+   (throws (thunk (hash-aggregate* 'id (list  (hash 'id 1) (hash 'id 7) (hash 'id 9))))
+           exn:fail:contract?
+           "does not treat a list of arguments specially (you must pass as individual items)"
+           )
+
+   (throws (thunk (hash-aggregate* 'id '()))
+           exn:fail:contract?
+           "passing a null list and a symbolic predicate goes boom")
+
+   (throws (thunk (hash-aggregate* 'id (hash 'x 1) (hash 'x 3)))
+           exn:fail:contract?
+           "hash-aggregate* throws when the key is not present and no default was supplied")
+
+   (is (hash-aggregate* 'id #:default #f (hash 'x 1) (hash 'id 7) (hash 'id 9))
+       (hash #f (hash 'x 1)  7 (hash 'id 7) 9 (hash 'id 9))
+       "can aggregate multiple hashes where one defaults")
+
+
+   (let ([result (hash-aggregate* 'id
+                                 (hash 'id 1 'foo 9)
+                                 (hash 'id 1)
+                                 (hash 'id 7)
+                                 (hash 'id 9))])
+
+     (ok (match result
+           [(hash-table (1 (list-no-order (hash-table ('id 1) ('foo 9))
+                                          (hash-table ('id 1))))
+                        (7 (hash-table ('id 7)))
+                        (9 (hash-table ('id 9))))
+            #t
+            ]
+           [_ #f])
+         "can aggregate hashes where two hashes share the same key"))
+
+
+
+   (let ([result (hash-aggregate* 'id
+                                 (hash 'id 1 'foo 9)
+                                 (hash 'id 1)
+                                 (hash 'id 7)
+                                 (hash 'id 9))])
+     (ok (match result
+           [(hash-table (1 (list-no-order (hash-table ('id 1) ('foo 9))
+                                          (hash-table ('id 1))))
+                        (7 (hash-table ('id 7)))
+                        (9 (hash-table ('id 9))))
+            #t
+            ]
+           [_ #f])
+         "can aggregate multiple hashes where two items share an index value"))
+
+
+   (let ([result (hash-aggregate* 'id #:default #f
+                                 (hash 'x 1 'foo 9)
+                                 (hash 'x 1)
+                                 (hash 'id 7)
+                                 (hash 'id 9))])
+     (ok (match result
+           [(hash-table (#f (list-no-order  (hash-table ('x 1))
+                                            (hash-table ('x 1) ('foo 9))))
+                        (7 (hash-table ('id 7)))
+                        (9 (hash-table ('id 9))))
+            #t]
+           [_ #f])
+         "can aggregate multiple hashes where two items share an index value and that value is the default"))
+
+
+   (let ([result (hash-aggregate* (lambda (h)
+                                   (define val (hash-ref h 'id #f))
+                                   (match val
+                                     [#f #f]
+                                     [else (add1 val)]))
+                                 (hash 'x 1 'foo 9)
+                                 (hash 'x 1)
+                                 (hash 'id 7)
+                                 (hash 'id 9))])
+     (ok (match result
+           [(hash-table (#f (list-no-order  (hash-table ('x 1))
+                                            (hash-table ('x 1) ('foo 9))))
+                        (8 (hash-table ('id 7)))
+                        (10 (hash-table ('id 9))))
+            #t]
+           [_ #f])
+         "can aggregate multiple hashes where two items share an index value that was determined by a procedure and that value is the default"))
+
+   (let ()
+     (struct person (age) #:transparent)
+     (define people (for/list ([i 10]) (person i)))
+
+     (let ([result (apply hash-aggregate* person-age people)])
+       (ok (match result
+             [(hash-table (0 (person 0))
+                          (1 (person 1))
+                          (2 (person 2))
+                          (3 (person 3))
+                          (4 (person 4))
+                          (5 (person 5))
+                          (6 (person 6))
+                          (7 (person 7))
+                          (8 (person 8))
+                          (9 (person 9)))
+              #t]
+             [else #f])
+           "hash-aggregate* worked with structs")))
+
+   (let ()
+     (struct person (age) #:transparent)
+     (define people (flatten (for/list ([i 5]) (list  (person i) (person i)))))
+
+     (let ([result (apply hash-aggregate* person-age people)])
+       (ok (match result
+             [(hash-table (0 (list (person 0) (person 0)))
+                          (1 (list (person 1) (person 1)))
+                          (2 (list (person 2) (person 2)))
+                          (3 (list (person 3) (person 3)))
+                          (4 (list (person 4) (person 4))))
+              #t]
+             [else #f])
+           "hash-aggregate* worked with structs where multiple values shared keys")))
    ))

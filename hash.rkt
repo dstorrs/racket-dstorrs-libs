@@ -11,7 +11,8 @@
          )
 
 ; for hash-union
-;; *) hash-aggregate      : list of hashes -> single hash that maps a key to the hashes
+;; *) hash-aggregate*     : listof any/c -> single hash that maps a key to the vals
+;; *) hash-aggregate      : flattens its args, trampolines to hash-aggregate*
 ;; *) hash->keyword-apply : take a function and a hash.  Assume the
 ;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) hash-key-exists?    : alias for hash-has-key? because I always forget the name
@@ -33,6 +34,7 @@
 (provide (all-from-out racket/hash)
 
          hash-aggregate
+         hash-aggregate*
 
          hash->keyword-apply
          hash-key-exists?
@@ -64,10 +66,25 @@
 
 ;;----------------------------------------------------------------------
 
+; hash-aggregate was the original primary function but has now been
+; turned into a trampoline to hash-aggregate* that flattens its
+; arguments list before bouncing.
+(define/contract (hash-aggregate key
+                                 #:default [default 'no-default-specified]
+                                 . items)
+  (->* (any/c)
+       (#:default any/c)
+       #:rest (listof any/c)
+       hash?)
+
+  ; allow passing individual hashes or a list of hashes
+  (apply hash-aggregate* key #:default default (flatten items)))
+
+
 ; hash-aggregate
 ;
 ; Takes a list of items and aggregates them into a hash where the
-; values are the original itemsand the keys are some element of the
+; values are the original items and the keys are some element of the
 ; items.  Typically used to evert a list of hashes (and includes
 ; special convenience functionality for that case) but could be used
 ; on anything.
@@ -109,25 +126,23 @@
 ; (hash 0 (person 0)
 ;       1 (person 1)
 ;       2 (person 2))
-(define/contract (hash-aggregate key
-                                 #:default [default 'no-default-specified]
-                                 . hshs)
+(define/contract (hash-aggregate* key
+                                  #:default [default 'no-default-specified]
+                                  . items)
   (->* (any/c)
        (#:default any/c)
        #:rest (listof any/c)
        hash?)
 
-  (define hashes (flatten hshs)) ; allow passing individual hashes or a list of hashes
-
+  (define no-default? (equal? default 'no-default-specified))
   (for/fold ([result (hash)])
-            ([h hashes])              ; e.g. (hash 'id 7)
+            ([h items]) ; e.g. (hash 'id 7)
 
     ; Key might have been specified or it might be the result of a
     ; procedure call
     (define key-in-result
       (cond [(procedure? key) (key h)]
-            [(equal? default 'no-default-specified)
-             (hash-ref h key)] ; will die if there's a hash without that key
+            [no-default? (hash-ref h key)] ; will die if there's a hash without that key
             [else (hash-ref h key default)]))
     (cond
       [(not (hash-has-key? result key-in-result))
@@ -788,7 +803,9 @@
 
 ;;
 ;;  Extend match to allow for matching optional values in hash tables.
-;;  Code provided by: Ryan Culpepper.   NOT CURRENTLY WORKING.
+;;  Code provided by: Ryan Culpepper at Racketcon2018.  NOT CURRENTLY
+;;  WORKING because I didn't record it promptly.
+;;
 ;; TODO:
 ;; (define not-found (gensym 'not-found))
 ;; (define (not-not-found? x) (not (eq? x not-found)))
