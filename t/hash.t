@@ -12,7 +12,7 @@
          racket/match
          )
 
-(expect-n-tests 142)
+(expect-n-tests 148)
 
 (when #t
   (test-suite
@@ -821,4 +821,34 @@
               #t]
              [else #f])
            "hash-aggregate* worked with structs where multiple values shared keys")))
+   ))
+
+(when #t
+  (test-suite
+   "hash-subtract"
+
+   (define source (hash 'a 1 'b '(2 3) 'c 7))
+
+   (is (hash-subtract (hash) (hash))
+       (hash)
+       "subtracting an empty hash from an empty hash returns an empty hash")
+   (is #:op eq?
+       (hash-subtract source (hash))
+       source
+       "subtracting an empty hash from a full hash returns the original hash")
+
+   (is (hash-subtract source (hash 'a 1))
+       (safe-hash-remove source 'a)
+       "success. (hash-subtract source (hash 'a 1))"
+       )
+
+   (is (hash-subtract source (hash 'a 1 'b 7) (hash 'c 9))
+       (hash)
+       "success. (hash-subtract source (hash 'a 1 'b 7) (hash 'c 9))"
+       )   
+
+   (is (hash-subtract source (hash 'a 1) (hash 'b 8) (hash 'c 9))
+       (hash)
+       "success. (hash-subtract source (hash 'a 1) (hash 'b 8) (hash 'c 9))"
+       )   
    ))

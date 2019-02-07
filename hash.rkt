@@ -26,6 +26,7 @@
 ;; *) hash-rename-key     : change, e.g., key 'name to be 'first-name
 ;; *) hash-slice          : takes a hash and a list of keys, returns the matching values
 ;; *) hash-slice*         : ibid, but it returns a new hash of those keys and their values
+;; *) hash-subtract       : remove one or more subsets of a hash's keys
 ;; *) safe-hash-remove    : does hash-remove or hash-remove! as needed.  Returns the hash.
 ;; *) safe-hash-set       : does hash-set or hash-set! as needed. Returns the hash.
 ;; *) safe-hash-union     : does hash-union or hash-union! as needed. Returns the hash.
@@ -52,6 +53,8 @@
          hash-slice
          hash-slice*
 
+         hash-subtract
+         
          safe-hash-remove
          safe-hash-set
          safe-hash-union
@@ -81,7 +84,7 @@
   (apply hash-aggregate* key #:default default (flatten items)))
 
 
-; hash-aggregate
+; hash-aggregate*
 ;
 ; Takes a list of items and aggregates them into a hash where the
 ; values are the original items and the keys are some element of the
@@ -89,7 +92,7 @@
 ; special convenience functionality for that case) but could be used
 ; on anything.
 ;
-; >  (hash-aggregate 'filepath (hash 'filepath "/foo" 'size 10)
+; >  (hash-aggregate* 'filepath (hash 'filepath "/foo" 'size 10)
 ;                              (hash 'filepath "/bar" 'size 20))
 ;   (hash "/foo" (hash 'filepath "/foo" 'size 10)
 ;         "/bar" (hash 'filepath "/bar" 'size 20))
@@ -102,7 +105,7 @@
 ; If multiple hashes share the same value for that key then they will
 ; be in a list.
 ;
-; >  (hash-aggregate 'filepath (hash 'filepath "/foo" 'size 10)
+; >  (hash-aggregate* 'filepath (hash 'filepath "/foo" 'size 10)
 ;                              (hash 'filepath "/bar" 'size 30)
 ;                              (hash 'filepath "/foo" 'size 20))
 ;
@@ -112,7 +115,7 @@
 ; You can pass a function of one argument as the key.
 ;
 ; >  (define key (compose1 add1 (curryr hash-ref 'size)))
-; >  (hash-aggregate key (hash 'filepath "/foo" 'size 10)
+; >  (hash-aggregate* key (hash 'filepath "/foo" 'size 10)
 ;                        (hash 'filepath "/bar" 'size 30)
 ;                        (hash 'filepath "/foo" 'size 20))
 ; (hash 11  (hash 'filepath "/foo" 'size 10)
@@ -122,13 +125,13 @@
 ; And, of course, you can do the same thing with non-hash data.
 ;
 ; > (struct person (age) #:transparent)
-; > (hash-aggregate person-age (list (person 0) (person 1) (person 2)))
+; > (hash-aggregate* person-age (list (person 0) (person 1) (person 2)))
 ; (hash 0 (person 0)
 ;       1 (person 1)
 ;       2 (person 2))
 (define/contract (hash-aggregate* key
-                                  #:default [default 'no-default-specified]
-                                  . items)
+                                 #:default [default 'no-default-specified]
+                                 . items)
   (->* (any/c)
        (#:default any/c)
        #:rest (listof any/c)
@@ -276,8 +279,8 @@
 
 ;;    Takes a hash and list of keys, returns a new hash containing
 ;;    only those keys and their values. Any keys that are not in the
-;;    hash will be returned as the default value (#f if not
-;;    specified).
+;;    hash will be returned as the default value, or an exception
+;;    thrown if no default was supplied.
 (define/contract (hash-slice* the-hash keys [default 'hash-slice*-default])
   (->* (hash? list?) (any/c) hash?)
   (for/hash ((k keys))
@@ -285,6 +288,15 @@
             (if (equal? default 'hash-slice*-default)
                 (hash-ref the-hash k)
                 (hash-ref the-hash k default)))))
+
+;;----------------------------------------------------------------------
+
+(define/contract (hash-subtract the-hash . subhashes)
+  (->* (hash?) () #:rest (listof hash?) hash?)
+  (safe-hash-remove the-hash
+                    (remove-duplicates
+                     (flatten
+                      (map hash-keys subhashes)))))
 
 ;;----------------------------------------------------------------------
 
