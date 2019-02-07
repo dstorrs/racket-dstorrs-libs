@@ -295,7 +295,7 @@
   (->* (hash?) () #:rest (listof hash?) hash?)
   (safe-hash-remove the-hash
                     (remove-duplicates
-                     (flatten
+                     (apply append
                       (map hash-keys subhashes)))))
 
 ;;----------------------------------------------------------------------
