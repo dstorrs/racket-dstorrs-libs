@@ -54,7 +54,7 @@
          hash-slice*
 
          hash-subtract
-         
+
          safe-hash-remove
          safe-hash-set
          safe-hash-union
@@ -130,8 +130,8 @@
 ;       1 (person 1)
 ;       2 (person 2))
 (define/contract (hash-aggregate* key
-                                 #:default [default 'no-default-specified]
-                                 . items)
+                                  #:default [default 'no-default-specified]
+                                  . items)
   (->* (any/c)
        (#:default any/c)
        #:rest (listof any/c)
@@ -203,11 +203,27 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (hash-keys->symbols h)
-  (-> hash? hash?)
+(define/contract (hash-keys->symbols h
+                                     #:dash->underscore? [dash->underscore? #f]
+                                     #:underscore->dash? [underscore->dash? #f]
+                                     )
+  (->* (hash?)
+       (#:dash->underscore? boolean?
+        #:underscore->dash? boolean?)
+       hash?)
+
+  (when (and dash->underscore? underscore->dash?)
+    (raise-arguments-error 'hash-keys->strings
+                           "It's not sensible to set both dash->underscore? and underscore->dash?."
+                           "dash->underscore?" dash->underscore?
+                           "underscore->dash?" underscore->dash?))
+
   ((if (immutable? h) identity hash->mutable)
-   (for/hash ([(k v) h])
-     (values (if (symbol? k) k (string->symbol (~a k)))
+   (for/hash ([(k v) (in-hash h)])
+     (define key (~a k))
+     (values (string->symbol (cond [dash->underscore?  (regexp-replace* #px"-" key "_")]
+                                   [underscore->dash?  (regexp-replace* #px"_" key "-")]
+                                   [else key]))
              v))))
 
 ;;----------------------------------------------------------------------
@@ -296,7 +312,7 @@
   (safe-hash-remove the-hash
                     (remove-duplicates
                      (apply append
-                      (map hash-keys subhashes)))))
+                            (map hash-keys subhashes)))))
 
 ;;----------------------------------------------------------------------
 

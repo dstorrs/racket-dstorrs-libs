@@ -12,7 +12,7 @@
          racket/match
          )
 
-(expect-n-tests 148)
+(expect-n-tests 150)
 
 (when #t
   (test-suite
@@ -274,6 +274,26 @@
        (hash 'foo 7 'bar 8)
        "(hash-keys->symbols works")
 
+   (is (hash-keys->symbols (hash 'x 7
+                                 "y" 0
+                                 'foo-bar 12
+                                 "bar_baz" 19)
+                           #:dash->underscore? #t
+                           )
+       (hash 'x 7 'y '0 'foo_bar 12 'bar_baz 19)
+       "hash-keys->symbols accepts #:dash->underscore?")
+   
+   (is (hash-keys->symbols (hash 'x 7
+                                 "y" 0
+                                 'foo-bar 12
+                                 "bar_baz" 19)
+                           #:underscore->dash? #t)
+       (hash 'x 7
+             'y '0
+             'foo-bar 12
+             'bar-baz 19)
+       "hash-keys->symbols accepts #:underscore->dash?")
+   
    (is (hash-keys->strings (hash "foo" 7 'bar 8 0 'c))
        (hash "foo" 7 "bar" 8 "0" 'c)
        "(hash-keys->strings works on things with keys that are not symbol/string")
