@@ -12,7 +12,7 @@
          racket/match
          )
 
-(expect-n-tests 150)
+(expect-n-tests 151)
 
 (when #t
   (test-suite
@@ -354,6 +354,12 @@
   (test-suite
    "hash-remap"
 
+   ;;  INCLUDE
+   (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
+     (is (hash-remap h #:include '(group))
+         (hash 'group 'fruit)
+         "include successful"))
+   
    ;;  REMOVE any values we were told to remove via the #:remove list
    ;;
    (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])

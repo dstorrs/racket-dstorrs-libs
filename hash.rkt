@@ -461,8 +461,10 @@
 ;;----------------------------------------------------------------------
 
 ;; (define/contract (hash-remap h
-;;                              #:action-order         [action-order '(remove overwrite add
-;;                                                                         rename default)]
+;;                              #:action-order         [action-order
+;;                                                        '(include remove overwrite 
+;;                                                          add rename default)]
+;;                              #:include              [include-keys #f]
 ;;                              #:remove               [remove-keys '()]
 ;;                              #:overwrite            [overwrite   #f ]
 ;;                              #:add                  [add         #f ]
@@ -473,15 +475,17 @@
 ;;                              )
 ;;   (->* (hash?)
 ;;        (#:action-order (listof (or/c 'remove 'overwrite 'add 'rename 'default))
-;;         #:remove list? #:overwrite hash? #:add hash? #:rename hash?
+;;         #:include list?
+;;         #:remove list?
+;;         #:overwrite hash? #:add hash? #:rename hash?
 ;;         #:default hash?
 ;;         #:value-is-default? any/c ; (-> any/c boolean) or converts to (or/c default-val)
 ;;         #:post (-> hash? any)
 ;;        )
 ;;        hash?)
 ;;
-;;  Mnemonic for default order of application: ROARenD
-;;         remove -> overwrite -> add -> rename -> default
+;;  Mnemonic for default order of application: I ROARenD
+;;         include -> remove -> overwrite -> add -> rename -> default
 ;;
 ;;    This will munge hashes any way you like.  You can rename keys,
 ;;    remove keys, overwrite the value of keys, add new keys, ensure
@@ -496,6 +500,10 @@
 ;;  NOTE: These are listed in the default action order, but you can
 ;;  change that with the #:action-order parameter.  Whatever order you
 ;;  specify there will be followed.
+;;
+;;  INCLUDE the keys specified in the #:include list.  This is really
+;;  just syntactic sugar around REMOVE, basically saying "remove
+;;  everything except the stated keys"
 ;;
 ;;  REMOVE any values we were told to remove via the #:remove list
 ;;
@@ -610,6 +618,7 @@
 ;;              'taste 'yummy) ; defaulted due to the #:value-is-default? predicate
 ;;
 (define/contract (hash-remap h
+                             #:include           [include-keys #f ]
                              #:remove            [remove-keys #f]
                              #:overwrite         [overwrite #f]
                              #:add               [add #f]
@@ -617,192 +626,198 @@
                              #:default           [default #f]
                              #:value-is-default? [def-val none/c]
                              #:post              [post-process identity]
-                             #:action-order      [action-order '(remove overwrite add
-                                                                        rename default)])
+                             #:action-order      [action-order '(include
+                                                                 remove overwrite add
+                                                                 rename default)])
   (->* (hash?)
-       (#:remove list?
+       (#:include (non-empty-listof any/c)
+        #:remove list?
         #:overwrite hash?
         #:add hash?
         #:rename hash?
         #:default hash?
         #:value-is-default? any/c
-        #:action-order (listof (or/c 'remove 'overwrite 'add 'rename 'default))
+        #:action-order (listof (or/c 'include 'remove 'overwrite
+                                     'add 'rename 'default))
         #:post (-> hash? any))
        any)
 
-  (define value-is-default? (or/c def-val)) ; converts non-procedure to procedures, does not affect procedures
+  ; converts non-procedure default values to procedures, does not affect procedures
+  (define value-is-default? (or/c def-val))
 
   ;(say "default predicate: " value-is-default?)
 
   ; If we aren't going to end up doing anything then just return the
   ; (post-processed) original hash.
-  (cond [(or (null? action-order)
-             (andmap false? (list remap remove-keys overwrite add default)))
+  (post-process
+   (cond [(or (null? action-order)
+              (andmap false? (list include-keys remap remove-keys overwrite add default)))
 
-         ;(say "doing nothing")
-         (post-process h)]
-        [else
-         ;(say "doing something")
-         ;
-         ; Okay, we're going to make some sort of change
-         (define (empty-hash) (if (immutable? h) (hash) (make-hash)))
-         (define overwrite-hash (or overwrite (empty-hash)))
-         (define add-hash       (or add       (empty-hash)))
-         (define remap-hash     (or remap     (empty-hash)))
-         (define default-hash   (or default   (empty-hash)))
+          ;(say "doing nothing")
+          h]
+         [else
+          ;(say "doing something")
+          ;
+          ; Okay, we're going to make some sort of change
+          (define (empty-hash) (if (immutable? h) (hash) (make-hash)))
+          (define overwrite-hash (or overwrite (empty-hash)))
+          (define add-hash       (or add       (empty-hash)))
+          (define remap-hash     (or remap     (empty-hash)))
+          (define default-hash   (or default   (empty-hash)))
 
-         ;; ;(say "original hash: " h
-         ;;      "\n\t immutable?     " (immutable? h)
-         ;;      "\n\t overwrite:     " overwrite-hash
-         ;;      "\n\t add:           " add-hash
-         ;;      "\n\t remap-hash:    " remap-hash
-         ;;      "\n\t default-hash:  " default-hash)
+          ;; ;(say "original hash: " h
+          ;;      "\n\t immutable?     " (immutable? h)
+          ;;      "\n\t overwrite:     " overwrite-hash
+          ;;      "\n\t add:           " add-hash
+          ;;      "\n\t remap-hash:    " remap-hash
+          ;;      "\n\t default-hash:  " default-hash)
 
-         ;(say "zot")
-         (define result
-           (for/fold ([result h])
-                     ([action action-order])
-             (match action
-               ['remove
-                ;; Remove keys
-                (apply (curry safe-hash-remove result)
-                       (or remove-keys '()))]
-               ;
-               ['overwrite
-                ;;    Overwrite any values from the original hash that
-                ;;    we were told to overwrite.  If the new value is a
-                ;;    procedure then it will be invoked and its result
-                ;;    will be the new value.  The procedure must have
-                ;;    the signature:
-                ;;
-                ;;        (-> hash? any/c any/c any/c)  ; hash, key, orig-val, return 1 value
-                ;;    or
-                ;;        (-> any/c any/c)  ; orig-val, return 1 value
-                ;;    or
-                ;;        (-> any/c)  ; orig-val, return 1 value
-                ;;
-                ;;    If you actually want to pass in a procedure (e.g. if you're
-                ;;    building a jumptable) then you'll have to wrap it like so:
-                ;;
-                ;;        (lambda (hsh key val)  ; the 'generate a value' procedure
-                ;;            (lambda ...))      ; the procedure it generates
-                ;;   or
-                ;;        (lambda (val)          ; the 'generate a value' procedure
-                ;;            (lambda ...))      ; the procedure it generates
-                ;;   or
-                ;;        (lambda ()             ; the 'generate a value' procedure
-                ;;            (lambda ...))      ; the procedure it generates
-                ;;
-                ;; 'overwrite will add keys that are not in the source
-                ;; hash.  In these cases, we want to make sure that
-                ;; procedural generators are still called, so let's
-                ;; make sure that the 'original' hash has all the keys
-                ;; that are in the overwrite-hash.
+          ;(say "zot")
+          (define result
+            (for/fold ([result h])
+                      ([action action-order])
+              (match action
+                ['include
+                 (if include-keys
+                     (hash-slice* result include-keys)
+                     h)
+                 ]
+                ['remove
+                 ;; Remove keys
+                 (apply (curry safe-hash-remove result)
+                        (or remove-keys '()))]
+                ;
+                ['overwrite
+                 ;;    Overwrite any values from the original hash that
+                 ;;    we were told to overwrite.  If the new value is a
+                 ;;    procedure then it will be invoked and its result
+                 ;;    will be the new value.  The procedure must have
+                 ;;    the signature:
+                 ;;
+                 ;;        (-> hash? any/c any/c any/c)  ; hash, key, orig-val, return 1 value
+                 ;;    or
+                 ;;        (-> any/c any/c)  ; orig-val, return 1 value
+                 ;;    or
+                 ;;        (-> any/c)  ; orig-val, return 1 value
+                 ;;
+                 ;;    If you actually want to pass in a procedure (e.g. if you're
+                 ;;    building a jumptable) then you'll have to wrap it like so:
+                 ;;
+                 ;;        (lambda (hsh key val)  ; the 'generate a value' procedure
+                 ;;            (lambda ...))      ; the procedure it generates
+                 ;;   or
+                 ;;        (lambda (val)          ; the 'generate a value' procedure
+                 ;;            (lambda ...))      ; the procedure it generates
+                 ;;   or
+                 ;;        (lambda ()             ; the 'generate a value' procedure
+                 ;;            (lambda ...))      ; the procedure it generates
+                 ;;
+                 ;; 'overwrite will add keys that are not in the source
+                 ;; hash.  In these cases, we want to make sure that
+                 ;; procedural generators are still called, so let's
+                 ;; make sure that the 'original' hash has all the keys
+                 ;; that are in the overwrite-hash.
 
 
-                ; hash-meld merges a list of hashes, with later
-                ; entries overwriting earlier ones.  It does this
-                ; using either mutation or functional update based on
-                ; whether the first hash in the list is mutable or
-                ; not.  We want to be sure that we don't destroy the
-                ; procedures in the overwrite-hash, so we'll make it
-                ; immutable then convert back if necessary.
-                (define is-immutable? (immutable? result))
-                (define enhanced
-                  ((if is-immutable? identity hash->mutable)
-                   (for/hash ([k (append (hash-keys overwrite-hash) (hash-keys result))])
-                     (values k (hash-ref result k #f)))))
-                (safe-hash-union enhanced
-                                 overwrite-hash
-                                 #:combine/key (lambda (key orig-val overwrite-val)
-                                                 ;(say  "(key orig-val overwrite-val): "  key ", " orig-val ", " overwrite-val)
-                                                 (match (and (procedure? overwrite-val)
-                                                             (procedure-arity overwrite-val))
-                                                   [#f overwrite-val]
-                                                   [0  (overwrite-val)]
-                                                   [1  (overwrite-val orig-val)]
-                                                   [3  (overwrite-val result
-                                                                      key
-                                                                      orig-val)]
-                                                   [else (raise-arguments-error 'hash-remap
-                                                                                "In the #:overwrite key, all value-generating procedures must have arity of exactly 0, 1, or 3"
-                                                                                "procedure" overwrite-val)])))]
-               ;
-               ['add
+                 ; hash-meld merges a list of hashes, with later
+                 ; entries overwriting earlier ones.  It does this
+                 ; using either mutation or functional update based on
+                 ; whether the first hash in the list is mutable or
+                 ; not.  We want to be sure that we don't destroy the
+                 ; procedures in the overwrite-hash, so we'll make it
+                 ; immutable then convert back if necessary.
+                 (define is-immutable? (immutable? result))
+                 (define enhanced
+                   ((if is-immutable? identity hash->mutable)
+                    (for/hash ([k (append (hash-keys overwrite-hash) (hash-keys result))])
+                      (values k (hash-ref result k #f)))))
+                 (safe-hash-union enhanced
+                                  overwrite-hash
+                                  #:combine/key (lambda (key orig-val overwrite-val)
+                                                  ;(say  "(key orig-val overwrite-val): "  key ", " orig-val ", " overwrite-val)
+                                                  (match (and (procedure? overwrite-val)
+                                                              (procedure-arity overwrite-val))
+                                                    [#f overwrite-val]
+                                                    [0  (overwrite-val)]
+                                                    [1  (overwrite-val orig-val)]
+                                                    [3  (overwrite-val result
+                                                                       key
+                                                                       orig-val)]
+                                                    [else (raise-arguments-error 'hash-remap
+                                                                                 "In the #:overwrite key, all value-generating procedures must have arity of exactly 0, 1, or 3"
+                                                                                 "procedure" overwrite-val)])))]
+                ;
+                ['add
 
-                ;;    Next, add any additional keys that we were told to add.
-                ;;
-                ;;    NOTE: This will throw an exception if you try to add a
-                ;;    key that is already there.  Use the #:default keyword
-                ;;    if you simply want to make sure the key is there
-                ;;    without disturbing a previously-existing value.
-                (safe-hash-union result
-                                 add-hash
-                                 #:combine/key (lambda _ (raise-arguments-error
-                                                          'hash-remap
-                                                          "add-hash cannot include keys that are already in the hash (hint: use #:default, or #:overwrite, or use #:action-order to put 'remove before 'add)"
-                                                          "add-hash" add-hash
-                                                          "hash to add to (remove and overwrite already done)" result)))]
-               ;
-               ['rename
-                ;;    Rename keys
-                (for/fold ([h result])
-                          ([(key val) remap-hash])
+                 ;;    Next, add any additional keys that we were told to add.
+                 ;;
+                 ;;    NOTE: This will throw an exception if you try to add a
+                 ;;    key that is already there.  Use the #:default keyword
+                 ;;    if you simply want to make sure the key is there
+                 ;;    without disturbing a previously-existing value.
+                 (safe-hash-union result
+                                  add-hash
+                                  #:combine/key (lambda _ (raise-arguments-error
+                                                           'hash-remap
+                                                           "add-hash cannot include keys that are already in the hash (hint: use #:default, or #:overwrite, or use #:action-order to put 'remove before 'add)"
+                                                           "add-hash" add-hash
+                                                           "hash to add to (remove and overwrite already done)" result)))]
+                ;
+                ['rename
+                 ;;    Rename keys
+                 (for/fold ([h result])
+                           ([(key val) remap-hash])
                   ;;;(say "renaming in hash with key/val: " h "," key "," val)
-                  (hash-rename-key h key val))]
-               ;
-               ['default
-                 ;;   Default.  Keys that are in default but not in
-                 ;;   the hash will be added.  Keys that are in
-                 ;;   default AND in the hash will be set IFF their
-                 ;;   value matches the value-is-default? predicate
+                   (hash-rename-key h key val))]
+                ;
+                ['default
+                  ;;   Default.  Keys that are in default but not in
+                  ;;   the hash will be added.  Keys that are in
+                  ;;   default AND in the hash will be set IFF their
+                  ;;   value matches the value-is-default? predicate
 
-                 ;;(say "renamed hash: " renamed-hash)
-                 ;;(say "default hash: " default-hash)
+                  ;;(say "renamed hash: " renamed-hash)
+                  ;;(say "default hash: " default-hash)
 
-                 ;
-                 ; If your default value is a procedure then it will
-                 ; be called as (default-val key).  If it is a normal
-                 ; value then it will be used directly.
-                 ;
-                 ; If you want your default value to actually be a
-                 ; procedure, as opposed to a value-generator, then
-                 ; you'll need to wrap it:
-                 ;
-                 ; #:default (hash 'foo (lambda (key) (lambda ...)))
-                 ;
-                 (define make-value
-                   (lambda (key hsh default-val)
-                     (cond [(not (procedure? default-val)) default-val]
-                           [(let ([proc-arity (procedure-arity default-val)])
-                              (and (number? proc-arity)
-                                   (= 2 proc-arity)))
-                            (default-val key hsh)]
-                           [else (default-val key)])))
+                  ;
+                  ; If your default value is a procedure then it will
+                  ; be called as (default-val key).  If it is a normal
+                  ; value then it will be used directly.
+                  ;
+                  ; If you want your default value to actually be a
+                  ; procedure, as opposed to a value-generator, then
+                  ; you'll need to wrap it:
+                  ;
+                  ; #:default (hash 'foo (lambda (key) (lambda ...)))
+                  ;
+                  (define make-value
+                    (lambda (key hsh default-val)
+                      (cond [(not (procedure? default-val)) default-val]
+                            [(let ([proc-arity (procedure-arity default-val)])
+                               (and (number? proc-arity)
+                                    (= 2 proc-arity)))
+                             (default-val key hsh)]
+                            [else (default-val key)])))
 
-                 (for/fold ([defaulted-result result])
-                           ([(key default-val) default-hash])
-                   ;;(say "key/val/final val: " key ", " default-val ", " (make-value key defaulted-result default-val))
-                   (cond [(not (hash-has-key? defaulted-result key))
-                          ;;(say "not has")
-                          (safe-hash-set defaulted-result
-                                         key
-                                         (make-value key defaulted-result default-val))]
-                         ;
-                         [(value-is-default? (hash-ref defaulted-result key))
-                          ;;(say "val is def")
-                          (safe-hash-set defaulted-result key (make-value key
-                                                                          defaulted-result
-                                                                          default-val))]
-                         ;
-                         [else
-                          ;;(say "else")
-                          defaulted-result]))])))
-
-         ;;(say "about to post")
-
-         ;; postprocess the hash and return
-         (post-process  result)]))
+                  (for/fold ([defaulted-result result])
+                            ([(key default-val) default-hash])
+                    ;;(say "key/val/final val: " key ", " default-val ", " (make-value key defaulted-result default-val))
+                    (cond [(not (hash-has-key? defaulted-result key))
+                           ;;(say "not has")
+                           (safe-hash-set defaulted-result
+                                          key
+                                          (make-value key defaulted-result default-val))]
+                          ;
+                          [(value-is-default? (hash-ref defaulted-result key))
+                           ;;(say "val is def")
+                           (safe-hash-set defaulted-result key (make-value key
+                                                                           defaulted-result
+                                                                           default-val))]
+                          ;
+                          [else
+                           ;;(say "else")
+                           defaulted-result]))])))
+          result])))
 
 ;;----------------------------------------------------------------------
 
