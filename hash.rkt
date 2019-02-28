@@ -722,7 +722,7 @@
                  ;;    or
                  ;;        (-> any/c any/c)  ; orig-val, return 1 value
                  ;;    or
-                 ;;        (-> any/c)  ; orig-val, return 1 value
+                 ;;        (-> any/c)  ; no args, return 1 value
                  ;;
                  ;;    If you actually want to pass in a procedure (e.g. if you're
                  ;;    building a jumptable) then you'll have to wrap it like so:
