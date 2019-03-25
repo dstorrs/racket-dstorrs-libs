@@ -477,7 +477,9 @@
 ;;        (#:action-order (listof (or/c 'remove 'overwrite 'add 'rename 'default))
 ;;         #:include list?
 ;;         #:remove list?
-;;         #:overwrite hash? #:add hash? #:rename hash?
+;;         #:overwrite hash?
+;;         #:add hash?
+;;         #:rename hash?
 ;;         #:default hash?
 ;;         #:value-is-default? any/c ; (-> any/c boolean) or converts to (or/c default-val)
 ;;         #:post (-> hash? any)
@@ -501,9 +503,14 @@
 ;;  change that with the #:action-order parameter.  Whatever order you
 ;;  specify there will be followed.
 ;;
+;;
 ;;  INCLUDE the keys specified in the #:include list.  This is really
 ;;  just syntactic sugar around REMOVE, basically saying "remove
-;;  everything except the stated keys"
+;;  everything except the following keys"
+;;
+;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
+;;    (hash-remap h #:include '(group color)   => (hash 'group 'fruit 'color 'red)
+;;
 ;;
 ;;  REMOVE any values we were told to remove via the #:remove list
 ;;
@@ -545,7 +552,7 @@
 ;;    want to be sure that a hash has a key then use #:default and it
 ;;    will only be added if it's not there.  Alternatively, use
 ;;    #:action-order and put 'remove before 'add.
-
+;;
 ;;    (define h (hash 'group 'fruit   'color 'red    'type 'apple))
 ;;    (hash-remap h #:add (hash 'subtype 'honeycrisp))
 ;;       => (hash 'group 'fruit 'color 'red 'type 'apple 'subtype 'honeycrisp))
@@ -642,13 +649,13 @@
 ;;              'taste 'yummy) ; defaulted due to the #:value-is-default? predicate
 ;;
 (define/contract (hash-remap h
-                             #:include           [include-keys #f ]
-                             #:remove            [remove-keys #f]
-                             #:overwrite         [overwrite #f]
-                             #:add               [add #f]
-                             #:rename            [remap #f]  ; rename is taken
-                             #:default           [default #f]
-                             #:value-is-default? [def-val none/c]
+                             #:include           [include-keys #f]
+                             #:remove            [remove-keys  #f]
+                             #:overwrite         [overwrite    #f]
+                             #:add               [add          #f]
+                             #:rename            [remap        #f] ; rename is taken
+                             #:default           [default      #f]
+                             #:value-is-default? [def-val      none/c]
                              #:post              [post-process identity]
                              #:action-order      [action-order '(include
                                                                  remove overwrite add
