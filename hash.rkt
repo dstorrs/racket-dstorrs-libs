@@ -173,12 +173,16 @@
 ;;        e.g. (vector 'a 'b) => "ab"
 ;;        e.g. (list 'a 'b)   => "ab"
 ;;
+(define (_maybe-remove-q s rqm?) (if rqm? (regexp-replace #px"\\?" s "") s))
 (define/contract (hash-keys->strings h
                                      #:dash->underscore? [dash->underscore? #f]
-                                     #:underscore->dash? [underscore->dash? #f])
+                                     #:underscore->dash? [underscore->dash? #f]
+                                     #:remove-question-marks? [remove-question-marks? #f]
+                                     )
   (->* (hash?)
        (#:dash->underscore? boolean?
         #:underscore->dash? boolean?
+        #:remove-question-marks? boolean?
         )
        hash?)
 
@@ -196,9 +200,10 @@
   ((if (immutable? h) identity hash->mutable)
    (for/hash ([(k v) h])
      (let ([key (to-string k)])
-       (values (cond [dash->underscore?  (regexp-replace* #px"-" key "_")]
-                     [underscore->dash?  (regexp-replace* #px"_" key "-")]
-                     [else key])
+       (values (let ([s (_maybe-remove-q key remove-question-marks?)])
+                 (cond [dash->underscore?  (regexp-replace* #px"-" s "_")]
+                       [underscore->dash?  (regexp-replace* #px"_" s "-")]
+                       [else s]))
                v)))))
 
 ;;----------------------------------------------------------------------
@@ -206,14 +211,17 @@
 (define/contract (hash-keys->symbols h
                                      #:dash->underscore? [dash->underscore? #f]
                                      #:underscore->dash? [underscore->dash? #f]
+                                     #:remove-question-marks? [remove-question-marks? #f]
                                      )
   (->* (hash?)
        (#:dash->underscore? boolean?
-        #:underscore->dash? boolean?)
+        #:underscore->dash? boolean?
+        #:remove-question-marks? boolean?
+        )
        hash?)
 
   (when (and dash->underscore? underscore->dash?)
-    (raise-arguments-error 'hash-keys->strings
+    (raise-arguments-error 'hash-keys->symbols
                            "It's not sensible to set both dash->underscore? and underscore->dash?."
                            "dash->underscore?" dash->underscore?
                            "underscore->dash?" underscore->dash?))
@@ -221,9 +229,11 @@
   ((if (immutable? h) identity hash->mutable)
    (for/hash ([(k v) (in-hash h)])
      (define key (~a k))
-     (values (string->symbol (cond [dash->underscore?  (regexp-replace* #px"-" key "_")]
-                                   [underscore->dash?  (regexp-replace* #px"_" key "-")]
-                                   [else key]))
+     (values (string->symbol
+              (let ([s (_maybe-remove-q key remove-question-marks?)])
+                (cond [dash->underscore?  (regexp-replace* #px"-" s "_")]
+                      [underscore->dash?  (regexp-replace* #px"_" s "-")]
+                      [else s])))
              v))))
 
 ;;----------------------------------------------------------------------

@@ -12,7 +12,7 @@
          racket/match
          )
 
-(expect-n-tests 151)
+(expect-n-tests 153)
 
 (when #t
   (test-suite
@@ -321,6 +321,15 @@
    (is (hash-keys->strings (hash (vector 'a 'b 'c) 8))
        (hash "abc" 8)
        "list keys are concatenated")
+
+   (is (hash-keys->symbols (hash 'foo? 8) #:remove-question-marks? #t)
+       (hash 'foo 8)
+       "hk->sym will remove ? on keys if told to"
+       )
+   (is (hash-keys->strings (hash 'foo? 8) #:remove-question-marks? #t)
+       (hash "foo" 8)
+       "hk->str will remove ? on keys if told to"
+       )
    )
   )
 
