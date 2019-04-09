@@ -13,13 +13,14 @@
 (require racket/file
          racket/format
          racket/function
+         racket/list
          racket/port
          racket/promise
          racket/runtime-path
          "../test-more.rkt"
          "../utils.rkt")
 
-(expect-n-tests 296)
+(expect-n-tests 301)
 
 (define-runtime-path thisdir ".")
 
@@ -971,3 +972,13 @@
       (and (file-exists? dest) (delete-file dest))
       (is-false (file-exists? source) "successfully deleted file #1 (of 2) from append-file tests")
       (is-false (file-exists? dest) "successfully deleted file #2 (of 2) from append-file tests")))))
+
+(test-suite
+ "both-or-neither"
+
+ (for ([data (cartesian-product (list #t #f) (list #t #f))]
+       [correct (list #t #f #f #t)])
+   (is (apply both-or-neither data)
+       correct
+       (format "both-or-neither with ~a worked" data)))
+ )

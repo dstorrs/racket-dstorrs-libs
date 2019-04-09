@@ -20,7 +20,10 @@
          __WHERE__        __WHERE:__
 
          ->string
+         
          !=
+         both-or-neither
+         
          12hr->24hr
 
          always-return
@@ -159,6 +162,10 @@
 (define/contract (!= . args)
   (->* () () #:rest (non-empty-listof number?) boolean?)
   (not (apply = args)))
+
+;;----------------------------------------------------------------------
+
+(define both-or-neither (negate xor))
 
 ;;----------------------------------------------------------------------
 
