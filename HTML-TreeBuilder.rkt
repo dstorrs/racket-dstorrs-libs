@@ -7,7 +7,7 @@
 		 racket/pretty
 		 "list-utils.rkt" ; for atom?
 		 "web.rkt"        ; for web/call
-		 (planet neil/html-parsing:3:0)
+		 html-parsing
 		 sxml
 		 )
 
