@@ -33,6 +33,7 @@
 ;; *) disjunction : find the elements of one dict that are not in the other
 ;; *) first*  : return the leftmost atom in a list
 ;; *) in-range-inc : inclusive ranges
+;; *) insert-at    : (insert-at '(a b c e) '(d) 3) returns '(a b c d e)
 ;; *) find-contiguous-runs : search a list for contiguous segments,
 ;;     return a list of sublists
 ;; *) L : alias for 'list'  (NOTE: deprecated!)
@@ -785,6 +786,25 @@
 
 ;;----------------------------------------------------------------------
 
+;;   Choose a random element from a list
 (define/contract (pick lst)
   (-> (non-empty-listof any/c) any/c)
   (list-ref lst (random (length lst))))
+
+;;----------------------------------------------------------------------
+
+;;  Insert a list into another list at a specified position
+(define/contract (insert-at orig-lst new-lst n)
+  (-> list? list? natural-number/c list?)
+
+  (when (> n (length orig-lst))
+    (raise-arguments-error 'insert-at
+                           "n must be <= the length of list"
+                           "n" n
+                           "original list" orig-lst
+                           "new list" new-lst))
+
+  (define-values (before after)
+    (split-at orig-lst n))
+  (append before new-lst after))
+
