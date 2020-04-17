@@ -476,7 +476,7 @@
 ;; 			l)  => '((table 1) (table 2 (table 3)) (table 3))
 ;;
 (define/contract (member-rec m lst)
-  (-> any/c any/c list?)
+  (-> any/c list? list?)
   (define match (if (procedure? m) m (curry equal? m)))
   (define search (compose autobox (curry member-rec match)))
   (define (recur l) (append (search (car l)) (search (cdr l))))
