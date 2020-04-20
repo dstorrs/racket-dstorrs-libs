@@ -251,7 +251,7 @@
 ;; (list-remf* 'a 'b (when x 'c) 'd)  => either '(a b c d) or '(a b d)
 ;; (list-remf* 'a "b" #:pred string?) => '(a)
 (define/contract (list-remf* #:pred [pred void?] . l)
-  (->* () (#:pred (-> list? boolean?)) #:rest list? list?)
+  (->* () (#:pred predicate/c) #:rest list? list?)
   (remf* pred l))
 
 ;;----------------------------------------------------------------------
