@@ -27,7 +27,7 @@ scribble/example)
 (examples #:label label #:eval ((make-eval-factory '("../list-utils.rkt" racket)))
 body ...))
 
-@subsection{Parameters}
+@subsection{Parameters and Related Functions}
 
 The following parameters modify how @racket[vector->dict] and @racket[list->dict] work. Those two functions take a list of keys and a (list/vector) of values and turn them into a @racket[dict?], possibly doing various transformations along the way.
 
@@ -46,6 +46,46 @@ Default: @racket[make-hash]}
 
 Default: @racket[identity]}
 
+@defproc[(make-transform-data-func [predicate predicate/c] [replacer (-> any/c any/c)] ... ...) (-> any/c any/c pair?)]{Generates a function suitable for use in @racket[current-transform-data-function].
+
+The resulting function expects to be given two values: a key and its value. The value will be checked to see if it matches any of the predicates supplied to @racket[make-transform-data-func].  If so, the value will be passed to the corresponding @racket[replacer] function.  The final result will be a pair consisting of the key and the final value.
+
+NOTE:  This function is intended for use when there are discrete classes of possible inputs.  The order in which predicates are tested is not guaranteed and it will stop after finding its first match.
+
+@(hlu-eval #f
+           (define transformer
+             (make-transform-data-func (and/c number? exact?) exact->inexact
+                                       string? string-trim
+                                       (vectorof string? #:flat? #t) (compose (curry map (compose1 string-titlecase string-trim))
+                                                                              vector->list)))
+(transformer 'name "       Bob")
+(transformer 'pies-eaten 2/3)
+(transformer 'friends (vector "mike" "fi" "jesse" "sam"))
+(transformer 'unchanged-1 (vector 'mike "fi" "jesse" "sam"))
+(transformer 'unchanged-2 (list "mike" "fi" "jesse" "sam"))
+)
+}
+
+@defproc[(make-transform-data-func* [predicate predicate/c] [replacer (-> any/c any/c)] ... ...) (-> any/c any/c pair?)]{Similar to @racket[make-transform-data-func], this generate a function suitable for use in @racket[current-transform-data-function].
+
+It is guaranteed that the specified predicates will all be tested, that they will be tested in the order provided, and replacements can be chained as the modified value will be carried from one step to the next.
+
+@(hlu-eval #f
+           (define transformer
+             (make-transform-data-func* (and/c number? exact?) exact->inexact
+                                        string? string-trim
+                                        (vectorof string? #:flat? #t) vector->list
+                                        (listof string?) (curry map (compose1 string-titlecase
+                                                                              string-trim)))
+
+             )
+(transformer 'name "       Bob")
+(transformer 'pies-eaten 2/3)
+(transformer 'unchanged (vector 'mike "fi" "jesse" "sam"))
+(transformer 'friends-1 (vector "mike" "fi" "jesse" "sam"))
+(transformer 'friends-2 (list "mike" "fi" "jesse" "sam"))
+)
+}
 
 @subsection{Functions}
 
@@ -92,7 +132,7 @@ Like @racket[compose] but composes from left to right instead of right to left, 
 (get-employees-1)
 (get-employees-2)
 
-(define (get-people [exclude none/c]) ; by default, exclude nothing 
+(define (get-people [exclude none/c]) ; by default, exclude nothing
   (list-remf* #:pred exclude
               (hash 'name 'alice   'employed #t)
               (hash 'name 'bob     'employed #t 'handed 'left)
@@ -116,16 +156,16 @@ handedness-unknown
 @defproc[(member-rec [target any/c] [lst list?]) list?]{Finds elements in @racketidfont{lst} that match `@racketidfont{target}', regardless of how deeply nested.  `@racketidfont{target}' can be either a value or a predicate; in the latter case, all values that match the predicate will be returned.
 @(hlu-eval #f
 (define l '(1 2 (table 1) ((4) 5 (((table 2 (table 3)))))))
-(member-rec 2 l)                  
-(member-rec (curry equal? 2) l)   
-(member-rec number? l)            
+(member-rec 2 l)
+(member-rec (curry equal? 2) l)
+(member-rec number? l)
 (member-rec (lambda (x) (and (list/not-null? x)
                              (equal? (car x) 'table)))
             l))}
 
 @defproc[(find-contiguous-runs [data list?]
                                [#:key extract-key (-> any/c any/c) identity]
-			       [#:op  op  (-> any/c any/c boolean?) #f])	
+			       [#:op  op  (-> any/c any/c boolean?) #f])
 			       list?]{
 
  Generate a list of lists where each sublist is a sequence of
