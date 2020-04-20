@@ -45,3 +45,6 @@ temp.html
 .meteor
 test.rkt
 compiled
+*.css
+*.js
+*.html
