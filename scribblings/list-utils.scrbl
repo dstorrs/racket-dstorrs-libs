@@ -99,7 +99,6 @@ Like @racket[compose] but composes from left to right instead of right to left, 
               (hash 'name 'charlie 'employed #f)
               (hash 'name 'denise  'employed #f)))
 
-
 (get-people)
 (define unemployed (get-people (λ (h) (hash-ref h 'employed))))
 unemployed
@@ -159,6 +158,7 @@ handedness-unknown
 
 @defproc[(remove-nulls [lst list?]) list?]{Filter @racket['()]s out of a list}
 
+
 @defproc*[([(safe-first [lst list?][default any/c '()]) any/c]
            [(safe-rest  [lst list?][default any/c '()]) any/c])]{
   When @racketidfont{lst} is non-null these work like @racket[first] and @racket[rest] respectively.
@@ -174,8 +174,6 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 (safe-rest '() #f)
 )
 }.
-
-
 
 @section{DEPRECATED}
 
