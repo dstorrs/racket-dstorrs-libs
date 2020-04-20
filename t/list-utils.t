@@ -9,7 +9,7 @@
          "../list-utils.rkt"
          "../test-more.rkt")
 
-(expect-n-tests 267)
+(expect-n-tests 270)
 
 (ok 1 "test harness is working")
 
@@ -868,3 +868,14 @@
      (is (func 'a 9) (cons 'a 'a) "converts ints to 'a")
      (is (func 'a (hash)) (cons 'a "foobar") "converts hash to string, then prepends foo"))
    ))
+
+(when #t
+  (test-suite
+   "in-range-inc"
+   (is (for/list ([i (in-range-inc 3)])  i)
+       '(0 1 2 3)
+       "(for/list ([i (in-range-inc 3)])  i) works")
+
+   (is (for/list ([i (in-range-inc 0 3 0.5)]) i)
+       '(0 0.5 1.0 1.5 2.0 2.5 3.0)
+       "(for/list ([i (in-range-inc 0 3 0.5)]) i)")))

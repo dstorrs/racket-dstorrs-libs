@@ -488,9 +488,11 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (in-range-inc x [y #f])
-  (->* (exact-integer?) (exact-integer?) stream?)
-  (if y (in-range x (add1 y)) (in-range (add1 x))))
+(define/contract (in-range-inc x [y #f] [step 1])
+  (->* (real?) (real? real?) stream?)
+  (if y
+      (in-range x (+ y step) step)
+      (in-range   (add1 x))))
 
 ;;----------------------------------------------------------------------
 
