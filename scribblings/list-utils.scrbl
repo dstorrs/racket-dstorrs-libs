@@ -89,6 +89,9 @@ Like @racket[compose] but composes from left to right instead of right to left, 
 (define (get-employees-2 [include-offsite #f])
   (list-remf*  'alice (when include-offsite 'bob)))
 
+(get-employees-1)
+(get-employees-2)
+
 (define (get-people [exclude none/c]) ; by default, exclude nothing 
   (list-remf* #:pred exclude
               (hash 'name 'alice   'employed #t)
@@ -96,8 +99,7 @@ Like @racket[compose] but composes from left to right instead of right to left, 
               (hash 'name 'charlie 'employed #f)
               (hash 'name 'denise  'employed #f)))
 
-(get-employees-1)
-(get-employees-2)
+
 (get-people)
 (define unemployed (get-people (λ (h) (hash-ref h 'employed))))
 unemployed
