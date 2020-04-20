@@ -99,7 +99,6 @@ Like @racket[compose] but composes from left to right instead of right to left, 
               (hash 'name 'charlie 'employed #f)
               (hash 'name 'denise  'employed #f)))
 
-
 (get-people)
 (define unemployed (get-people (λ (h) (hash-ref h 'employed))))
 unemployed
@@ -174,7 +173,6 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 (safe-rest '() #f)
 )
 }.
-
 
 
 @section{DEPRECATED}
