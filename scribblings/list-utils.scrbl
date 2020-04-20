@@ -159,11 +159,23 @@ handedness-unknown
 
 @defproc[(remove-nulls [lst list?]) list?]{Filter @racket['()]s out of a list}
 
-@defproc*[([(safe-first [lst list?][default any/c]) any/c]
-           [(safe-rest  [lst list?][default any/c]) any/c])]{
+@defproc*[([(safe-first [lst list?][default any/c '()]) any/c]
+           [(safe-rest  [lst list?][default any/c '()]) any/c])]{
   When @racketidfont{lst} is non-null these work like @racket[first] and @racket[rest] respectively.
 
-  When @racketidfont{lst} is null then these return @racketidfont{default}}.
+When @racketidfont{lst} is null then these return @racketidfont{default}
+
+@(hlu-eval #f
+(safe-first '(a b c))
+(safe-first '())
+(safe-first '() #f)
+(safe-rest '(a b c))
+(safe-rest '())
+(safe-rest '() #f)
+)
+}.
+
+
 
 @section{DEPRECATED}
 
