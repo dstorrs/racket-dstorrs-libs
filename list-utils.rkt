@@ -73,7 +73,7 @@
 ;; current-query-as-dict-transform-data-function
 ;;
 (define/contract (make-transform-data-func . args)
-  (->* () () #:rest (and/c (listof any/c) (compose even? length)) procedure?)
+  (->* () () #:rest (and/c list? (compose even? length)) procedure?)
 
   (define the-map
     (make-immutable-hash
@@ -112,7 +112,7 @@
 (define/contract (make-transform-data-func* . args)
   (->* ()
        ()
-       #:rest (and/c (listof any/c) (compose even? length))
+       #:rest (and/c list? (compose even? length))
        (-> any/c any/c pair?))
 
   ;    Example:
