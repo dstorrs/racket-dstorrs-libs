@@ -9,7 +9,7 @@
          "../list-utils.rkt"
          "../test-more.rkt")
 
-(expect-n-tests 270)
+(expect-n-tests 281)
 
 (ok 1 "test harness is working")
 
@@ -832,6 +832,10 @@
        '(1 2 (4))
        "cleared dupe from a sublist. resulting sublist non-empty")
 
+   (is (remove-duplicates/rec '(1 2 (1 3 4) 4 2))
+       '(1 2 (3 4))
+       "sublists maintain their order after duplicates removed")
+
    (define thnk (thunk 'a))
    (define h1 (hash))
    (define h2 (hash))
@@ -845,7 +849,25 @@
                                            (if (procedure? e) (e) e)))
        (list 1 2 3 'a h1)
        "extract-key can redefine what the value is beforehand, e.g. by evaling a thunk")
-   ))
+
+
+   (define args-all (list '()
+                          '(x)
+                          '(x y z)
+                          '(x x y z y y y)
+                          '(x ((x)) y z y)))
+
+   (for ([args args-all]
+         [correct (list '() '(x) '(x y z) '(x y z) '(x (()) y z))])
+     (is (remove-duplicates/rec #:key list args equal?)
+         correct
+         (format "(remove-duplicates/rec #:key list ~v equal?) worked" args))
+     )
+
+   (for ([args args-all])
+     (is (remove-duplicates/rec #:key list args eq?)
+         args
+         "(remove-duplicates/rec #:key list args eq?) makes no changes because (list x) is not eq? (list x)"))))
 
 (when #t
   (test-suite

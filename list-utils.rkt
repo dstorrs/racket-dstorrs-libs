@@ -260,42 +260,29 @@
 
 ;;----------------------------------------------------------------------
 
-;
-(define/contract (remove-duplicates/rec lst #:key [extract-key identity])
-  (->* (list?)
-       (#:key  (-> any/c any/c))
-       list?)
+; recursively remove items from a list
+(define (remove-duplicates/rec  lst [same? equal?] #:key [extract-key identity])
+  (define (_helper lst seen)
+    (match lst
+      ['()
+       (values '() seen)]
+      [(list  head tail ...)
+       #:when (list? head)
+       (define-values (sub-headres sub-headseen) (_helper head seen))
+       (define-values (sub-tailres sub-tailseen) (_helper tail sub-headseen))
 
-  (define (_helper lst
-                   [same? equal?]
-                   #:key [extract-key identity]
-                   #:seen [seen (hash)])
+       (values (cons sub-headres sub-tailres) sub-tailseen)]
+      [(list  head tail ...)
+       #:when (not (member (extract-key head) seen same?))
+       (define-values (tail-result tail-seen)
+         (_helper tail (cons (extract-key head) seen)))
+       (values (cons head tail-result)
+               tail-seen)]
+      [(list  head tail ...)
+       (_helper tail seen)]))
 
-    (for/fold ([result '()]
-               [already-seen seen])
-              ([item lst])
-
-      (cond [(list? item)
-             (define-values (res new-seen)
-               (_helper item
-                        same?
-                        #:key extract-key
-                        #:seen already-seen))
-             (values (cons res result) new-seen)]
-            ;
-            [(hash-ref already-seen (extract-key item) #f)
-             (values result already-seen)]
-            ;
-            [else
-             (values (cons item result)
-                     (hash-set already-seen (extract-key item) #t))])))
-
-  (define-values (res ignore) (_helper lst
-                                       ;same? ; @@TODO  PUT THIS IN LATER
-                                       #:key extract-key))
-
-  (reverse res))
-
+  (define-values (result seen) (_helper lst '()))
+  result)
 
 ;;----------------------------------------------------------------------
 
@@ -807,4 +794,3 @@
   (define-values (before after)
     (split-at orig-lst n))
   (append before new-lst after))
-

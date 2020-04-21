@@ -196,6 +196,31 @@ handedness-unknown
      		                         #:key (curryr hash-ref 'age))))
 }
 
+@defproc[(remove-duplicates/rec [lst list?] [same? (-> any/c any/c any/c) equal?] [#:key extract-key (-> any/c any/c) identity]) list?]{Recursively remove duplicates in a (possibly nested) list
+@(hlu-eval #f
+
+(remove-duplicates/rec '())
+(remove-duplicates/rec '(a b c))
+(remove-duplicates/rec '(a a b b c))
+(remove-duplicates/rec '(a a (a b c) b c))
+(remove-duplicates/rec '(x ((x)) y z y))
+
+"; The following will de-dupe its args because (x) equal? (x)"
+(remove-duplicates/rec '(a a (a b c) b c) equal? #:key list)
+(remove-duplicates/rec '(a a b b c)       equal? #:key list)
+(remove-duplicates/rec '(a b c)           equal? #:key list)
+(remove-duplicates/rec '()                equal? #:key list)
+(remove-duplicates/rec '(x ((x)) y z y)   equal? #:key list)
+
+"; The following will NOT de-dupe its args because (x) NOT eq? (x)"
+(remove-duplicates/rec '(a a (a b c) b c) eq? #:key list)
+(remove-duplicates/rec '(a a b b c)       eq? #:key list)
+(remove-duplicates/rec '(a b c)           eq? #:key list)
+(remove-duplicates/rec '()                eq? #:key list)
+(remove-duplicates/rec '(x ((x)) y z y)   eq? #:key list)
+)
+}
+
 @defproc[(remove-nulls [lst list?]) list?]{Filter @racket['()]s out of a list}
 
 @defproc*[([(safe-first [lst list?][default any/c '()]) any/c]
