@@ -239,7 +239,6 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 )
 }.
 
-
 @section{DEPRECATED}
 
 The following will be removed in a future version.  They were mostly written when I was first learning Racket and didn't realize that there was already something that did the thing I wanted.  Either that, or they simply proved to be unnecessary/not useful.
