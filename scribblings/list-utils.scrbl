@@ -331,6 +331,7 @@ The following will be removed in a future version.  They were mostly written whe
              l)  
 )}
 
+@defproc[(symbols->keywords [lst (listof symbol?)]) (listof keyword?) ]{Take a list of symbols, sort them, convert them into keywords.  Useful in combination with @racket[keyword-apply].}
 
 @defproc[(unique [lst list?]  [same? (-> any/c any/c boolean?) equal?] [#:key key-maker (-> any/c any/c) identity]) list?]{Convenient alias for running @racket[remove-nulls] on the result of @racket[remove-duplicates].  @racket[same?] determines if two elements are the same and therefore the latter should be removed.  @racket[key-maker] determines the actual value to test.}
 
