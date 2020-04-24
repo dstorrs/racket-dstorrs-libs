@@ -330,3 +330,16 @@ The following will be removed in a future version.  They were mostly written whe
  			      (equal? (car x) 'table)))
              l)  
 )}
+
+
+@defproc[(unique [lst list?]  [same? (-> any/c any/c boolean?) equal?] [#:key key-maker (-> any/c any/c) identity]) list?]{Convenient alias for running @racket[remove-nulls] on the result of @racket[remove-duplicates].  @racket[same?] determines if two elements are the same and therefore the latter should be removed.  @racket[key-maker] determines the actual value to test.}
+
+@defproc[(unwrap-list [lst list?]) list?]{If @racket[lst] is a 1-element list, return the @racket[car] of @racket[lst].  Otherwise, return @racket[lst].
+
+@(hlu-eval #f
+(unwrap-list '(a b c))
+(unwrap-list '((a b c) (d e f)))
+(unwrap-list  '((a b c)))
+
+)
+}

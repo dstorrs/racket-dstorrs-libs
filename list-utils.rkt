@@ -647,10 +647,9 @@
 
 (define/contract (unwrap-list lst)
   (-> list? list?)
-  (cond [(null? lst) lst]
-        [(> (length lst) 1) lst]
-        [(list? (car lst)) (car lst)]
-        [else lst]))
+  (match lst
+    [(list (list item ...)) item]
+    [else lst]))
 
 ;;----------------------------------------------------------------------
 
