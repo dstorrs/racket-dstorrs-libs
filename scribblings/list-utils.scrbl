@@ -164,6 +164,155 @@ handedness-unknown
 @(hlu-eval #f
 (list->values '(a b c)))}
 
+@defproc[(list->dict [raw-keys list?] [data list?]
+                     [#:dict-maker     dict-maker (-> (listof pair?) dict?) (current-dict-maker-function)]
+                     [#:transform-dict transform-dict (-> dict? dict?) (current-transform-dict-function)]
+                     [#:transform-data transform-data (-> any/c any/c pair?) (current-transform-data-function)]
+                     [#:make-keys      key-maker (-> any/c any/c) #f]) dict?]{Takes a list of keys and a list of data, as well as some optional keyword params.  Default functionality is to cons the keys to their respective data then send that to make-hash in order to generate a mutable hash.  Through application of the various optional params you can make it generate anything.  NOTE: The contract does not actually require that the return value be a dict; if you know what you're doing and want to generate something else, that's fine.
+
+NB:  A dict is either:
+@itemlist[
+@item{a hash}
+@item{a vector (uses exact integers as keys)}
+@item{a list of pairs  (could be either cons pairs or proper non-null lists of any length)}
+@item{structures that implement the gen:dict interface}
+]
+
+Default values assuming the various parameters listed in the signature have not had their values changed:
+
+@itemlist[
+@item{@racket[#:transform-data]     Default: @racket[cons]       Accepts a key and a value, returns a pair.}
+@item{@racket[#:dict-maker]         Default: @racket[make-hash]  Gets the list of pairs from transform-data}
+@item{@racket[#:transform-dict]     Default: @racket[identity]   Operate on the result of dict-maker}
+@item{@racket[#:make-keys]          Default: @racket[#f]         If set, generates the keys based on the data}
+]
+
+@(hlu-eval #f
+   (list->dict '(foo bar) '(7 8))
+   (list->dict '()        '(65 66) #:make-keys integer->char)
+   (list->dict '(foo bar) '(65 66) #:make-keys integer->char)
+   (list->dict '(foo bar) '(7 8) #:transform-data (lambda (k v) (cons k (add1 v))))
+   (list->dict '(foo bar) '(7 8) #:dict-maker make-immutable-hash)
+
+   (define (get-metadata-for-person h)
+       "This could get data from anywhere -- DB, REST call, etc"
+       (hash 'last-login 1587761196761 'access-level 'admin))
+       
+   (parameterize ([current-dict-maker-function make-immutable-hash])
+     (list->dict '(name age) '(bob 22)
+                 #:transform-dict (λ (h)
+		                     (hash-set h 'profile (get-metadata-for-person h))))))}
+
+@defproc[(multi-partition [#:partitions num-dests exact-positive-integer?]
+                          [#:source source list?]
+                          [#:filter                 chooser (-> any/c (or/c #f void? exact-nonnegative-integer?)) (let-values ([(more? next) (sequence-generate (in-naturals))])
+                      (lambda (x) (modulo (next) num-dests)))]
+                          [#:post-process-element   post-process-element   (-> exact-nonnegative-integer? any/c any/c) (lambda (idx elem) elem)]
+                          [#:post-process-partition post-process-partition (-> list? any/c) identity]
+                          [#:post-process-all-data  post-process-all-data (-> vector? any)  vector->list]
+                                   )
+any]{This is like group-by, but with some additional properties and capabilities.  Specifically:
+
+@itemlist[
+@item{Items will come back in the order you want them to, not in the order they happen to occur in the source.  This is useful if you have different kinds of elements in a list -- for example, given a function that might return a valid result or throw one of various kinds of exceptions, you can multi-partition the results such that all the valid ones are in partition 1 and each of the various kinds of exceptions are all in expected slots.}
+@item{You can separately post process each element and/or partition, and all of the resulting data.}
+]
+@(hlu-eval #f
+
+  (multi-partition #:partitions 3 #:source '(1 2 3 4 5 6 7) #:filter (curryr modulo 3))
+  (multi-partition #:partitions 3 #:source '(1 2 3 4 5 6 7) #:filter (curryr modulo 3)
+                   #:post-process-element (lambda (idx elem) (add1 elem))
+                   #:post-process-partition (lambda (lst) (map (curry * 2) lst)))
+
+  (define lst  '(a b c))
+  (multi-partition #:partitions 1
+                   #:filter (lambda (x) (raise "should not get here"))
+                   #:source lst)
+  (multi-partition #:partitions 2
+                   #:filter (lambda (n) 1)
+                   #:post-process-all-data vector->values
+                   #:source '())
+  (multi-partition #:partitions 3
+                   #:filter (lambda (n) 1)
+                   #:post-process-all-data vector->values
+                   #:source '())
+
+  (multi-partition #:partitions 3
+                   #:filter (lambda (n) (cond [(zero? (floor n)) 0]
+                                              [(even? (floor n)) 1]
+                                              [(odd?  (floor n)) 2]))
+                   #:post-process-all-data vector->values
+                   #:source '(1 7 8 0 15.8 -2))
+
+  (with-handlers ([exn:fail? (λ (e)
+  		 	       (displayln "If your match function returns something other than #f or a 0+ natural number then multi-partition throws"))]) 
+     (multi-partition #:partitions 2
+                      #:filter (lambda (n) #t)
+                      #:post-process-all-data vector->values
+                      #:source '(1 7 8 0 15.8 -2 a)))
+  (with-handlers ([exn:fail? (λ (e)
+  		 	       (displayln "Returned 8.2 : If your match function returns something other than #f or a 0+ natural number then multi-partition throws"))])
+            (multi-partition #:partitions 2
+                             #:filter (lambda (n) 8.2)
+                             #:post-process-all-data vector->values
+                             #:source '(1 7 8 0 15.8 -2 a)))
+
+   (multi-partition #:partitions 2
+                    #:source '(1 2 3 4 1)
+                    #:post-process-partition unique
+                    #:post-process-all-data vector->values
+                    #:filter (lambda (i) (if (odd? i) 0 1)))
+   
+   (multi-partition #:partitions 2
+                    #:source '(1 2 3 4 1)
+                    #:post-process-partition unique
+                    #:post-process-all-data vector->values
+                    #:filter (lambda (i)
+                               (cond [(odd? i) 0]
+                                     [(= 4 i) #f]
+                                     [else     1]))
+                    )
+     
+   (multi-partition #:partitions 2
+                    #:source '(1 2 3 4 1)
+                    #:post-process-partition unique
+                    #:post-process-all-data vector->values
+                    #:filter (lambda (i)
+                               (cond [(odd? i) 0]
+                                     [(= 8 i)    1])))
+
+   (multi-partition #:partitions 2
+                    #:source '(1 2 3 4 1)
+                    #:post-process-element (lambda (x y) (add1 y))
+                    #:post-process-all-data vector->values
+                    #:filter (lambda (i)
+                               (cond [(odd? i) 0]
+                                     [(= 8 i)    1])))
+    (multi-partition #:partitions 3
+                     #:source '(a b c d e f g)
+                     #:post-process-all-data vector->values)
+
+    (multi-partition #:partitions 3 #:source '(a b c d e f g))
+)
+}
+
+
+@defproc[(pick [lst (non-empty-listof any/c)]) any/c]{Return a random item from @racket[lst].}
+
+@defproc[(symbols->keywords [lst (listof symbol?)]) (listof keyword?) ]{Take a list of symbols, sort them, convert them into keywords.  Useful in combination with @racket[keyword-apply].}
+
+@defproc[(unique [lst list?]  [same? (-> any/c any/c boolean?) equal?] [#:key key-maker (-> any/c any/c) identity]) list?]{Convenient alias for running @racket[remove-nulls] on the result of @racket[remove-duplicates].  @racket[same?] determines if two elements are the same and therefore the latter should be removed.  @racket[key-maker] determines the actual value to test.}
+
+@defproc[(unwrap-list [lst list?]) list?]{If @racket[lst] is a 1-element list, return the @racket[car] of @racket[lst].  Otherwise, return @racket[lst].
+
+@(hlu-eval #f
+(unwrap-list '(a b c))
+(unwrap-list '((a b c) (d e f)))
+(unwrap-list  '((a b c)))
+
+)
+}
+
 
 @defproc[(find-contiguous-runs [data list?]
                                [#:key extract-key (-> any/c any/c) identity]
@@ -331,19 +480,3 @@ The following will be removed in a future version.  They were mostly written whe
  			      (equal? (car x) 'table)))
              l)  
 )}
-
-@defproc[(pick [lst (non-empty-listof any/c)]) any/c]{Return a random item from @racket[lst].}
-
-@defproc[(symbols->keywords [lst (listof symbol?)]) (listof keyword?) ]{Take a list of symbols, sort them, convert them into keywords.  Useful in combination with @racket[keyword-apply].}
-
-@defproc[(unique [lst list?]  [same? (-> any/c any/c boolean?) equal?] [#:key key-maker (-> any/c any/c) identity]) list?]{Convenient alias for running @racket[remove-nulls] on the result of @racket[remove-duplicates].  @racket[same?] determines if two elements are the same and therefore the latter should be removed.  @racket[key-maker] determines the actual value to test.}
-
-@defproc[(unwrap-list [lst list?]) list?]{If @racket[lst] is a 1-element list, return the @racket[car] of @racket[lst].  Otherwise, return @racket[lst].
-
-@(hlu-eval #f
-(unwrap-list '(a b c))
-(unwrap-list '((a b c) (d e f)))
-(unwrap-list  '((a b c)))
-
-)
-}
