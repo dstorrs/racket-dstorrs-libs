@@ -235,6 +235,12 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 (slice '(a b c d e f g) 2)
 (slice '(a b c d e f g) 2 4))}
 
+@defproc*[([(sort-num [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?]
+	   [(sort-str [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?]
+	   [(sort-sym [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?]
+	   [(sort-bool [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?]
+	   [(sort-smart [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?])]{Short names for sorting various datatypes.  @racket[sort-smart] will check the type of the first element of the provided list and then trampoline to the appropriate specific sort function.  The @racket[asc?] argument specifies whether the list should be sorted in ascending order (the default) or descending order.}
+
 @defproc[(get [s any/c] [keys any/c] [def any/c unsupplied-value]) any/c]{
 Take a data structure built of nested (hashes, lists, vectors, structs) and retrieve items from it.  Hashes are accessed by key, vectors and lists by index, and structs by function. If the data is not a recognized thing then @racket[get] returns the data.
 
