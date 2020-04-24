@@ -153,15 +153,6 @@ handedness-unknown
 @(hlu-eval #f
 (list->values '(a b c)))}
 
-@defproc[(member-rec [target any/c] [lst list?]) list?]{Finds elements in @racketidfont{lst} that match `@racketidfont{target}', regardless of how deeply nested.  `@racketidfont{target}' can be either a value or a predicate; in the latter case, all values that match the predicate will be returned.
-@(hlu-eval #f
-(define l '(1 2 (table 1) ((4) 5 (((table 2 (table 3)))))))
-(member-rec 2 l)
-(member-rec (curry equal? 2) l)
-(member-rec number? l)
-(member-rec (lambda (x) (and (list/not-null? x)
-                             (equal? (car x) 'table)))
-            l))}
 
 @defproc[(find-contiguous-runs [data list?]
                                [#:key extract-key (-> any/c any/c) identity]
@@ -252,3 +243,16 @@ The following will be removed in a future version.  They were mostly written whe
 @defproc[(alist->hash [lst (listof pair?)]) hash?]{An alternate name  for @racket[make-immutable-hash].}
 
 @defproc[(L [v any/c] ...) list?]{An alternate name for @racket[list].}
+
+
+@defproc[(member-rec [m any/c] [lst any/c]) list?]{Search through a list recursively for all instances of an item, includes ones that are nested inside other instances.  The item can be either a value or a predicate.  Returns a list of all instances; nested items will appear both in their parent and on their own.  e.g.:
+@(hlu-eval #f
+ (define l '(1 2 (table 1) ((4) 5 (((table 2 (table 3)))))))
+ (member-rec 2 l)                  
+ (member-rec (curry equal? 2) l)   
+ (member-rec number? l)            
+ (member-rec (lambda (x) (and (list? x)
+ 			      (not (null? x))
+ 			      (equal? (car x) 'table)))
+             l)  
+)}
