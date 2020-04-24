@@ -9,7 +9,7 @@
          "../list-utils.rkt"
          "../test-more.rkt")
 
-(expect-n-tests 281)
+(expect-n-tests 283)
 
 (ok 1 "test harness is working")
 
@@ -901,3 +901,13 @@
    (is (for/list ([i (in-range-inc 0 3 0.5)]) i)
        '(0 0.5 1.0 1.5 2.0 2.5 3.0)
        "(for/list ([i (in-range-inc 0 3 0.5)]) i)")))
+
+(when #t
+  (test-suite
+   "list->assoc-list"
+
+   (is (list->assoc-list '(a b c d))
+       '((a . b) (c . d))
+       "(list->assoc-list '(a b c d)) works"
+       )
+   ))

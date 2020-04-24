@@ -146,6 +146,12 @@ unemployed
 handedness-unknown
 )}
 
+@defproc[(list->assoc-list [lst (and/c list? (λ (l) (even? (length l))))]) (listof pair?)]{Converts an even-length list into an associative list.  Pass the result to @racket[make-hash] or @racket[make-immutable-hash] and you have the inverse of hash->list.
+
+@(hlu-eval #f
+(list->assoc-list '(a b c d))
+)}
+
 
 @defproc[(list/not-null? [v any/c]) boolean?]{Returns true if @racketidfont{v} is a pair and not @racket['()]. NB: checks for pair, not list, so it treats @racket['(x . y)] as a list.}
 
