@@ -634,7 +634,7 @@
 
 (define/contract (flatten/convert func lst)
   (-> procedure? list? list?)
-  (flatten (map func lst)))
+  ((compose flatten (curry map func)) lst))
 
 ;;----------------------------------------------------------------------
 

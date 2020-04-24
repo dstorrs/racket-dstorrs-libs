@@ -109,6 +109,10 @@ Like @racket[compose] but composes from left to right instead of right to left, 
 (first* '(a b c))
 (first* '(((a b)))))}
 
+;; ;;----------------------------------------------------------------------
+
+@defproc[(flatten/convert [func procedure?][lst list?]) list?]{Maps the specified function across the list and flattens the result.  Useful when working with DBs and you need to process the results.}
+
 @defproc*[([(in-range-inc [end real?]) stream?]
 [(in-range-inc [start real?] [end real?] [step real? 1]) stream?])]{Like @racket[in-range] but includes the endpoint.
 @(hlu-eval #f
