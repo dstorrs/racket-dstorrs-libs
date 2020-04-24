@@ -241,6 +241,23 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 	   [(sort-bool [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?]
 	   [(sort-smart [lst list?] [#:key key (-> any/c any/c) identity][#:cache-keys? cache? boolean? #f][#:asc? asc? boolean? #t]) list?])]{Short names for sorting various datatypes.  @racket[sort-smart] will check the type of the first element of the provided list and then trampoline to the appropriate specific sort function.  The @racket[asc?] argument specifies whether the list should be sorted in ascending order (the default) or descending order.}
 
+@defproc[(step-by-n [func (unconstrained-domain-> any/c)][data sequence?] [step-size? exact-positive-integer? 2] [#:return-results? return-results? #t] [#:pass-args-as-list? pass-args-as-list? #f]) (or/c void? list?)]{Step through a sequence @racket[step-size?] elements at a time (or however many are left), passing them to @racket[func].  Normally they will be passed positionally, but if @racket[pass-args-as-list?] is @racket[#t] then @racket[func] will receive a list containing the arguments.  By default the results of @racket[func] will be returned in a list, but if @racket[return-results?] is @racket[#f] then @racket[step-by-n] will return @racket[(void)].
+
+@(hlu-eval
+	#f
+	(step-by-n list '(a b c d))
+	(step-by-n list '(a b c d e))
+	(step-by-n hash '(a 1 b 2 c 3 d 4) 4)
+	(struct person (name age sex) #:transparent)
+	(step-by-n person '(bob 18 male diane 19 female) 3)
+	(step-by-n (curry apply person) '(bob 18 male diane 19 female) 3 #:pass-args-as-list? #t)
+	(step-by-n displayln (list "foo" "bar" "baz") 1)
+	(step-by-n displayln (list "foo" "bar" "baz") 1 #:return-results? #f)
+	(define (query-row conn sql vals)
+		  "Mock function that pretends to get a row from the database. See (require db) for the actual query-row function."
+		  (apply vector vals))
+	(step-by-n (curry query-row 'conn "select * from users where first_name = $1 and last_name = $2") '(bob geitz isaac asimov) #:pass-args-as-list? #t))}
+
 @defproc[(get [s any/c] [keys any/c] [def any/c unsupplied-value]) any/c]{
 Take a data structure built of nested (hashes, lists, vectors, structs) and retrieve items from it.  Hashes are accessed by key, vectors and lists by index, and structs by function. If the data is not a recognized thing then @racket[get] returns the data.
 
