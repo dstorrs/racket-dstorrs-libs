@@ -415,7 +415,7 @@
 ;;
 ;;  (get h  (list "bar" add1)) ; returns 9
 ;;
-(define/contract (get s keys [def 'no-default-value-specified])
+(define/contract (get s keys [def the-unsupplied-arg])
   (->* (any/c any/c)
        (any/c)
        any/c)
@@ -436,11 +436,13 @@
            ([exn:fail:contract?
              (lambda (e)
                (cond
-                 [(equal? def 'no-default-value-specified) (raise e)]
-                 [(not (regexp-match #px"(no value found for key|index (too large|out of range))"
-                                     (exn-message e)))
-                  (raise e)]
-                 [else def]))])
+                 [(unsupplied-arg? def) (raise e)]
+                 [(not (exn:fail:contract? e)) (raise e)]
+                 [(regexp-match #px"(no value found for key|index (too large|is out of range))"
+                                (exn-message e))
+                  def
+                  ]
+                 [else (raise e)]))])
            (foldl get-once s (autobox keys)))]))
 
 ;;----------------------------------------------------------------------

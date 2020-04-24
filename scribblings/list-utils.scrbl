@@ -235,6 +235,47 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 (slice '(a b c d e f g) 2)
 (slice '(a b c d e f g) 2 4))}
 
+@defproc[(get [s any/c] [keys any/c] [def any/c unsupplied-value]) any/c]{
+Take a data structure built of nested (hashes, lists, vectors, structs) and retrieve items from it.  Hashes are accessed by key, vectors and lists by index, and structs by function. If the data is not a recognized thing then @racket[get] returns the data.
+
+As a special case, if there is only one key then you can pass it directly instead of in a list.
+
+The optional def argument allows you to specify a default.  The default is returned iff one of the following exceptions is thrown:
+
+        @racket[exn:fail:contract] with message:  "list-ref: index too large for list"
+        @racket[exn:fail:contract] with message:  "hash-ref: no value found for key"
+        @racket[exn:fail:contract] with message:  "vector-ref: index is out of range"
+
+Note that you can pass functions as 'keys' even when the thing you'll be accessing is not a struct.
+
+@(hlu-eval #f
+   (define l '(foo "bar" ("baz" (quux))))
+   (define h (make-hash
+              `(("foo" . "bar")
+                (baz . 7)
+                (quux . (foo bar))
+                (blag . ,(make-hash '(["baz" . "jaz"]))))))
+
+
+   (get l 0)
+   (get l '(0))
+   (get l '(1))
+   (get l '(2))
+   (get l '(2 0))
+   (get l '(188) -11)
+
+   (get h 'quux)
+   (get h '(quux 0))
+   (get h '(jaz) "not found")
+
+(struct fruit (taste data))
+(define apple (fruit 'sweet (hash 'seeds 7)))
+(get (hash 'x (list 'a 'b apple 'c))
+     (list 'x 2 fruit-data 'seeds))
+	)
+	}
+
+
 
 @section{DEPRECATED}
 
