@@ -124,6 +124,7 @@ Like @racket[compose] but composes from left to right instead of right to left, 
 @defproc[(insert-at [orig list?] [new list?] [idx natural-number/c]) list?]{Add a list at a specified 0-based index of another list
 @(hlu-eval #f
 (insert-at '(a b c e) '(d) 3))}
+
 @defproc[(list-remf* [#:pred p (-> any/c boolean?) void?]) list?]{Create a list and filter out all elements that match the predicate.
 
 @(hlu-eval #f
@@ -330,6 +331,8 @@ The following will be removed in a future version.  They were mostly written whe
  			      (equal? (car x) 'table)))
              l)  
 )}
+
+@defproc[(pick [lst (non-empty-listof any/c)]) any/c]{Return a random item from @racket[lst].}
 
 @defproc[(symbols->keywords [lst (listof symbol?)]) (listof keyword?) ]{Take a list of symbols, sort them, convert them into keywords.  Useful in combination with @racket[keyword-apply].}
 
