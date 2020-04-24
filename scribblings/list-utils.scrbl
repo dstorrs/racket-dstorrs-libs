@@ -239,6 +239,12 @@ When @racketidfont{lst} is null then these return @racketidfont{default}
 )
 }.
 
+@defproc[(slice [lst list?][start natural-number/c] [end natural-number/c +inf.0]) list?]{Returns indices @racket[start] up to and including @racket[end].
+@(hlu-eval #f
+(slice '(a b c d e f g) 2)
+(slice '(a b c d e f g) 2 4))}
+
+
 @section{DEPRECATED}
 
 The following will be removed in a future version.  They were mostly written when I was first learning Racket and didn't realize that there was already something that did the thing I wanted.  Either that, or they simply proved to be unnecessary/not useful.
