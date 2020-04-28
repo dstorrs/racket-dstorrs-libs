@@ -460,27 +460,31 @@
 
 ;;----------------------------------------------------------------------
 
-(define/contract (vector->dict keys
+; This is a trampoline to list->dict.  It simply calls vector->list and passes that and
+; its arguments on to list->dict.
+(define/contract (vector->dict raw-keys
                                data
-                               #:dict-maker [dict-maker (current-dict-maker-function)]
-                               #:transform-dict [transform-dict (current-transform-dict-function)]
+                               #:make-keys      [key-maker      #f]
                                #:transform-data [transform-data (current-transform-data-function)]
-                               )
-  (->* (list? vector?)                           ; keys and data
-       (#:dict-maker (-> (listof pair?) dict?)   ; takes an assoc list, returns a dict
-        #:transform-dict (-> dict? dict?)        ; transform the output of dict-maker
-        #:transform-data (-> any/c any/c pair?)  ; transform the input of dict-maker
+                               #:dict-maker     [dict-maker     (current-dict-maker-function)]
+                               #:transform-dict [transform-dict (current-transform-dict-function)])
+  (->* (list? vector)                              ;; keys and data
+       (
+        #:make-keys      (or/c #f (-> any/c any/c)); generate the keys list based on data
+        #:transform-data (-> any/c any/c pair?)    ; transform the input of dict-maker
+        #:dict-maker     (-> (listof pair?) any/c) ; takes an assoc list, returns something
+        #:transform-dict (-> any/c any)            ; transform the output of dict-maker
         )
-       dict?)
+       any)
 
   (if (not data)
       (dict-maker);; Makes handling DB queries easier
-      (list->dict keys
-                  (vector->list data)
-                  #:dict-maker dict-maker
+      (list->dict raw-keys
+                  (vector->list    data)
+                  #:dict-maker     dict-maker
                   #:transform-dict transform-dict
                   #:transform-data transform-data
-                  )))
+                  #:make-keys      key-maker)))
 
 ;;----------------------------------------------------------------------
 
@@ -527,18 +531,19 @@
 ;;        => (make-hash '((#\A . 65) (#\B . 66)))
 (define/contract (list->dict raw-keys
                              data
-                             #:dict-maker [dict-maker (current-dict-maker-function)]
+                             #:dict-maker     [dict-maker     (current-dict-maker-function)]
                              #:transform-dict [transform-dict (current-transform-dict-function)]
                              #:transform-data [transform-data (current-transform-data-function)]
-                             #:make-keys  (key-maker #f)
+                             #:make-keys      [key-maker      #f]
                              )
-  (->* (list? list?)         ;; keys and data
-       (#:dict-maker     (-> (listof pair?) dict?) ; takes an assoc list, returns a dict
+  (->* (list? list?)                               ;; keys and data
+       (
+        #:make-keys      (or/c #f (-> any/c any/c)); generate the keys list based on data
         #:transform-data (-> any/c any/c pair?)    ; transform the input of dict-maker
-        #:transform-dict (-> dict? dict?)          ; transform the output of dict-maker
-        #:make-keys      (-> any/c any/c)          ; generate the keys list based on data
+        #:dict-maker     (-> (listof pair?) any/c) ; takes an assoc list, returns something
+        #:transform-dict (-> any/c any)            ; transform the output of dict-maker
         )
-       dict?)
+       any)
 
   (let ((keys (if key-maker (map key-maker data) raw-keys)))
     (unless (= (length data) (length keys))
