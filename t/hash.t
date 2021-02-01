@@ -183,7 +183,7 @@
          (func)
          "Passing '((a b) c) DOES remove both the key '(a b) and the key 'c"))
 
-   (define weird-h   (hash '(foo bar) 'x 'a 7 'b 8))
+   (define weird-h   (hash '(foo bar) '6 'a 7 'b 8))
    (is (safe-hash-remove weird-h '((foo bar) a))
        (hash 'b 8)
        "(safe-hash-remove weird-h '((foo bar) a)) => (hash 'b 8)")
@@ -282,7 +282,7 @@
                            )
        (hash 'x 7 'y '0 'foo_bar 12 'bar_baz 19)
        "hash-keys->symbols accepts #:dash->underscore?")
-   
+
    (is (hash-keys->symbols (hash 'x 7
                                  "y" 0
                                  'foo-bar 12
@@ -293,7 +293,7 @@
              'foo-bar 12
              'bar-baz 19)
        "hash-keys->symbols accepts #:underscore->dash?")
-   
+
    (is (hash-keys->strings (hash "foo" 7 'bar 8 0 'c))
        (hash "foo" 7 "bar" 8 "0" 'c)
        "(hash-keys->strings works on things with keys that are not symbol/string")
@@ -368,7 +368,7 @@
      (is (hash-remap h #:include '(group))
          (hash 'group 'fruit)
          "include successful"))
-   
+
    ;;  REMOVE any values we were told to remove via the #:remove list
    ;;
    (let ([h (hash 'group 'fruit   'color 'red    'type 'apple)])
@@ -727,9 +727,9 @@
 
    ;; Now run all the hash-aggregate** tests
    (is (hash-aggregate* 'id
-                       (hash 'id 1)
-                       (hash 'id 7)
-                       (hash 'id 9))
+                        (hash 'id 1)
+                        (hash 'id 7)
+                        (hash 'id 9))
        (hash 1 (hash 'id 1)  7 (hash 'id 7) 9 (hash 'id 9))
        "can aggregate multiple hashes via rest argument")
 
@@ -756,10 +756,10 @@
 
 
    (let ([result (hash-aggregate* 'id
-                                 (hash 'id 1 'foo 9)
-                                 (hash 'id 1)
-                                 (hash 'id 7)
-                                 (hash 'id 9))])
+                                  (hash 'id 1 'foo 9)
+                                  (hash 'id 1)
+                                  (hash 'id 7)
+                                  (hash 'id 9))])
 
      (ok (match result
            [(hash-table (1 (list-no-order (hash-table ('id 1) ('foo 9))
@@ -774,10 +774,10 @@
 
 
    (let ([result (hash-aggregate* 'id
-                                 (hash 'id 1 'foo 9)
-                                 (hash 'id 1)
-                                 (hash 'id 7)
-                                 (hash 'id 9))])
+                                  (hash 'id 1 'foo 9)
+                                  (hash 'id 1)
+                                  (hash 'id 7)
+                                  (hash 'id 9))])
      (ok (match result
            [(hash-table (1 (list-no-order (hash-table ('id 1) ('foo 9))
                                           (hash-table ('id 1))))
@@ -790,10 +790,10 @@
 
 
    (let ([result (hash-aggregate* 'id #:default #f
-                                 (hash 'x 1 'foo 9)
-                                 (hash 'x 1)
-                                 (hash 'id 7)
-                                 (hash 'id 9))])
+                                  (hash 'x 1 'foo 9)
+                                  (hash 'x 1)
+                                  (hash 'id 7)
+                                  (hash 'id 9))])
      (ok (match result
            [(hash-table (#f (list-no-order  (hash-table ('x 1))
                                             (hash-table ('x 1) ('foo 9))))
@@ -805,14 +805,14 @@
 
 
    (let ([result (hash-aggregate* (lambda (h)
-                                   (define val (hash-ref h 'id #f))
-                                   (match val
-                                     [#f #f]
-                                     [else (add1 val)]))
-                                 (hash 'x 1 'foo 9)
-                                 (hash 'x 1)
-                                 (hash 'id 7)
-                                 (hash 'id 9))])
+                                    (define val (hash-ref h 'id #f))
+                                    (match val
+                                      [#f #f]
+                                      [else (add1 val)]))
+                                  (hash 'x 1 'foo 9)
+                                  (hash 'x 1)
+                                  (hash 'id 7)
+                                  (hash 'id 9))])
      (ok (match result
            [(hash-table (#f (list-no-order  (hash-table ('x 1))
                                             (hash-table ('x 1) ('foo 9))))
@@ -880,10 +880,29 @@
    (is (hash-subtract source (hash 'a 1 'b 7) (hash 'c 9))
        (hash)
        "success. (hash-subtract source (hash 'a 1 'b 7) (hash 'c 9))"
-       )   
+       )
 
    (is (hash-subtract source (hash 'a 1) (hash 'b 8) (hash 'c 9))
        (hash)
        "success. (hash-subtract source (hash 'a 1) (hash 'b 8) (hash 'c 9))"
-       )   
+       )
    ))
+
+(test-suite
+ "hash-invert"
+
+ (is (hash-invert (hash 'a 1 'b 2 'c 3))
+     (hash 1 '(a) 2 '(b) 3 '(c))
+     "(hash-invert (hash 'a 1 'b 2 'c 3)) => (hash 1 '(a) 2 '(b) 3 '(c))")
+
+ (matches (hash-invert (hash 'a 1 'b 1))
+          (λ (r) (match r [(hash-table (1 (list-no-order 'a 'b))) #t] [else #f]))
+          "(hash-invert (hash 'a 1 'b 1)) => (hash-table (1 (list-no-order 'a 'b)))")
+
+ (matches (hash-invert (hash 'a 1 '(x y z) 1 '(a b c) 1))
+          (λ (r)
+            (match r
+              [(hash-table (1 (list-no-order 'a '(x y z) '(a b c)))) #t]
+              [else #f]))
+          "(hash-invert (hash 'a 1 '(x y z) 1 '(a b c) 1)) => (hash-table (1 (list-no-order 'a '(x y z) '(a b c))))")
+ )

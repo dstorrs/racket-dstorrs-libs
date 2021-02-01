@@ -13,6 +13,7 @@
 ; for hash-union
 ;; *) hash-aggregate*     : listof any/c -> single hash that maps a key to the vals
 ;; *) hash-aggregate      : flattens its args, trampolines to hash-aggregate*
+;; *) hash-invert         : (hash 'a 1 'b 2 'c 1) => (hash 1 '(a c) 2 '(b)). order undefined.
 ;; *) hash->keyword-apply : take a function and a hash.  Assume the
 ;;     keys of the hash are keyword arguments and call appropriately.
 ;; *) hash-key-exists?    : alias for hash-has-key? because I always forget the name
@@ -37,6 +38,8 @@
          hash-aggregate
          hash-aggregate*
 
+         hash-invert
+
          hash->keyword-apply
          hash-key-exists?
 
@@ -46,6 +49,7 @@
          hash->immutable
          hash->mutable
          mutable-hash
+         mutable-hash?
 
          hash-rename-key
          hash-meld
@@ -73,7 +77,7 @@
 ; turned into a trampoline to hash-aggregate* that flattens its
 ; arguments list before bouncing.
 (define/contract (hash-aggregate key
-                                 #:default [default 'no-default-specified]
+                                 #:default [default the-unsupplied-arg]
                                  . items)
   (->* (any/c)
        (#:default any/c)
@@ -130,14 +134,14 @@
 ;       1 (person 1)
 ;       2 (person 2))
 (define/contract (hash-aggregate* key
-                                  #:default [default 'no-default-specified]
+                                  #:default [default the-unsupplied-arg]
                                   . items)
   (->* (any/c)
        (#:default any/c)
        #:rest (listof any/c)
        hash?)
 
-  (define no-default? (equal? default 'no-default-specified))
+  (define no-default? (unsupplied-arg? default))
   (for/fold ([result (hash)])
             ([h items]) ; e.g. (hash 'id 7)
 
@@ -159,6 +163,16 @@
              [else ; it is there but it's not a list
               (safe-hash-set result key-in-result (list h current-val-in-result))
               ])])))
+
+
+;;----------------------------------------------------------------------
+
+;;  
+(define/contract (hash-invert h)
+  (-> (and/c hash? immutable?) hash?)
+  (for/fold ([result (hash)])
+            ([(k v) (in-hash h)])
+    (hash-set result v (cons k (hash-ref result v '())))))
 
 ;;----------------------------------------------------------------------
 
@@ -262,32 +276,35 @@
   (->* () ()
        #:rest (and/c (listof any/c) (compose even? length))
        (and/c hash? (not/c immutable?)))
-  (hash->mutable (apply hash args)))
+  (define result (make-hash))
+  (let loop ([l args])
+    (match l
+      ['()  result]
+      [else (hash-set! result (first l) (second l))
+            (loop (drop l 2))])))
 
 ;;----------------------------------------------------------------------
 
-(define/contract (mutable-hash? data)
-  (-> hash? boolean?)
-  (not (immutable? data)))
+(define mutable-hash? (and/c hash? (not/c immutable?)))
 
 ;;----------------------------------------------------------------------
 
 (define/contract (hash-meld . hshs)
-  (->* () () #:rest (non-empty-listof hash?) hash?)
-  (cond [(= (length hshs) 1) (first hshs)]
-        [else
-         (define base-hash (first hshs))
-         (define is-immutable?  (immutable? base-hash))
+  (->* () () #:rest (listof hash?) hash?)
 
-         (define-values (union-func converter)
-           (if is-immutable?
-               (values hash-union hash->immutable)
-               (values hash-union! hash->mutable)))
-
-         (let ([result (apply union-func
-                              (map converter hshs)
-                              #:combine (lambda (x y) y))])
-           (if is-immutable? result base-hash))]))
+  (match hshs
+    ['() (hash)]
+    [(list base-hash) base-hash]
+    [(list base-hash others ...)
+     #:when (immutable? base-hash)
+     (hash-union base-hash
+                 (apply hash-meld others)
+                 #:combine (λ (x y) y))]
+    [(list base-hash others ...)
+     (hash-union! base-hash
+                  (apply hash-meld others)
+                  #:combine (λ (x y) y))
+     base-hash]))
 
 ;;----------------------------------------------------------------------
 
@@ -386,7 +403,7 @@
 
 ;; safe-hash-union
 ;;
-;; Takes a list of hashes and an optional
+;; Like hash-union/hash-union! but handles mutable or immutable
 (define/contract (safe-hash-union h0
                                   #:combine [combine (lambda args
                                                        (raise-arguments-error
