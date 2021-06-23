@@ -167,7 +167,30 @@
 
 ;;----------------------------------------------------------------------
 
-;;  
+;;  Turn a hash inside out so that the values become keys and the keys
+;;  become values.  This can be particularly useful when collecting
+;;  votes and then finding the option with the most votes.  For example:
+;;
+;;    (hash 'eat 3 'drink 1 'make-merry 5)
+;;
+;;  becomes
+;;
+;;    (hash 3 'eat 1 'drink 5 'make-merry)
+;;
+;; And it's then easy enough to look at the keys and determine that
+;; 'make-merry got the most votes.
+;;
+;; If the source hash had two keys with the same value then the result
+;; hash will have one key with a list of two values:
+;;
+;;    (hash 'eat 3 'drink 3 'make-merry 1)
+;;
+;; becomes
+;;
+;;    (hash 3 '(eat drink) 1 'make-merry)
+;;
+;; There is no promise of which order '(eat drink) will be listed in.
+;;
 (define/contract (hash-invert h)
   (-> (and/c hash? immutable?) hash?)
   (for/fold ([result (hash)])
