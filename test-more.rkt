@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
-         "utils.rkt"
          racket/bool
          racket/contract/base
          racket/contract/region
@@ -9,7 +8,8 @@
          racket/format
          racket/function
          racket/match
-         racket/string)
+         racket/string
+         "utils.rkt")
 
 (provide prefix-for-test-report ; parameter printed at start of each test
          prefix-for-diag        ; parameter printed at front of each (diag ...) message
@@ -57,6 +57,7 @@
          next-test-num     ; return next test number and optionally modify it
          )
 
+(define-logger test-more)
 (define prefix-for-diag (make-parameter "### "))
 
 ;;======================================================================
@@ -570,7 +571,11 @@
                                  #:text [text (rand-val "test file contents")]
                                  #:overwrite [overwrite #t])
   (->* () (path-string? #:text string? #:overwrite boolean?) path-string?)
+  (log-test-more-debug "fpath is: ~a" fpath)
+
   (define-values (dir fn ignore) (split-path fpath))
+
+  (log-test-more-debug "dir: ~a, fn:~a, ignore:~" dir fn ignore)
 
   (make-directory* dir) ; this doesn't fail if the directory exists, so no reason not to do it
 
@@ -578,11 +583,14 @@
     (cond [(file-exists? fpath) fpath]
           [(directory-exists? fpath) (build-path fpath (rand-val "test-file"))]
           [else fpath]))
+  (log-test-more-debug "filepath: ~a" filepath)
 
   (with-output-to-file
     filepath
     (thunk (display text))
     #:exists (if overwrite 'replace 'error))
+
+  (log-test-more-debug "created file")
 
   (path-string->string filepath))
 
