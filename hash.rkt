@@ -317,17 +317,12 @@
 
   (match hshs
     ['() (hash)]
-    [(list base-hash) base-hash]
     [(list base-hash others ...)
-     #:when (immutable? base-hash)
-     (hash-union base-hash
-                 (apply hash-meld others)
-                 #:combine (λ (x y) y))]
-    [(list base-hash others ...)
-     (hash-union! base-hash
-                  (apply hash-meld others)
-                  #:combine (λ (x y) y))
-     base-hash]))
+     (define base-is-imm? (immutable? base-hash))
+     (define func (if base-is-imm? hash-union hash-union!))
+     (define result (apply (curry func #:combine (λ (x y) y))
+                           hshs))
+     (if base-is-imm? result base-hash)]))
 
 ;;----------------------------------------------------------------------
 
