@@ -178,54 +178,43 @@
 ;;
 ;; Summary:
 ;;
-;;    Run a query against the database, return the result as a list of
-;;    dicts. (By default hashes, but you can override to use some
-;;    other form of dict if desired.)  You can also provide
-;;    transformer functions to rewrite the data before the hashes are
-;;    built or rewrite the hashes after they are built but before
-;;    they are returned.
+;;    Run a query against the database, return the result as a list of dicts. (By default
+;;    hashes, but you can override to use some other form of dict if desired.)  You can
+;;    also provide transformer functions to rewrite the data before the hashes are built
+;;    or rewrite the hashes after they are built but before they are returned.
 ;;
-;;    By default, if an exception is thrown from the query then an
-;;    empty dict is returned.  If you want the exn to be re-raised
-;;    then you can pass #:trap-exns #f.  In that case the exn will be
-;;    sent to 'refine-db-exn' (see above) before being re-raised.
+;;    By default, if an exception is thrown from the query then an empty dict is returned.
+;;    If you want the exn to be re-raised then you can pass #:trap-exns #f.  In that case
+;;    the exn will be sent to 'refine-db-exn' (see above) before being re-raised.
 ;;
 ;;
 ;; Contract:
 ;;
-;;  (->* (list? connection? string?) ; keys, db handle, SQL string
-;;       (
-;;        #:wrapper          (-> connection (-> any) any) ; e.g. call-with-transaction/disconnect
-;;        #:trap-exns?       boolean?
-;;        #:dict-maker       procedure?
-;;        #:transform-dict   procedure?
-;;        #:transform-data   procedure?
-;;        )
-;;       #:rest list?
-;;       (listof dict?))
+;; (->* (list? connection? string?)
+;;      (
+;;       #:wrapper          (-> connection? (-> any) any)
+;;       #:trap-exns?       boolean?
+;;       #:dict-maker       (-> (listof pair?) dict?)
+;;       #:transform-dict   (-> any/c any/c)
+;;       #:transform-data   (-> any/c any/c pair?)
+;;       #:post-process     (-> list? any)
+;;       )
+;;      #:rest list?
+;;      any)
 ;;
 ;;
-;; The various procedures passed through the keywords are expected
-;; to have the following contracts.  The contracts aren't actually
-;; checked because raw lambdas and curried functions have no
-;; available contract and so would fail the check.
+;; The default dict-maker is make-hash, which produces a mutable hash.  If you want an
+;; immutable hash then you can pass make-immutable-hash to the #:dict-maker argument
 ;;
-;;  #:wrapper        (-> (-> any) any)         ; takes a thunk, return value(s) not checked
-;;  #:trap-exns?     boolean?                  ; return empty dict instead of throw? default: #t
-;;  #:dict-maker     (-> (listof pair?) dict?) ; takes an assoc list, returns a dict
-;;  #:transform-data (-> any/c any/c pair?)    ; transform the input of dict-maker
-;;  #:transform-dict (-> dict? dict?)          ; transform the output of dict-maker
-;;
-;; The default dict-maker is make-hash, which produces a mutable
-;; hash.  If you want an immutable hash then you can pass
-;; make-immutable-hash to the #:dict-maker argument
+;;  NOTE: The function is called 'query-rows-as-DICTS' but it will actually allow you to
+;;  return anything you want.  A common reason for this was that you want the hashes to be
+;;  converted into structs before being returned.
 ;;
 ;;
 ;; Examples:
 ;;
-;;    ;Run a query that needs no params. Result is a list of
-;;    ;mutable hashes matching (hash/c symbol? any/c)  Note that
-;;    ;the keys don't have to be the same as the field names
+;;    ;Run a query that needs no params. Result is a list of mutable hashes matching
+;;    ;(hash/c symbol? any/c) Note that the keys are different from the field names.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks")
@@ -247,8 +236,8 @@
 ;;                      '(7))
 ;;
 ;;
-;;    ;Run a query but return the results as a list of 2-item lists
-;;    ;instead of a list of hashes.
+;;    ;Run a query but return the results as a list of 2-item lists instead of a list of
+;;    ;hashes.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
@@ -256,8 +245,8 @@
 ;;                      #:dict-maker flatten) ;; e.g. '(foo . 7) => '(foo 7)
 ;;
 ;;
-;;    ;Run a query with params, add one to each chunk-num before
-;;    ;returning the results.
+;;    ;Run a query with params, add one to each chunk-num before returning the results.
+;;    ;In practice you should prefer to do this in the DB but this makes a clear example.
 ;; (query-rows-as-dicts '(chunk-hash chunk-num)
 ;;                      db-handle
 ;;                      "select hash, chunk_num from chunks where id = $1"
@@ -265,29 +254,25 @@
 ;;                      #:transform-data (lambda (k v) (cons k (add1 v))))
 ;;
 ;;
-;;    ;Run a query with params, convert the keys of the resulting
-;;    ;hashes from symbols to strings before returning the results.
-;;    ;(hash-keys->strings is defined in handy/utils)
-;;    ;
-;;    ;NOTE: Obviously, this is contrived.  An easier solution would
-;;    ;be to make the keys be strings in the first place.  That might
-;;    ;not be straightforward, however, if the keys were being
-;;    ;auto-generated somewhere else.
-;; (query-rows-as-dicts '(chunk-hash chunk-num)
+;;    ;Run a query with params, convert the results to structs.  hash->struct/kw is defined
+;;    ;in handy/struct
+;;
+;; (struct person (name age))
+;; (define (person/kw #:name name #:age age) (person name age))
+;; (query-rows-as-dicts '(name age)
 ;;                      db-handle
-;;                      "select hash, chunk_num from chunks where id = $1"
-;;                      7
-;;                      #:transform-dict hash-keys->strings)
+;;                      "select name, age from users where id = $1"
+;;                      #:transform-dict (curry hash->struct/kw person/kw)
+;;                      7)
 ;;
 ;;    ;Same as above, but run the query inside a transaction and then
 ;;    ;disconnect the db handle
-;; (query-rows-as-dicts '(chunk-hash chunk-num)
+;; (query-rows-as-dicts '(name age)
 ;;                      db-handle
-;;                      "select hash, chunk_num from chunks where id = $1"
+;;                      "select name, age from users where id = $1"
 ;;                      7
-;;                      #:transform-dict hash-keys->strings
+;;                      #:transform-dict (curry hash->struct/kw person/kw)
 ;;                      #:wrapper call-with-transaction/disconnect)
-;;
 (define/contract (query-rows-as-dicts keys db sql
                                       #:wrapper        [wrapper    (lambda (db thnk) (thnk))]
                                       #:trap-exns?     [trap-exns? #f]
@@ -302,9 +287,9 @@
         #:wrapper          (-> connection? (-> any) any)
         #:trap-exns?       boolean?
         #:dict-maker       (-> (listof pair?) dict?)
-        #:transform-dict   (-> dict? dict?)
+        #:transform-dict   (-> any/c any/c)
         #:transform-data   (-> any/c any/c pair?)
-        #:post-process     (-> (listof dict?) any)
+        #:post-process     (-> list? any)
         )
        #:rest list?
        any)
