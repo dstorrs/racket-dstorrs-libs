@@ -20,10 +20,10 @@
          __WHERE__        __WHERE:__
 
          ->string
-         
+
          !=
          both-or-neither
-         
+
          12hr->24hr
 
          always-return
@@ -407,14 +407,15 @@
 ; #:relaxed? If #f (the default) then passing a single-element
 ; relative path (e.g. "foo") or the root directory (e.g. "/") raises
 ; an exception.  If #t then:
-;    "foo" => (values "" "foo")  ; the non-empty-string item will be a
+;    "foo" => (values "" "foo")  ; the non-empty-string item will be used as the filepath
 ;    "/"   => (values "/" "")    ; path or string as per #:as-str?
 ;
-;   IMPORTANT: EMPTY STRING IS NOT A VALID PATH.  If you attempt to
-;   use it with functions that manipulate path-string? items then you
-;   will get an exception.  #:relaxed? is useful if, e.g, you are
-;   going to be storing the directory in a database as a string.  Use
-;   safe-build-path to combine them without worrying about this.
+;   IMPORTANT: EMPTY STRING IS NOT A VALID PATH-STRING VALUE IN
+;   RACKET.  If you attempt to use it with functions that manipulate
+;   path-string?  items then you will get an exception.  #:relaxed? is
+;   useful if, e.g, you are going to be storing the directory in a
+;   database as a string.  Use safe-build-path to combine them without
+;   worrying about this.
 ;
 (define/contract (dir-and-filename fp #:as-str? [as-str? #f] #:relaxed? [relaxed? #f]
                                    #:is-dir? [force-dir? #f])
@@ -431,9 +432,10 @@
      (raise-argument-error 'dir-and-filename "path-string?" fp)]
     ;
     [(list #t (or "" #f)) (values "" "")]
-    [(list #t (or 'up 'same)) (values ""
-                                      ((if as-str? path->string identity)
-                                       (path->directory-path (build-path fp))))]
+    [(list #t (or 'up 'same))
+     (values ""
+             ((if as-str? path->string identity)
+              (path->directory-path (build-path fp))))]
     [else
      (define-values (d f is-dir?) (split-path fp))
 
