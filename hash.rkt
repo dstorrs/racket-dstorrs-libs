@@ -529,7 +529,7 @@
 ;;         #:value-is-default? any/c ; (-> any/c boolean) or converts to (or/c default-val)
 ;;         #:post (-> hash? any)
 ;;        )
-;;        hash?)
+;;        any)
 ;;
 ;;  Mnemonic for default order of application: I ROARenD
 ;;         include -> remove -> overwrite -> add -> rename -> default
