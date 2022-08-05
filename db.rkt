@@ -347,12 +347,12 @@
                                     )
   (->* ((non-empty-listof any/c) connection? string?)
        (
-        #:wrapper  (-> connection? (-> any))
-        #:trap-exns? boolean?
-        #:dict-maker (-> (listof pair?) dict?)     ; takes an assoc list, returns a dict
-        #:transform-data (-> any/c any/c pair?)    ; transform the input of dict-maker
-        #:transform-dict (-> dict? dict?)          ; transform the output of dict-maker
-        #:post-process     (-> dict? any)          ; transform the final result to anything
+        #:wrapper          (-> connection? (-> any))
+        #:trap-exns?       boolean?
+        #:dict-maker       (-> (listof pair?) dict?) ; takes an assoc list, returns a dict
+        #:transform-data   (-> any/c any/c pair?)    ; transform the input of dict-maker
+        #:transform-dict   (-> dict? any/c)          ; transform the output of dict-maker
+        #:post-process     (-> any/c any)            ; transform the final result to anything
         )
        #:rest (listof any/c)
        any)
